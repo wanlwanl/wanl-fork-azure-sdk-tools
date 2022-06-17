@@ -95,9 +95,9 @@ namespace APIViewWeb.Repositories
         }
 
         public async Task<(IEnumerable<ReviewModel> Reviews, int TotalCount, int TotalPages, int CurrentPage, int? PreviousPage, int? NextPage)> GetPagedReviewsAsync(
-            List<string> search, List<string> languages, bool? isClosed, List<int> filterTypes, bool? isApproved, int offset, int limit, string orderBy) 
+            List<string> nameExact, List<string> nameLoose, List<string> author, List<string> prNo, List<string> languages, bool? isClosed, List<int> filterTypes, bool? isApproved, int offset, int limit, string orderBy) 
         {
-            var result = await _reviewsRepository.GetReviewsAsync(search, languages, isClosed, filterTypes, isApproved, offset, limit, orderBy);
+            var result = await _reviewsRepository.GetReviewsAsync(nameExact, nameLoose, author, prNo, languages, isClosed, filterTypes, isApproved, offset, limit, orderBy);
 
             // Calculate and add Previous and Next and Current page to the returned result
             var totalPages = (int)Math.Ceiling((double)result.TotalCount / (double)limit);

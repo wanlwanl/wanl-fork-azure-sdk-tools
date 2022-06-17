@@ -35,17 +35,19 @@ namespace APIViewWeb.Pages.Assemblies
             int CurrentPage, int? PreviousPage, int? NextPage) PagedResults { get; set; }
 
         public async Task OnGetAsync(
-            List<string> search = null, List<string> languages=null, List<string> state =null,
+            List<string> nameExact = null, List<string> nameLoose = null, List<string> author = null,
+            List<string> prNo = null, List<string> languages=null, List<string> state =null,
             List<string> status =null, List<string> type =null, int pageNo=1, int pageSize=_defaultPageSize, string sortField=_defaultSortField)
         {
-            await RunGetRequest(search, languages, state, status, type, pageNo, pageSize, sortField);
+            await RunGetRequest(nameExact, nameLoose, author, prNo, languages, state, status, type, pageNo, pageSize, sortField);
         }
 
         public async Task<PartialViewResult> OnGetReviewsPartialAsync(
-            List<string> search = null, List<string> languages = null, List<string> state = null,
+            List<string> nameExact = null, List<string> nameLoose = null, List<string> author = null,
+            List<string> prNo = null, List<string> languages = null, List<string> state = null,
             List<string> status = null, List<string> type = null, int pageNo = 1, int pageSize=_defaultPageSize, string sortField=_defaultSortField)
         {
-            await RunGetRequest(search, languages, state, status, type, pageNo, pageSize, sortField);
+            await RunGetRequest(nameExact, nameLoose, author, prNo, languages, state, status, type, pageNo, pageSize, sortField);
             return Partial("_ReviewsPartial", PagedResults);
         }
 
@@ -78,10 +80,15 @@ namespace APIViewWeb.Pages.Assemblies
             return RedirectToPage();
         }
 
-        private async Task RunGetRequest(List<string> search, List<string> languages,
-            List<string> state, List<string> status, List<string> type, int pageNo, int pageSize, string sortField)
+        private async Task RunGetRequest(
+            List<string> nameExact, List<string> nameLoose, List<string> author,
+            List<string> prNo, List<string> languages, List<string> state, List<string> status,
+            List<string> type, int pageNo, int pageSize, string sortField)
         {
-            search = search.Select(x => HttpUtility.UrlDecode(x)).ToList();
+            nameExact = nameExact.Select(x => HttpUtility.UrlDecode(x)).ToList();
+            nameLoose = nameLoose.Select(x => HttpUtility.UrlDecode(x)).ToList();
+            author = author.Select(x => HttpUtility.UrlDecode(x)).ToList();
+            prNo = prNo.Select(x => HttpUtility.UrlDecode(x)).ToList();
             languages = languages.Select(x => HttpUtility.UrlDecode(x)).ToList();
             state = state.Select(x => HttpUtility.UrlDecode(x)).ToList();
             status = status.Select(x => HttpUtility.UrlDecode(x)).ToList();
@@ -151,7 +158,7 @@ namespace APIViewWeb.Pages.Assemblies
             }
             var offset = (pageNo - 1) * pageSize;
 
-            PagedResults = await _manager.GetPagedReviewsAsync(search, languages, isClosed, filterTypes, isApproved, offset, pageSize, sortField);
+            PagedResults = await _manager.GetPagedReviewsAsync(nameExact, nameLoose, author, prNo, languages, isClosed, filterTypes, isApproved, offset, pageSize, sortField);
         }
     }
 

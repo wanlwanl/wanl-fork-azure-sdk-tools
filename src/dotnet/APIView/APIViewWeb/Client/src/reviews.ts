@@ -6,7 +6,10 @@
   const stateFilter = $( '#state-filter-bootstraps-select' );
   const statusFilter = $( '#status-filter-bootstraps-select' );
   const typeFilter = $( '#type-filter-bootstraps-select' );
-  const searchBox = $( '#reviews-table-search-box' );
+  const searchNameExact = $('#reviews-table-search-name-exact');
+  const searchNameLoose = $('#reviews-table-search-name-loose');
+  const searchAuthor = $('#reviews-table-search-author');
+  const searchPrNo = $('#reviews-table-search-pr-no');
   const searchButton = $( '#reviews-search-button' );
   const resetButton = $( '#reset-filter-button' );
 
@@ -22,13 +25,37 @@
   function updateListedReviews({ pageNo = 1, pageSize = defaultPageSize } = {})
   {
     var uri = '?handler=reviewspartial';
-    var searchQuery = searchBox.val() as string;
+    var nameQueryExact = searchNameExact.val() as string;
+    var nameQueryLoose = searchNameLoose.val() as string;
+    var authorQuery = searchAuthor.val() as string;
+    var prNoQuery = searchPrNo.val() as string;
 
-    if (searchQuery != null && searchQuery.trim() != '')
+    if (nameQueryExact != null && nameQueryExact.trim() != '')
     {
-      var searchTerms = searchQuery.trim().split(/\s+/);
+      var searchTerms = nameQueryExact.trim().split(/\s+/);
       searchTerms.forEach(function(value, index){
-        uri = uri + '&search=' + encodeURIComponent(value);
+        uri = uri + '&nameExact=' + encodeURIComponent(value);
+      });
+    }
+
+    if (nameQueryLoose != null && nameQueryLoose.trim() != '') {
+      var searchTerms = nameQueryLoose.trim().split(/\s+/);
+      searchTerms.forEach(function (value, index) {
+        uri = uri + '&nameLoose=' + encodeURIComponent(value);
+      });
+    }
+
+    if (authorQuery != null && authorQuery.trim() != '') {
+      var searchTerms = authorQuery.trim().split(/\s+/);
+      searchTerms.forEach(function (value, index) {
+        uri = uri + '&author=' + encodeURIComponent(value);
+      });
+    }
+
+    if (prNoQuery != null && prNoQuery.trim() != '') {
+      var searchTerms = prNoQuery.trim().split(/\s+/);
+      searchTerms.forEach(function (value, index) {
+        uri = uri + '&prNo=' + encodeURIComponent(value);
       });
     }
 
@@ -111,9 +138,11 @@
     });
   });
 
-  searchBox.on('input', _.debounce(function(e) {
-    updateListedReviews();
-  }, 300));
+  [searchNameExact, searchNameLoose, searchAuthor, searchPrNo].forEach(function (value, index) {
+    value.on('input', _.debounce(function (e) {
+      updateListedReviews();
+    }, 300));
+  });
 
   searchButton.on('click', function() {
     updateListedReviews();
@@ -124,7 +153,10 @@
     (<any>stateFilter).selectpicker('deselectAll').selectpicker('val', 'Open');
     (<any>statusFilter).selectpicker('deselectAll');
     (<any>typeFilter).selectpicker('deselectAll');
-    searchBox.val('');
+    searchNameExact.val('');
+    searchNameLoose.val('');
+    searchAuthor.val('');
+    searchPrNo.val('');
     updateListedReviews();
   });
 });

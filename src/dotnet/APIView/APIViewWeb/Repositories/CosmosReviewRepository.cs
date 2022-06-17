@@ -130,7 +130,8 @@ namespace APIViewWeb
         }
 
         public async Task<(IEnumerable<ReviewModel> Reviews, int TotalCount)> GetReviewsAsync(
-            List<string> search, List<string> languages, bool? isClosed, List<int> filterTypes, bool? isApproved, int offset, int limit, string orderBy)
+            List<string> nameExact, List<string> nameLoose, List<string> author, List<string> prNo,
+            List<string> languages, bool? isClosed, List<int> filterTypes, bool? isApproved, int offset, int limit, string orderBy)
         {
             (IEnumerable<ReviewModel> Reviews, int TotalCount) result = (Reviews: new List<ReviewModel>(), TotalCount: 0);
 
@@ -138,22 +139,40 @@ namespace APIViewWeb
             var queryStringBuilder = new StringBuilder("SELECT * FROM Reviews r");
             queryStringBuilder.Append(" WHERE IS_DEFINED(r.id)"); // Allows for appending the other query parts as AND's in any order
 
-            if (search != null && search.Count > 0)
+            if (nameExact != null && nameExact.Count > 0)
             {
-                var searchAsQueryStr = ArrayToQueryString<string>(search);
-                var searchAsSingleString = '"' + String.Join(' ', search) + '"';
-                queryStringBuilder.Append($" AND (r.Author IN {searchAsQueryStr}");
-                queryStringBuilder.Append($" OR STRINGEQUALS(r.Revisions[0].Name, {searchAsSingleString}, true)");
-                queryStringBuilder.Append($" OR CONTAINS(r.Name, {searchAsSingleString}, true)");
-                queryStringBuilder.Append($" OR CONTAINS(r.ServiceName, {searchAsSingleString}, true)");
-                queryStringBuilder.Append($" OR CONTAINS(r.PackageDisplayName, {searchAsSingleString}, true)");
-                queryStringBuilder.Append($" OR (CONTAINS(r.Name, \"{search[0]}\", true)");
+                var nameExactAsSingleString = '"' + String.Join(' ', nameExact) + '"';
+                queryStringBuilder.Append($" AND CONTAINS(r.Name, {nameExactAsSingleString}, true)");
+            }
 
-                for (int i = 1; i < search.Count; i++)
+            if (author != null && author.Count > 0)
+            {
+                var authorAsQueryStr = ArrayToQueryString<string>(author);
+                queryStringBuilder.Append($" AND r.Author IN {authorAsQueryStr}");
+            }
+
+            if (prNo != null && prNo.Count > 0)
+            {
+                queryStringBuilder.Append($" AND (ENDSWITH(ARRAY_SLICE(r.Revisions, -1)[0].Label, \"{prNo[0]}\", true)");
+                for (int i = 1; i < prNo.Count; i++)
                 {
-                    queryStringBuilder.Append($" AND CONTAINS(r.Revisions[0].Name, \"{search[i]}\", true)");
+                    queryStringBuilder.Append($" OR ENDSWITH(ARRAY_SLICE(r.Revisions, -1)[0].Label, \"{prNo[i]}\", true)");
                 }
-                queryStringBuilder.Append($"))");
+                queryStringBuilder.Append(')');
+            }
+
+            if (nameLoose != null && nameLoose.Count > 0)
+            {
+                var nameLooseAsSingleString = '"' + String.Join(' ', nameLoose) + '"';
+                queryStringBuilder.Append($" AND (CONTAINS(ARRAY_SLICE(r.Revisions, -1)[0].Name, \"{nameLoose[0]}\", true)");
+                queryStringBuilder.Append($" OR CONTAINS(r.Name, {nameLooseAsSingleString}, true)");
+                queryStringBuilder.Append($" OR CONTAINS(r.ServiceName, {nameLooseAsSingleString}, true)");
+                queryStringBuilder.Append($" OR CONTAINS(r.PackageDisplayName, {nameLooseAsSingleString}, true)");
+                for (int i = 1; i < nameLoose.Count; i++)
+                {
+                    queryStringBuilder.Append($" OR CONTAINS(ARRAY_SLICE(r.Revisions, -1)[0].Name, \"{nameLoose[i]}\", true)");
+                }
+                queryStringBuilder.Append(')');
             }
 
             if (languages != null && languages.Count > 0)
@@ -190,7 +209,14 @@ namespace APIViewWeb
                 result.TotalCount = (await countFeedIterator.ReadNextAsync()).SingleOrDefault();
             }
 
-            queryStringBuilder.Append($" ORDER BY r.{orderBy} DESC");
+            if (nameExact.Count > 0 || nameLoose.Count > 0)
+            {
+                queryStringBuilder.Append($" ORDER BY r.Name, r.LastUpdated DESC");
+            }
+            else
+            {
+                queryStringBuilder.Append($" ORDER BY r.{orderBy} DESC");
+            }
             queryStringBuilder.Append(" OFFSET @offset LIMIT @limit");
 
             var reviews = new List<ReviewModel>();
