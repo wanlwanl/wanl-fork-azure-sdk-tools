@@ -18,18 +18,11 @@ namespace APIViewWeb.Repositories
             _mapper = mapper;
         }
 
-        public void UpdateUserPreference(UserPreferenceModel preference)
+        public void UpdateUserPreference(UserPreferenceModel preference, string userName)
         {
-            UserPreferenceModel existingPreference = GetUserPreferences(preference.UserName);
-            if (existingPreference == null)
-            {
-                _cache.Set(preference.UserName, preference);
-            }
-            else
-            {
-                _mapper.Map<UserPreferenceModel, UserPreferenceModel>(preference, existingPreference);
-                _cache.Set(preference.UserName, existingPreference);
-            }
+            UserPreferenceModel existingPreference = GetUserPreferences(userName);
+            _mapper.Map<UserPreferenceModel, UserPreferenceModel>(preference, existingPreference);
+            _cache.Set(userName, existingPreference);
         }
 
         public UserPreferenceModel GetUserPreferences(string userName)
@@ -38,17 +31,7 @@ namespace APIViewWeb.Repositories
             {
                 return _preference;
             }
-            return null;
-        }
-
-        public IEnumerable<string> GetLangauge(string userName)
-        {
-            if (_cache.TryGetValue(userName, out UserPreferenceModel _preference))
-            {
-                return _preference.Language;
-            }
-
-            return null;
+            return new UserPreferenceModel();
         }
 
         public IEnumerable<ReviewType> GetFilterType(string userName, ReviewType defaultType = ReviewType.Automatic)
@@ -57,7 +40,6 @@ namespace APIViewWeb.Repositories
             {
                 return _preference.FilterType;
             }
-
             return new List<ReviewType> { defaultType };
         }
     }

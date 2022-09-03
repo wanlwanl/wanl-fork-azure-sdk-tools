@@ -2,26 +2,61 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CsvHelper.Configuration.Attributes;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace APIViewWeb.Models
 {
     public class UserPreferenceModel
     {
-        [Name("UserName")]
-        public string UserName { get; set; }
+        private readonly string _userName;
+        internal IEnumerable<string> _language;
+        internal IEnumerable<ReviewType> _filterType;
+        internal IEnumerable<string> _state;
+        internal IEnumerable<string> _status;
+        internal bool? _hideLineNumbers;
+        internal bool? _hideLeftNavigation;
+        internal string _theme;
+
         [Name("Language")]
-        public IEnumerable<string> Language { get; set; }
+        public IEnumerable<string> Language { 
+            get => _language ?? new List<string>();
+            set => _language = value;
+        }
+
         [Name("FilterType")]
-        public IEnumerable<ReviewType> FilterType { get; set; }
+        public IEnumerable<ReviewType> FilterType {
+            get => _filterType ?? new List<ReviewType>();
+            set => _filterType = value;
+        }
+
         [Name("State")]
-        public IEnumerable<string> State { get; set; }
+        public IEnumerable<string> State {
+            get => _state ?? new List<string>();
+            set => _state = value;
+        }
+
         [Name("Status")]
-        public IEnumerable<string> Status { get; set; }
+        public IEnumerable<string> Status {
+            get => _status ?? new List<string>();
+            set => _status = value;
+        }
+
         [Name("HideLineNumbers")]
-        public bool? HideLineNumbers { get; set; }
+        public bool? HideLineNumbers {
+            get => _hideLineNumbers ?? false;
+            set => _hideLineNumbers = value;
+        }
+
         [Name("HideLeftNavigation")]
-        public bool? HideLeftNavigation { get; set; }
+        public bool? HideLeftNavigation {
+            get => _hideLeftNavigation ?? false;
+            set => _hideLeftNavigation = value;
+        }
+
         [Name("Theme")]
-        public string Theme { get; set; }
+        public string Theme {
+            get => _theme ?? "light-theme";
+            set => _theme = value;
+        }
     }
 }
