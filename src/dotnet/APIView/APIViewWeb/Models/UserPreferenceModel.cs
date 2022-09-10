@@ -8,7 +8,6 @@ namespace APIViewWeb.Models
 {
     public class UserPreferenceModel
     {
-        private readonly string _userName;
         internal IEnumerable<string> _language;
         internal IEnumerable<ReviewType> _filterType;
         internal IEnumerable<string> _state;
