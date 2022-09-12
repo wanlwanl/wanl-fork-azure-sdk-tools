@@ -16,19 +16,19 @@ namespace APIViewWeb.Account
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, "31145988"),
-                new Claim(ClaimTypes.Name, "Chidozie Ononiwu (His Righteousness)"),
-                new Claim(ClaimConstants.Login, "chidozieononiwu"),
-                new Claim(ClaimConstants.Url, "https://github.com/chidozieononiwu"),
-                new Claim(ClaimConstants.Avatar, "https://avatars.githubusercontent.com/u/31145988?v=4"),
-                new Claim(ClaimConstants.Name, "Chidozie Ononiwu (His Righteousness)"),
-                new Claim(ClaimConstants.Email,"chononiw@microsoft.com"),
+                new Claim(ClaimTypes.NameIdentifier, "53356347"),
+                new Claim(ClaimTypes.Name, "Azure SDK Bot"),
+                new Claim(ClaimConstants.Login, "azure-sdk"),
+                new Claim(ClaimConstants.Url, "https://api.github.com/users/azure-sdk"),
+                new Claim(ClaimConstants.Avatar, "https://avatars.githubusercontent.com/u/53356347?v=4"),
+                new Claim(ClaimConstants.Name, "Azure SDK Bot"),
+                new Claim(ClaimConstants.Email,"azuresdkengsysteam@microsoft.com"),
                 new Claim(ClaimConstants.Orgs, "Azure"),
             };
 
-            var identity = new ClaimsIdentity(claims, "Test");
+            var identity = new ClaimsIdentity(claims, "TestUser");
             var principal = new ClaimsPrincipal(identity);
-            var ticket = new AuthenticationTicket(principal, "Test");
+            var ticket = new AuthenticationTicket(principal, "TestUser");
             var result = AuthenticateResult.Success(ticket);
 
             return Task.FromResult(result);
