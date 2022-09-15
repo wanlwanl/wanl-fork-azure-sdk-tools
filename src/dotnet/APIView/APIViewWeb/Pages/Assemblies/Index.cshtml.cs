@@ -41,7 +41,7 @@ namespace APIViewWeb.Pages.Assemblies
         {
             if (!search.Any() && !languages.Any() && !state.Any() && !status.Any() && !type.Any())
             {
-                UserPreferenceModel userPreference = _preferenceCache.GetUserPreferences(User.GetGitHubLogin());
+                UserPreferenceModel userPreference = await _preferenceCache.GetUserPreferences(User.GetGitHubLogin());
                 languages = userPreference.Language;
                 state = userPreference.State;
                 status = userPreference.Status;
@@ -62,7 +62,7 @@ namespace APIViewWeb.Pages.Assemblies
         {
             if (!selectedLanguages.Any())
             {
-                UserPreferenceModel userPreference = _preferenceCache.GetUserPreferences(User.GetGitHubLogin());
+                UserPreferenceModel userPreference = await _preferenceCache.GetUserPreferences(User.GetGitHubLogin());
                 selectedLanguages = userPreference.Language.ToList();
             }
             ReviewsProperties.Languages.All = await _manager.GetReviewPropertiesAsync("Revisions[0].Files[0].Language");

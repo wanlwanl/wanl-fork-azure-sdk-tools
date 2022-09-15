@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CsvHelper.Configuration.Attributes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Newtonsoft.Json;
 
 namespace APIViewWeb.Models
 {
@@ -15,6 +16,11 @@ namespace APIViewWeb.Models
         internal bool? _hideLineNumbers;
         internal bool? _hideLeftNavigation;
         internal string _theme;
+
+        [JsonProperty("id")]
+        public string PreferenceId { get; set; } = IdHelper.GenerateId();
+
+        public string UserName { get; set; }
 
         [Name("Language")]
         public IEnumerable<string> Language { 
