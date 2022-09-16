@@ -30,9 +30,12 @@ namespace APIViewUITests
 
                 // Review Page Loads without Error
                 var reviewNames = driver.FindElements(By.ClassName("review-name"));
-                reviewNames[0].Click();
-                Assert.NotEqual("Error - apiview.dev", driver.Title);
-                Assert.NotEqual("Internal Server Error", driver.Title);
+                if (reviewNames.Any())
+                {
+                    reviewNames[0].Click();
+                    Assert.NotEqual("Error - apiview.dev", driver.Title);
+                    Assert.NotEqual("Internal Server Error", driver.Title);
+                }
 
                 // Conversiation and Revision Pages Loads without error
                 var navLinks = driver.FindElements(By.ClassName("nav-link"));
@@ -68,17 +71,14 @@ namespace APIViewUITests
                 // Change Reviews and Revisions Withous Errors
                 var revisionSelector = driver.FindElement(By.Id("revisions-bootstraps-select"));
                 var revisionSelectElement = new SelectElement(revisionSelector);
-                int index = 0;
-                foreach (IWebElement option in revisionSelectElement.Options)
+                if (revisionSelectElement.Options.Count > 1)
                 {
-                    if (index == 2)
-                    {
-                        break;
-                    }
-                    revisionSelectElement.SelectByText(option.Text);
+                    revisionSelectElement.SelectByText(revisionSelectElement.Options[1].Text);
                     Assert.NotEqual("Error - apiview.dev", driver.Title);
                     Assert.NotEqual("Internal Server Error", driver.Title);
                     driver.Navigate().Back();
+                    Assert.NotEqual("Error - apiview.dev", driver.Title);
+                    Assert.NotEqual("Internal Server Error", driver.Title);
                 }
             }
         }
@@ -100,11 +100,14 @@ namespace APIViewUITests
                     languageSelectElement = new SelectElement(languageSelector);
                     languageSelectElement.SelectByText(language);
                     var reviewNames = driver.FindElements(By.ClassName("review-name"));
-                    reviewNames[0].Click();
-                    Assert.NotEqual("Error - apiview.dev", driver.Title);
-                    Assert.NotEqual("Internal Server Error", driver.Title);
-                    driver.Navigate().Back();
-                    driver.FindElement(By.Id("reset-filter-button")).Click(); ;
+                    if (reviewNames.Any())
+                    {
+                        reviewNames[0].Click();
+                        Assert.NotEqual("Error - apiview.dev", driver.Title);
+                        Assert.NotEqual("Internal Server Error", driver.Title);
+                        driver.Navigate().Back();
+                        driver.FindElement(By.Id("reset-filter-button")).Click();
+                    }
                 }
 
                 // State Filters Work Without Errors
@@ -117,11 +120,14 @@ namespace APIViewUITests
                     stateSelectElement = new SelectElement(stateSelector);
                     stateSelectElement.SelectByText(state);
                     var reviewNames = driver.FindElements(By.ClassName("review-name"));
-                    reviewNames[0].Click();
-                    Assert.NotEqual("Error - apiview.dev", driver.Title);
-                    Assert.NotEqual("Internal Server Error", driver.Title);
-                    driver.Navigate().Back();
-                    driver.FindElement(By.Id("reset-filter-button")).Click(); ;
+                    if (reviewNames.Any())
+                    {
+                        reviewNames[0].Click();
+                        Assert.NotEqual("Error - apiview.dev", driver.Title);
+                        Assert.NotEqual("Internal Server Error", driver.Title);
+                        driver.Navigate().Back();
+                        driver.FindElement(By.Id("reset-filter-button")).Click();
+                    }
                 }
 
                 // Status Filters Work Without Errors
@@ -134,11 +140,14 @@ namespace APIViewUITests
                     statusSelectElement = new SelectElement(statusSelector);
                     statusSelectElement.SelectByText(status);
                     var reviewNames = driver.FindElements(By.ClassName("review-name"));
-                    reviewNames[0].Click();
-                    Assert.NotEqual("Error - apiview.dev", driver.Title);
-                    Assert.NotEqual("Internal Server Error", driver.Title);
-                    driver.Navigate().Back();
-                    driver.FindElement(By.Id("reset-filter-button")).Click(); ;
+                    if (reviewNames.Any())
+                    {
+                        reviewNames[0].Click();
+                        Assert.NotEqual("Error - apiview.dev", driver.Title);
+                        Assert.NotEqual("Internal Server Error", driver.Title);
+                        driver.Navigate().Back();
+                        driver.FindElement(By.Id("reset-filter-button")).Click();
+                    }
                 }
 
                 // Type Filters Work Without Errors
@@ -151,11 +160,14 @@ namespace APIViewUITests
                     typeSelectElement = new SelectElement(typeSelector);
                     typeSelectElement.SelectByText(type);
                     var reviewNames = driver.FindElements(By.ClassName("review-name"));
-                    reviewNames[0].Click();
-                    Assert.NotEqual("Error - apiview.dev", driver.Title);
-                    Assert.NotEqual("Internal Server Error", driver.Title);
-                    driver.Navigate().Back();
-                    driver.FindElement(By.Id("reset-filter-button")).Click(); ;
+                    if (reviewNames.Any())
+                    {
+                        reviewNames[0].Click();
+                        Assert.NotEqual("Error - apiview.dev", driver.Title);
+                        Assert.NotEqual("Internal Server Error", driver.Title);
+                        driver.Navigate().Back();
+                        driver.FindElement(By.Id("reset-filter-button")).Click();
+                    }
                 }
             }
         }

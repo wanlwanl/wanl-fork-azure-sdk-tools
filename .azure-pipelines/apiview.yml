@@ -168,6 +168,31 @@ stages:
               packageType: runtime
               version: '$(DotNetRuntimeVersion)'
 
+          - pwsh: |
+              Start-Process dotnet -PassThru -ArgumentList "run --project $(Build.SourcesDirectory)\src\dotnet\APIView\APIViewWeb\APIViewWeb.csproj"
+              $timeout = 10
+              do
+              {
+                Start-Sleep -Seconds 2
+                $apiViewHost = Get-NetTCPConnection -State Listen | Where-Object {$_.LocalAddress -eq "127.0.0.1" -and $_.LocalPort -eq "5000"}
+                if ($apiViewHost.Count -gt 0)
+                {
+                  Write-Host "Started APIView on localhost:5000"
+                }
+                else
+                {
+                  Write-Host "APIView not yet started"
+                }
+                $timeout -= 2
+              }
+              while(($timeout -eq 0) -or ($apiViewHost.Count -eq 0))
+            displayName: 'Start APIView Application'
+            env:
+              APIVIEW_BLOB__CONNECTIONSTRING: $(apiview-blob-connectionstring)
+              APIVIEW_COSMOS__CONNECTIONSTRING: $(apiview-cosmos-connectionstring)
+              APIVIEW_GITHUB__CLIENTID: $(apiview-github-clientid)
+              APIVIEW_GITHUB__CLIENTSECRET: $(apiview-github-clientid)
+
           - task: DotNetCoreCLI@2
             displayName: 'Build & Test'
             env:
