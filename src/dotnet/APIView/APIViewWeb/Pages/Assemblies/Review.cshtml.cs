@@ -294,22 +294,48 @@ namespace APIViewWeb.Pages.Assemblies
             {
                 lines = CreateDiffOnlyLines(lines);
             }
+            List<int> documentedByLines = new List<int>();
+            int lineNumberExcludingDocumentation = 0;
 
             return lines.Select(
-                (diffLine, index) => new CodeLineModel(
-                    diffLine.Kind,
-                    diffLine.Line,
-                    diffLine.Kind != DiffLineKind.Removed &&
-                    comments.TryGetThreadForLine(diffLine.Line.ElementId, out var thread) ?
-                        thread :
-                        null,
-
-                    diffLine.Kind != DiffLineKind.Removed ?
-                        diagnostics.Where(d => d.TargetId == diffLine.Line.ElementId).ToArray() :
-                        Array.Empty<CodeDiagnostic>(),
-                    diffLine.Line.LineNumber ?? ++index,
-                    new int[] { }
-                )).ToArray();
+                (diffLine, index) =>
+                {
+                    if (diffLine.Line.IsDocumentation)
+                    {
+                        // documentedByLines must include the index of a line, assuming that documentation lines are counted
+                        documentedByLines.Add(++index);
+                        return new CodeLineModel(
+                            diffLine.Kind,
+                            diffLine.Line,
+                            comments.TryGetThreadForLine(diffLine.Line.ElementId, out var thread) ?
+                                thread :
+                                null,
+                            diffLine.Kind != DiffLineKind.Removed ?
+                                diagnostics.Where(d => d.TargetId == diffLine.Line.ElementId).ToArray() :
+                                Array.Empty<CodeDiagnostic>(),
+                            lineNumberExcludingDocumentation,
+                            new int[] { }
+                        );
+                    }
+                    else
+                    {
+                        CodeLineModel c = new CodeLineModel(
+                             diffLine.Kind,
+                             diffLine.Line,
+                             diffLine.Kind != DiffLineKind.Removed &&
+                             comments.TryGetThreadForLine(diffLine.Line.ElementId, out var thread) ?
+                                 thread :
+                                 null,
+                             diffLine.Kind != DiffLineKind.Removed ?
+                                 diagnostics.Where(d => d.TargetId == diffLine.Line.ElementId).ToArray() :
+                                 Array.Empty<CodeDiagnostic>(),
+                             diffLine.Line.LineNumber ?? ++lineNumberExcludingDocumentation,
+                             documentedByLines.ToArray()
+                         );
+                        documentedByLines.Clear();
+                        return c;
+                    }
+                }).ToArray();
         }
 
         private CodeLineModel[] CreateLines(CodeDiagnostic[] diagnostics, CodeLine[] lines, ReviewCommentsModel comments, bool hideCommentRows = false)
