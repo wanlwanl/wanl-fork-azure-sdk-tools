@@ -81,11 +81,32 @@
                     var lineNumberClass = RemoveMultipleSpaces($"line-number {lineClass}");
                     if (Model.CodeLine.IsDocumentation)
                     {
-                        <td class="@lineNumberClass invisible"><span></span></td>
+                        <td class="@lineNumberClass"><span class="invisible"></span></td>
                     }
                     else
                     {
-                        <td class="@lineNumberClass"><span>@Model.LineNumber</span></td>
+                        if (Model.IsDiffView)
+                        {
+                            if (Model.Kind == DiffLineKind.Added)
+                            {
+                                <td class="@lineNumberClass"><span class="invisible">@Model.LineNumber</span></td>
+                                <td class="@lineNumberClass"><span>@Model.LineNumber</span></td>
+                            }
+                            else if (Model.Kind == DiffLineKind.Removed)
+                                {
+                                <td class="@lineNumberClass"><span>@Model.LineNumber</span></td>
+                                <td class="@lineNumberClass"><span class="invisible">@Model.LineNumber</span></td>
+                            }
+                            else
+                            {
+                                <td class="@lineNumberClass"><span>@Model.LineNumber</span></td>
+                                <td class="@lineNumberClass"><span>@Model.LineNumber</span></td>
+                            }
+                        }
+                        else
+                        {
+                            <td class="@lineNumberClass"><span>@Model.LineNumber</span></td>
+                        }
                     }
                 }
                 <td class="@lineDetailsClass comment-icon-cell">

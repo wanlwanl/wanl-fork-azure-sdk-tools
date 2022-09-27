@@ -9,7 +9,7 @@ namespace APIViewWeb.Models
 {
     public readonly struct CodeLineModel
     {
-        public CodeLineModel(DiffLineKind kind, CodeLine codeLine, CommentThreadModel commentThread, CodeDiagnostic[] diagnostics, int lineNumber, int[] documentedByLines = null)
+        public CodeLineModel(DiffLineKind kind, CodeLine codeLine, CommentThreadModel commentThread, CodeDiagnostic[] diagnostics, int lineNumber, int[] documentedByLines = null, bool isDiffView = false)
         {
             CodeLine = codeLine;
             CommentThread = commentThread;
@@ -17,6 +17,7 @@ namespace APIViewWeb.Models
             Kind = kind;
             LineNumber = lineNumber;
             DocumentedByLines = documentedByLines;
+            IsDiffView = isDiffView;
         }
 
         public CodeLine CodeLine { get; }
@@ -25,5 +26,6 @@ namespace APIViewWeb.Models
         public DiffLineKind Kind { get; }
         public int LineNumber { get; }
         public int[] DocumentedByLines { get; }
+        public bool IsDiffView { get;  }
     }
 }

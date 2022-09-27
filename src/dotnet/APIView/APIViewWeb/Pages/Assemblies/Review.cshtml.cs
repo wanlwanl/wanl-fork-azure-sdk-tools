@@ -314,7 +314,8 @@ namespace APIViewWeb.Pages.Assemblies
                                 diagnostics.Where(d => d.TargetId == diffLine.Line.ElementId).ToArray() :
                                 Array.Empty<CodeDiagnostic>(),
                             lineNumberExcludingDocumentation,
-                            new int[] { }
+                            new int[] { },
+                            true
                         );
                     }
                     else
@@ -330,7 +331,8 @@ namespace APIViewWeb.Pages.Assemblies
                                  diagnostics.Where(d => d.TargetId == diffLine.Line.ElementId).ToArray() :
                                  Array.Empty<CodeDiagnostic>(),
                              diffLine.Line.LineNumber ?? ++lineNumberExcludingDocumentation,
-                             documentedByLines.ToArray()
+                             documentedByLines.ToArray(),
+                             true
                          );
                         documentedByLines.Clear();
                         return c;
