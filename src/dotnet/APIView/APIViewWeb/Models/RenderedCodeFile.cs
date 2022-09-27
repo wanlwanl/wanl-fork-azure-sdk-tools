@@ -74,13 +74,19 @@ namespace APIViewWeb.Models
             return _renderedText;
         }
 
-        public CodeLine[] GetCodeLineSection(int sectionId)
+        // renderType: null = Normal, true = Instance (Text), false = ReadOnly
+        public (CodeLine[] codeLines, TreeNode<CodeLine> sectionHead) GetCodeLineSection(int sectionId = 0, TreeNode<CodeLine> sectionNode = null, bool? renderType = null, bool skipDiff = false)
         {
             var result = new List<CodeLine>();
-            if (RenderResult.Sections.Count > sectionId)
-            {
-                var section = RenderResult.Sections[sectionId];
+            var section = sectionNode;
 
+            if (section == null && RenderResult.Sections.Count > sectionId)
+            {
+                section = RenderResult.Sections[sectionId];
+            }
+                
+            if (section != null)
+            {
                 using (IEnumerator<TreeNode<CodeLine>> enumerator = section.GetEnumerator())
                 {
                     enumerator.MoveNext();
@@ -113,7 +119,22 @@ namespace APIViewWeb.Models
                             if (parseWorked && CodeFile.LeafSections.Count > leafSectionId)
                             {
                                 var leafSection = CodeFile.LeafSections[leafSectionId];
-                                var renderedLeafSection = CodeFileHtmlRenderer.Normal.Render(leafSection);
+
+                                CodeLine[] renderedLeafSection;
+
+                                if (renderType == null)
+                                {
+                                    renderedLeafSection = CodeFileHtmlRenderer.Normal.Render(leafSection);
+                                }
+                                else if (renderType == true)
+                                {
+                                    renderedLeafSection = CodeFileHtmlRenderer.Instance.Render(leafSection, enableSkipDiff: skipDiff);
+                                }
+                                else
+                                {
+                                    renderedLeafSection = CodeFileHtmlRenderer.ReadOnly.Render(leafSection);
+                                }
+                                                                 
                                 var placeHolderLineNumber = node.Data.LineNumber;
                                 int index = 0;
                                 foreach (var codeLine in renderedLeafSection)
@@ -140,7 +161,47 @@ namespace APIViewWeb.Models
                     }
                 }
             }
-            return result.ToArray();
+            return (result.ToArray(), section);
+        }
+
+        public TreeNode<CodeLine> FindCorrespondingDiffSection(int sectionId, TreeNode<CodeLine> sectionHead)
+        {
+            var section = sectionHead;
+            if (RenderResult.Sections.Count > sectionId)
+            {
+                section = RenderResult.Sections[sectionId];
+                if (section.Data.DisplayString == sectionHead.Data.DisplayString)
+                    return section;
+            }
+
+            int indexDown = sectionId + 1;
+            int indexUp = sectionId - 1;
+
+            while (indexDown < RenderResult.Sections.Count || indexUp >= 0)
+            {
+                if (indexDown >= RenderResult.Sections.Count && indexUp >= RenderResult.Sections.Count)
+                {
+                    break;
+                }
+
+                if (indexDown < RenderResult.Sections.Count)
+                {
+                    section = RenderResult.Sections[indexDown];
+                    if (section.Data.DisplayString == sectionHead.Data.DisplayString)
+                        return section;
+                }
+
+                if (indexUp >= 0)
+                {
+                    section = RenderResult.Sections[indexUp];
+                    if (section.Data.DisplayString == sectionHead.Data.DisplayString)
+                        return section;
+                }
+
+                indexDown++;
+                indexUp--;
+            }
+            return sectionHead;
         }
     }
 }

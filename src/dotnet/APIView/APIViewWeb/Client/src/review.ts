@@ -182,6 +182,8 @@ $(() => {
     var caretDirection = caretClasses ? caretClasses.split(' ').filter(c => c.startsWith('fa-angle-'))[0] : "";
     var subSectionHeadingClass = headingRowClasses ? headingRowClasses.split(' ').filter(c => c.startsWith('code-line-section-heading-'))[0] : "";
     var subSectionContentClass = headingRowClasses ? headingRowClasses.split(' ').filter(c => c.startsWith('code-line-section-content-'))[0] : "";
+    var subSectionHeadingDiffClass = headingRowClasses ? headingRowClasses.split(' ').filter(c => (c == "code-added" || c == "code-removed"))[0] : "";
+    console.log(subSectionHeadingDiffClass);
 
     if (subSectionHeadingClass) {
       var sectionId = subSectionHeadingClass.replace("code-line-section-heading-", "")
@@ -195,10 +197,18 @@ $(() => {
           var uriPath = location.pathname.split('/');
           var reviewId = uriPath[uriPath.length - 1];
           var revisionId = new URLSearchParams(location.search).get("revisionId");
+          var diffRevisionId = new URLSearchParams(location.search).get("diffRevisionId");
+          var diffOnly = new URLSearchParams(location.search).get("diffOnly");
           uri = uri + '&id=' + reviewId + '&sectionId=' + sectionId;
-          if (revisionId) {
+          if (revisionId)
             uri = uri + '&revisionId=' + revisionId;
-          }
+          if (diffRevisionId)
+            uri = uri + '&diffRevisionId=' + diffRevisionId;
+          if (diffOnly)
+            uri = uri + '&diffOnly=' + diffOnly;
+          if (!subSectionHeadingDiffClass)
+            uri = uri + '&hasMixedChanges=' + true;
+
 
           var loadingMarkUp = "<td class='spinner-border spinner-border-sm ml-4' role='status'><span class='sr-only'>Loading...</span></td>"
           sectionContent.children("td").after(loadingMarkUp);

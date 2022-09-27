@@ -700,6 +700,7 @@ code {
 
 .code-inner > svg {
     float: left;
+    fill: var(--text-color);
 }
 
 .code-inner > table {
@@ -709,13 +710,6 @@ code {
 
 .code-inner td, .code-inner th {
     border: 1px solid #dee2e6;
-}
-
-.code-added {
-    background-color: rgba(46,160,67,0.15);
-}
-.code-removed {
-    background-color: rgba(248,81,73,0.15);
 }
 
 .deprecated {
@@ -955,6 +949,14 @@ code {
     width: 1%;
     white-space: nowrap;
     padding: 0px;
+}
+
+.code-added {
+    background-color: rgba(46,160,67,0.15);
+}
+
+.code-removed {
+    background-color: rgba(248,81,73,0.15);
 }
 
 .line-details table {
