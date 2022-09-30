@@ -48,14 +48,12 @@ $(() => {
     if (setTo == "OPEN") {
       caretIcon.removeClass("fa-angle-right");
       caretIcon.addClass("fa-angle-down");
-      caretIcon.css("color", "darkorange");
       headingRow.find(".row-fold-elipsis").addClass("d-none");
     }
 
     if (setTo == "CLOSE") {
       caretIcon.removeClass("fa-angle-down");
       caretIcon.addClass("fa-angle-right");
-      caretIcon.css("color", "darkcyan");
       headingRow.find(".row-fold-elipsis").removeClass("d-none");
     }
   }
@@ -304,14 +302,12 @@ $(() => {
       $(".code-line-documentation").removeClass('hidden-row');
       $(TOGGLE_DOCUMENTATION).children('i').removeClass("fa-square-plus");
       $(TOGGLE_DOCUMENTATION).children('i').addClass("fa-square-minus");
-      $(TOGGLE_DOCUMENTATION).children('i').css("color", "darkorange");
       $(TOGGLE_DOCUMENTATION).children('svg').removeClass("invisible");
     } else {
       // hide all documentation
       $(".code-line-documentation").addClass("hidden-row");
       $(TOGGLE_DOCUMENTATION).children('i').removeClass("fa-square-minus");
       $(TOGGLE_DOCUMENTATION).children('i').addClass("fa-square-plus");
-      $(TOGGLE_DOCUMENTATION).children('i').css("color", "darkcyan");
       $(TOGGLE_DOCUMENTATION).children('svg').addClass("invisible");
     }*/
   });
@@ -365,11 +361,9 @@ $(() => {
     $(this).children('i').toggleClass('fa-square-minus');
     $(this).children('i').toggleClass('fa-square-plus');
     if ($(this).children('i').hasClass('fa-square-plus')) {
-      $(this).children('i').css("color", "darkcyan");
       $(this).children('svg').addClass("invisible");
     }
     else {
-      $(this).children('i').css("color", "darkorange");
       $(this).children('svg').removeClass("invisible");
     }
 

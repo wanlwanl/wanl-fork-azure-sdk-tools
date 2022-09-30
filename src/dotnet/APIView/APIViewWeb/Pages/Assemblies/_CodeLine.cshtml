@@ -52,13 +52,13 @@
         if ((isSectionHeading || isSubSectionHeading) && (i == Model.CodeLine.Indent - 1))
         {
             cellContent += @"<svg height='23' width='23'>
-                                <line x1='0' y1='50%' x2='90%' y2='50%' style='stroke:rgb(217,217,214);stroke-width:1' />
-                                <line x1='0' y1='0' x2='0' y2='100%' style='stroke:rgb(217,217,214);stroke-width:1.5' />
+                                <line x1='0' y1='50%' x2='90%' y2='50%' style='stroke-width:1' />
+                                <line x1='0' y1='0' x2='0' y2='100%' style='stroke-width:1.5' />
                             </svg>";
         }else
         {
             cellContent += @"<svg height='23' width='23'>
-                                <line x1='0' y1='0' x2='0' y2='100%' style='stroke:rgb(217,217,214);stroke-width:1.5' />
+                                <line x1='0' y1='0' x2='0' y2='100%' style='stroke-width:1.5' />
                             </svg>";
         }
     }
@@ -66,7 +66,7 @@
 }
 
 <tr class="@rowClass" data-line-id="@(isRemoved ? string.Empty : Model.CodeLine.ElementId)">
-    <td class="@lineClass line-details">
+    <td class="line-details @lineClass">
         <table>
             <tr>
                 @if(userPreference.HideLineNumbers == true)
@@ -122,7 +122,7 @@
                     {
                         <span class="line-toggle-documentation-button" data-documented-by="[@String.Join(",",Model.DocumentedByLines)]">
                             <svg height='23' width='23' class="invisible">
-                                <line x1='52%' y1='0' x2='52%' y2='30%' style='stroke:rgb(255,140,0);stroke-width:1.2' />
+                                <line x1='52%' y1='0' x2='52%' y2='30%' style='stroke-width:1.2' />
                             </svg>
                             <i class="fa-regular fa-square-plus"></i>
                         </span>
@@ -131,7 +131,7 @@
                     {
                         <span>
                             <svg height='23' width='23'>
-                                <line x1='52%' y1='0' x2='52%' y2='100%' style='stroke:rgb(255,140,0);stroke-width:1.2' />
+                                <line x1='52%' y1='0' x2='52%' y2='100%' style='stroke-width:1.2' />
                             </svg>
                         </span>
                     }
