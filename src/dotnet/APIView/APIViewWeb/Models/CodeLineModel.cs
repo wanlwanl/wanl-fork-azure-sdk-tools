@@ -11,7 +11,7 @@ namespace APIViewWeb.Models
     {
         public CodeLineModel(DiffLineKind kind, CodeLine codeLine, CommentThreadModel commentThread,
             CodeDiagnostic[] diagnostics, int lineNumber, int[] documentedByLines = null,
-            bool isDiffView = false, int? diffSectionId = null, int? otherLineSectionId = null)
+            bool isDiffView = false, int? diffSectionId = null, int? otherLineSectionKey = null)
         {
             CodeLine = codeLine;
             CommentThread = commentThread;
@@ -21,7 +21,7 @@ namespace APIViewWeb.Models
             DocumentedByLines = documentedByLines;
             IsDiffView = isDiffView;
             DiffSectionId = diffSectionId;
-            OtherLineSectionId = otherLineSectionId;
+            OtherLineSectionKey = otherLineSectionKey;
         }
 
         public CodeLine CodeLine { get; }
@@ -32,6 +32,6 @@ namespace APIViewWeb.Models
         public int[] DocumentedByLines { get; }
         public bool IsDiffView { get;  }
         public int? DiffSectionId { get; }
-        public int? OtherLineSectionId { get; }
+        public int? OtherLineSectionKey { get; }
     }
 }

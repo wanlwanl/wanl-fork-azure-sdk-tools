@@ -174,66 +174,69 @@ $(() => {
 
   /* On Click Handler for Expand/Collapse of CodeLine Sections and SubSections  */
   function toggleCodeLines(headingRow) {
-    var headingRowClasses = headingRow.attr('class');
-    var caretIcon = headingRow.find(".row-fold-caret").children("i");
-    var caretClasses = caretIcon.attr("class");
-    var caretDirection = caretClasses ? caretClasses.split(' ').filter(c => c.startsWith('fa-angle-'))[0] : "";
-    var subSectionHeadingClass = headingRowClasses ? headingRowClasses.split(' ').filter(c => c.startsWith('code-line-section-heading-'))[0] : "";
-    var subSectionContentClass = headingRowClasses ? headingRowClasses.split(' ').filter(c => c.startsWith('code-line-section-content-'))[0] : "";
-    var subSectionHeadingDiffClass = headingRowClasses ? headingRowClasses.split(' ').filter(c => (c == "code-added" || c == "code-removed"))[0] : "";
-    console.log(subSectionHeadingDiffClass);
+    if (headingRow.attr('class')) {
+      const headingRowClasses = headingRow.attr('class').split(/\s+/);
+      const caretIcon = headingRow.find(".row-fold-caret").children("i");
+      const caretDirection = caretIcon.attr("class").split(/\s+/).filter(c => c.startsWith('fa-angle-'))[0];
+      const subSectionHeadingClass = headingRowClasses.filter(c => c.startsWith('code-line-section-heading-'))[0];
+      const subSectionContentClass = headingRowClasses.filter(c => c.startsWith('code-line-section-content-'))[0];
 
-    if (subSectionHeadingClass) {
-      var sectionId = subSectionHeadingClass.replace("code-line-section-heading-", "")
-      if (/^\d+$/.test(sectionId)) {
-        var sectionContent = $(`.code-line-section-content-${sectionId}`);
-        if (sectionContent.hasClass("section-loaded")) {
-          toggleSectionContent(headingRow, sectionContent, caretDirection, caretIcon);
-        }
-        else {
-          var uri = '?handler=codelinesection';
-          var uriPath = location.pathname.split('/');
-          var reviewId = uriPath[uriPath.length - 1];
-          var revisionId = new URLSearchParams(location.search).get("revisionId");
-          var diffRevisionId = new URLSearchParams(location.search).get("diffRevisionId");
-          var diffOnly = new URLSearchParams(location.search).get("diffOnly");
-          uri = uri + '&id=' + reviewId + '&sectionId=' + sectionId;
-          if (revisionId)
-            uri = uri + '&revisionId=' + revisionId;
-          if (diffRevisionId)
-            uri = uri + '&diffRevisionId=' + diffRevisionId;
-          if (diffOnly)
-            uri = uri + '&diffOnly=' + diffOnly;
-          if (!subSectionHeadingDiffClass)
-            uri = uri + '&hasMixedChanges=' + true;
+      if (subSectionHeadingClass) {
+        const sectionId = subSectionHeadingClass.replace("code-line-section-heading-", "")
+        const sectionKeyA = headingRowClasses.filter(c => c.startsWith('diff-line-section-'))[0]?.replace('diff-line-section-', '');
+        const sectionKeyB = headingRowClasses.filter(c => c.startsWith('other-diff-line-section-'))[0]?.replace('other-diff-line-section-', '');
 
-
-          var loadingMarkUp = "<td class='spinner-border spinner-border-sm ml-4' role='status'><span class='sr-only'>Loading...</span></td>"
-          sectionContent.children("td").after(loadingMarkUp);
-          sectionContent.removeClass("d-none");
-
-          var request = $.ajax({ url: uri });
-          request.done(function (partialViewResult) {
-            sectionContent.replaceWith(partialViewResult);
+        if (/^\d+$/.test(sectionId)) {
+          var sectionContent = $(`.code-line-section-content-${sectionId}`);
+          if (sectionContent.hasClass("section-loaded")) {
             toggleSectionContent(headingRow, sectionContent, caretDirection, caretIcon);
-            addToggleEventHandlers();
-          });
-          request.fail(function () {
-            // Alert here
-          });
-          return request;
+          }
+          else {
+            let uri = '?handler=codelinesection';
+            const uriPath = location.pathname.split('/');
+            const reviewId = uriPath[uriPath.length - 1];
+            const revisionId = new URLSearchParams(location.search).get("revisionId");
+            const diffRevisionId = new URLSearchParams(location.search).get("diffRevisionId");
+            const diffOnly = new URLSearchParams(location.search).get("diffOnly");
+            uri = uri + '&id=' + reviewId + '&sectionId=' + sectionId;
+            if (revisionId)
+              uri = uri + '&revisionId=' + revisionId;
+            if (diffRevisionId)
+              uri = uri + '&diffRevisionId=' + diffRevisionId;
+            if (diffOnly)
+              uri = uri + '&diffOnly=' + diffOnly;
+            if (sectionKeyA)
+              uri = uri + '&sectionKeyA=' + sectionKeyA;
+            if (sectionKeyB)
+              uri = uri + '&sectionKeyB=' + sectionKeyB;
+
+            const loadingMarkUp = "<td class='spinner-border spinner-border-sm ml-4' role='status'><span class='sr-only'>Loading...</span></td>"
+            sectionContent.children("td").after(loadingMarkUp);
+            sectionContent.removeClass("d-none");
+
+            const request = $.ajax({ url: uri });
+            request.done(function (partialViewResult) {
+              sectionContent.replaceWith(partialViewResult);
+              toggleSectionContent(headingRow, sectionContent, caretDirection, caretIcon);
+              addToggleEventHandlers();
+            });
+            request.fail(function () {
+              // TODO: Alert on Failure
+            });
+            return request;
+          }
         }
       }
-    }
 
-    if (subSectionContentClass) {
-      var subSectionClass = headingRowClasses ? headingRowClasses.split(' ').filter(c => c.match(/.*lvl_[0-9]+_parent.*/))[0] : "";
-      var lineNumber = headingRow.find(".line-number>span").text();
-      if (subSectionClass) {
-        var subSectionLevel = subSectionClass.split('_')[1];
-        var subSectionHeadingPosition = subSectionClass.split('_')[3];
-        if (/^\d+$/.test(subSectionLevel) && /^\d+$/.test(subSectionHeadingPosition)) {
-          toggleSubSectionContent (headingRow, subSectionLevel, subSectionHeadingPosition, subSectionContentClass, caretDirection, caretIcon, lineNumber);
+      if (subSectionContentClass) {
+        const subSectionClass = headingRowClasses.filter(c => c.match(/.*lvl_[0-9]+_parent.*/))[0];
+        const lineNumber = headingRow.find(".line-number>span").text();
+        if (subSectionClass) {
+          const subSectionLevel = subSectionClass.split('_')[1];
+          const subSectionHeadingPosition = subSectionClass.split('_')[3];
+          if (/^\d+$/.test(subSectionLevel) && /^\d+$/.test(subSectionHeadingPosition)) {
+            toggleSubSectionContent(headingRow, subSectionLevel, subSectionHeadingPosition, subSectionContentClass, caretDirection, caretIcon, lineNumber);
+          }
         }
       }
     }

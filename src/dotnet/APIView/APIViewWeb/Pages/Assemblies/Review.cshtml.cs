@@ -174,7 +174,9 @@ namespace APIViewWeb.Pages.Assemblies
             return Page();
         }
 
-        public async Task<PartialViewResult> OnGetCodeLineSectionAsync(string id, int sectionId, string revisionId = null, string diffRevisionId = null, bool diffOnly = false, bool hasMixedChanges = false)
+        public async Task<PartialViewResult> OnGetCodeLineSectionAsync(
+            string id, int sectionId, int? sectionKeyA = null, int? sectionKeyB = null,
+            string revisionId = null, string diffRevisionId = null, bool diffOnly = false)
         {
             await GetReviewPageModelProperties(id, revisionId, diffRevisionId, diffOnly);
             var renderedCodeFile = await _codeFileRepository.GetCodeFileAsync(Revision);
@@ -193,7 +195,7 @@ namespace APIViewWeb.Pages.Assemblies
                     previousRevisionHtmlLines,
                     sectionInfo.codeLines);
 
-                if (hasMixedChanges)
+                if (sectionKeyA != null && sectionKeyB != null)
                 {
                     previousRevisionHtmlLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: false).codeLines;
                     previousRevisionTextLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: true).codeLines;
@@ -346,7 +348,7 @@ namespace APIViewWeb.Pages.Assemblies
                             lineNumberExcludingDocumentation,
                             new int[] { },
                             true,
-                            diffSectionId++,
+                            diffLine.Line.SectionKey != null ? ++diffSectionId : null,
                             diffLine.Kind == DiffLineKind.Unchanged ?
                                 diffLine.OtherLine.SectionKey : null
                         );
@@ -366,7 +368,7 @@ namespace APIViewWeb.Pages.Assemblies
                              diffLine.Line.LineNumber ?? ++lineNumberExcludingDocumentation,
                              documentedByLines.ToArray(),
                              true,
-                             diffSectionId++,
+                             diffLine.Line.SectionKey != null ? ++diffSectionId : null,
                              diffLine.Kind == DiffLineKind.Unchanged ?
                                 diffLine.OtherLine.SectionKey : null
 

@@ -27,11 +27,20 @@
     string documentationRow = String.Empty;
     string codeLineDisplay = String.Empty;
     string codeLineClass = (!String.IsNullOrWhiteSpace(Model.CodeLine.LineClass)) ? Model.CodeLine.LineClass.Trim() : String.Empty;
+    int? sectionKey = Model.DiffSectionId ?? Model.CodeLine.SectionKey;
 
-    if (Model.CodeLine.SectionKey != null )
+    if (sectionKey != null)
     {
         isSectionHeading = true;
-        headingClass = $"code-line-section-heading-{Model.CodeLine.SectionKey}";
+        headingClass = $"code-line-section-heading-{sectionKey}";
+        if (Model.IsDiffView)
+        {
+            headingClass += $" diff-line-section-{Model.CodeLine.SectionKey}";
+            if (Model.Kind == DiffLineKind.Unchanged)
+            {
+                headingClass += $" other-diff-line-section-{Model.OtherLineSectionKey}";
+            }
+        }
     }
 
     if(Model.CodeLine.IsDocumentation)
@@ -172,7 +181,7 @@
 </tr>
 @if (isSectionHeading)
 {
-    <partial name="_CodeLinePartial" model="@Model.CodeLine.SectionKey" />
+    <partial name="_CodeLinePartial" model="@sectionKey" />
 }
 @if (Model.Diagnostics.Any())
 {
