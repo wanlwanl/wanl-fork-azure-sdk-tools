@@ -186,18 +186,19 @@ namespace APIViewWeb.Pages.Assemblies
                 var diffSectionHead = previousRevisionFile.FindCorrespondingDiffSection(sectionId, sectionInfo.sectionHead);
                 var previousRevisionHtmlLines = new CodeLine[] { };
                 var previousRevisionTextLines = new CodeLine[] { };
-                if (hasMixedChanges)
-                {
-                    previousRevisionHtmlLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: false).codeLines;
-                    previousRevisionTextLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: true).codeLines;
-                }
                 var currentRevisionTextLines = renderedCodeFile.GetCodeLineSection(sectionId, renderType: true).codeLines;
-
                 var diffLines = InlineDiff.Compute(
                     previousRevisionTextLines,
                     currentRevisionTextLines,
                     previousRevisionHtmlLines,
                     sectionInfo.codeLines);
+
+                if (hasMixedChanges)
+                {
+                    previousRevisionHtmlLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: false).codeLines;
+                    previousRevisionTextLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: true).codeLines;
+
+                }
 
                 Lines = CreateLines(fileDiagnostics, diffLines, Comments, true);
             }
@@ -324,6 +325,7 @@ namespace APIViewWeb.Pages.Assemblies
             }
             List<int> documentedByLines = new List<int>();
             int lineNumberExcludingDocumentation = 0;
+            int diffSectionId = 0;
 
             return lines.Select(
                 (diffLine, index) =>
@@ -343,7 +345,10 @@ namespace APIViewWeb.Pages.Assemblies
                                 Array.Empty<CodeDiagnostic>(),
                             lineNumberExcludingDocumentation,
                             new int[] { },
-                            true
+                            true,
+                            diffSectionId++,
+                            diffLine.Kind == DiffLineKind.Unchanged ?
+                                diffLine.OtherLine.SectionKey : null
                         );
                     }
                     else
@@ -360,7 +365,11 @@ namespace APIViewWeb.Pages.Assemblies
                                  Array.Empty<CodeDiagnostic>(),
                              diffLine.Line.LineNumber ?? ++lineNumberExcludingDocumentation,
                              documentedByLines.ToArray(),
-                             true
+                             true,
+                             diffSectionId++,
+                             diffLine.Kind == DiffLineKind.Unchanged ?
+                                diffLine.OtherLine.SectionKey : null
+
                          );
                         documentedByLines.Clear();
                         return c;

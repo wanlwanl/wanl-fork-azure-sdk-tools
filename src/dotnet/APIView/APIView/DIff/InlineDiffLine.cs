@@ -10,7 +10,15 @@ namespace APIView.DIff
             Kind = kind;
         }
 
+        public InlineDiffLine(T lineA, T lineB, DiffLineKind kind)
+        {
+            Line = lineA;
+            OtherLine = lineB;
+            Kind = kind;
+        }
+
         public T Line { get; }
+        public T OtherLine { get; } = default;
         public DiffLineKind Kind { get; }
 
         public override string ToString()

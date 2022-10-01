@@ -17,7 +17,7 @@ namespace APIView.DIff
             {
                 for (; currentLine < line; currentLine++)
                 {
-                    diffs.Add(new InlineDiffLine<TR>(afterResults[currentLine], DiffLineKind.Unchanged));
+                    diffs.Add(new InlineDiffLine<TR>(afterResults[currentLine], beforeResults[currentLine], DiffLineKind.Unchanged));
                 }
             }
 
