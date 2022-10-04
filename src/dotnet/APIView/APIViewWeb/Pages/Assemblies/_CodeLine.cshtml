@@ -35,10 +35,10 @@
         headingClass = $"code-line-section-heading-{sectionKey}";
         if (Model.IsDiffView)
         {
-            headingClass += $" diff-line-section-{Model.CodeLine.SectionKey}";
+            headingClass += $" rev-a-heading-{Model.CodeLine.SectionKey}";
             if (Model.Kind == DiffLineKind.Unchanged)
             {
-                headingClass += $" other-diff-line-section-{Model.OtherLineSectionKey}";
+                headingClass += $" rev-b-heading-{Model.OtherLineSectionKey}";
             }
         }
     }

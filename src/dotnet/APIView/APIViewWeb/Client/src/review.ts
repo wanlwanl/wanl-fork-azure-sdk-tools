@@ -183,8 +183,8 @@ $(() => {
 
       if (subSectionHeadingClass) {
         const sectionId = subSectionHeadingClass.replace("code-line-section-heading-", "")
-        const sectionKeyA = headingRowClasses.filter(c => c.startsWith('diff-line-section-'))[0]?.replace('diff-line-section-', '');
-        const sectionKeyB = headingRowClasses.filter(c => c.startsWith('other-diff-line-section-'))[0]?.replace('other-diff-line-section-', '');
+        const sectionKeyA = headingRowClasses.filter(c => c.startsWith('rev-a-heading-'))[0]?.replace('rev-a-heading-', '');
+        const sectionKeyB = headingRowClasses.filter(c => c.startsWith('rev-b-heading-'))[0]?.replace('rev-b-heading-', '');
 
         if (/^\d+$/.test(sectionId)) {
           var sectionContent = $(`.code-line-section-content-${sectionId}`);
