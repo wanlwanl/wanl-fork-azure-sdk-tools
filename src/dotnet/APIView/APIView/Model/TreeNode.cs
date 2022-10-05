@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis.SymbolDisplay;
 
 namespace APIView.Model
 {
@@ -14,6 +15,8 @@ namespace APIView.Model
         public bool IsRoot { get { return Parent == null; } }
 
         public bool IsLeaf { get { return Children.Count == 0; } }
+
+        public bool WasDetachedLeafParent { get; set; }
 
         public int Level 
         { 
@@ -40,6 +43,11 @@ namespace APIView.Model
             childNode.PositionAmongSiblings = this.Children.Count + 1;
             this.Children.Add(childNode);
             return childNode;
+        }
+
+        public bool IsParentOf(TreeNode<T> childNode)
+        {
+            return this.Children.Contains(childNode);
         }
 
         public override string ToString()

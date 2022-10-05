@@ -182,12 +182,12 @@ $(() => {
       const subSectionContentClass = headingRowClasses.filter(c => c.startsWith('code-line-section-content-'))[0];
 
       if (subSectionHeadingClass) {
-        const sectionId = subSectionHeadingClass.replace("code-line-section-heading-", "")
+        const sectionKey = subSectionHeadingClass.replace("code-line-section-heading-", "")
         const sectionKeyA = headingRowClasses.filter(c => c.startsWith('rev-a-heading-'))[0]?.replace('rev-a-heading-', '');
         const sectionKeyB = headingRowClasses.filter(c => c.startsWith('rev-b-heading-'))[0]?.replace('rev-b-heading-', '');
 
-        if (/^\d+$/.test(sectionId)) {
-          var sectionContent = $(`.code-line-section-content-${sectionId}`);
+        if (/^\d+$/.test(sectionKey)) {
+          var sectionContent = $(`.code-line-section-content-${sectionKey}`);
           if (sectionContent.hasClass("section-loaded")) {
             toggleSectionContent(headingRow, sectionContent, caretDirection, caretIcon);
           }
@@ -198,7 +198,7 @@ $(() => {
             const revisionId = new URLSearchParams(location.search).get("revisionId");
             const diffRevisionId = new URLSearchParams(location.search).get("diffRevisionId");
             const diffOnly = new URLSearchParams(location.search).get("diffOnly");
-            uri = uri + '&id=' + reviewId + '&sectionId=' + sectionId;
+            uri = uri + '&id=' + reviewId + '&sectionKey=' + sectionKey;
             if (revisionId)
               uri = uri + '&revisionId=' + revisionId;
             if (diffRevisionId)

@@ -6,12 +6,14 @@ using System.Threading.Tasks;
 using ApiView;
 using APIView;
 using APIView.DIff;
+using APIView.Model;
 using APIViewWeb.Helpers;
 using APIViewWeb.Models;
 using APIViewWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
+
 
 namespace APIViewWeb.Pages.Assemblies
 {
@@ -175,42 +177,49 @@ namespace APIViewWeb.Pages.Assemblies
         }
 
         public async Task<PartialViewResult> OnGetCodeLineSectionAsync(
-            string id, int sectionId, int? sectionKeyA = null, int? sectionKeyB = null,
+            string id, int sectionKey, int? sectionKeyA = null, int? sectionKeyB = null,
             string revisionId = null, string diffRevisionId = null, bool diffOnly = false)
         {
+            var sectionId = sectionKeyA ?? sectionKey;
             await GetReviewPageModelProperties(id, revisionId, diffRevisionId, diffOnly);
             var renderedCodeFile = await _codeFileRepository.GetCodeFileAsync(Revision);
-            var sectionInfo = renderedCodeFile.GetCodeLineSection(sectionId);
             var fileDiagnostics = renderedCodeFile.CodeFile.Diagnostics ?? Array.Empty<CodeDiagnostic>();
+            CodeLine[] currentHtmlLines;
+
             if (DiffRevision != null)
             {
-                var previousRevisionFile = await _codeFileRepository.GetCodeFileAsync(DiffRevision);
-                var diffSectionHead = previousRevisionFile.FindCorrespondingDiffSection(sectionId, sectionInfo.sectionHead);
-                var previousRevisionHtmlLines = new CodeLine[] { };
-                var previousRevisionTextLines = new CodeLine[] { };
-                var currentRevisionTextLines = renderedCodeFile.GetCodeLineSection(sectionId, renderType: true).codeLines;
-                var diffLines = InlineDiff.Compute(
-                    previousRevisionTextLines,
-                    currentRevisionTextLines,
-                    previousRevisionHtmlLines,
-                    sectionInfo.codeLines);
-
+                InlineDiffLine<CodeLine>[] diffLines;
+                
                 if (sectionKeyA != null && sectionKeyB != null)
                 {
-                    previousRevisionHtmlLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: false).codeLines;
-                    previousRevisionTextLines = previousRevisionFile.GetCodeLineSection(sectionNode: diffSectionHead, renderType: true).codeLines;
-
+                    var previousRevisionFile = await _codeFileRepository.GetCodeFileAsync(DiffRevision);
+                    var currentRootNode = renderedCodeFile.GetCodeLineSectionRoot((int)sectionKeyA);
+                    var previousRootNode = previousRevisionFile.GetCodeLineSectionRoot((int)sectionKeyB!);
+                    var diffSectionRoot = ComputeSectionDiff(previousRootNode, currentRootNode, previousRevisionFile, renderedCodeFile);
+                    diffLines = renderedCodeFile.GetDiffCodeLineSection(diffSectionRoot);
                 }
-
+                else
+                {
+                    currentHtmlLines = renderedCodeFile.GetCodeLineSection(sectionId);
+                    var previousRevisionHtmlLines = new CodeLine[] { };
+                    var previousRevisionTextLines = new CodeLine[] { };
+                    var currentRevisionTextLines = renderedCodeFile.GetCodeLineSection(sectionId, renderType: RenderType.Text);
+                    diffLines = InlineDiff.Compute(
+                        previousRevisionTextLines,
+                        currentRevisionTextLines,
+                        previousRevisionHtmlLines,
+                        currentHtmlLines);
+                }
                 Lines = CreateLines(fileDiagnostics, diffLines, Comments, true);
             }
             else
             {
-                Lines = CreateLines(fileDiagnostics, sectionInfo.codeLines, Comments, true);
+                currentHtmlLines = renderedCodeFile.GetCodeLineSection(sectionId);
+                Lines = CreateLines(fileDiagnostics, currentHtmlLines, Comments, true);
             }
             TempData["CodeLineSection"] = Lines;
             TempData["UserPreference"] = PageModelHelpers.GetUserPreference(_preferenceCache, User) ?? new UserPreferenceModel();
-            return Partial("_CodeLinePartial", sectionId);
+            return Partial("_CodeLinePartial", sectionKey);
         }
 
         public async Task<ActionResult> OnPostToggleClosedAsync(string id)
@@ -433,6 +442,68 @@ namespace APIViewWeb.Pages.Assemblies
                 }
             }
             return activeThreads;
+        }
+
+        private TreeNode<InlineDiffLine<CodeLine>> ComputeSectionDiff(TreeNode<CodeLine> before, TreeNode<CodeLine> after, RenderedCodeFile beforeFile, RenderedCodeFile afterFile) 
+        {
+            InlineDiffLine<CodeLine> rootDiff = new InlineDiffLine<CodeLine>(after.Data, before.Data, DiffLineKind.Unchanged);
+            TreeNode<InlineDiffLine<CodeLine>> resultRoot = new TreeNode<InlineDiffLine<CodeLine>>(rootDiff);
+
+            Queue<(TreeNode<CodeLine> before, TreeNode<CodeLine> after, TreeNode<InlineDiffLine<CodeLine>> current)> 
+                queue = new Queue<(TreeNode<CodeLine> before, TreeNode<CodeLine> after, TreeNode<InlineDiffLine<CodeLine>> current)>();
+
+            queue.Enqueue((before, after, resultRoot));
+
+            while (queue.Count > 0)
+            {
+                var nodesInProcess = queue.Dequeue();
+                var (beforeHTMLLines, beforeTextLines) = GetCodeLinesForDiff(nodesInProcess.before, nodesInProcess.current, beforeFile);
+                var (afterHTMLLines, afterTextLines) = GetCodeLinesForDiff(nodesInProcess.after, nodesInProcess.current, afterFile);
+
+                var diffResult = InlineDiff.Compute(beforeHTMLLines, afterHTMLLines, beforeTextLines, afterTextLines);
+
+                foreach (var diff in diffResult)
+                {
+                    TreeNode<InlineDiffLine<CodeLine>> addedChild = nodesInProcess.current.AddChild(diff);
+
+                    switch (diff.Kind)
+                    {
+                        case DiffLineKind.Removed:
+                            queue.Enqueue((diff.Line.NodeRef, null, addedChild));
+                            break;
+                        case DiffLineKind.Added:
+                            queue.Enqueue((null, diff.Line.NodeRef, addedChild));
+                            break;
+                        case DiffLineKind.Unchanged:
+                            queue.Enqueue((diff.OtherLine.NodeRef, diff.Line.NodeRef, addedChild));
+                            break;
+                    }
+                }
+            }
+            return resultRoot;
+        }
+
+        private (CodeLine[] htmlLines, CodeLine[] textLines) GetCodeLinesForDiff(TreeNode<CodeLine> node, TreeNode<InlineDiffLine<CodeLine>> curr, RenderedCodeFile codeFile)
+        {
+            (CodeLine[] htmlLines, CodeLine[] textLines) result = (new CodeLine[] { }, new CodeLine[] { });
+            if (node != null)
+            {
+                if (node.IsLeaf)
+                {
+                    result.htmlLines = codeFile.GetDetachedLeafSectionLines(node);
+                    result.textLines = codeFile.GetDetachedLeafSectionLines(node, renderType: RenderType.Text, skipDiff: true);
+
+                    if (result.htmlLines.Count() > 0)
+                    {
+                        curr.WasDetachedLeafParent = true;
+                    }
+                }
+                else
+                {
+                    result.htmlLines = result.textLines = node.Children.Select(x => new CodeLine(x.Data, nodeRef: x)).ToArray();
+                }
+            }
+            return result;
         }
     }
 }

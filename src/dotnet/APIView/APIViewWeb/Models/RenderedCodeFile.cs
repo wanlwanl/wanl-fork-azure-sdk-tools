@@ -5,11 +5,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using ApiView;
+using APIView.DIff;
 using APIView.Model;
+using Markdig.Syntax.Inlines;
+using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+using Octokit;
 
 namespace APIViewWeb.Models
 {
+    public enum RenderType { Normal, ReadOnly, Text }
+
     public class RenderedCodeFile
     {
         private CodeLine[] _rendered;
@@ -74,19 +81,14 @@ namespace APIViewWeb.Models
             return _renderedText;
         }
 
-        // renderType: null = Normal, true = Instance (Text), false = ReadOnly
-        public (CodeLine[] codeLines, TreeNode<CodeLine> sectionHead) GetCodeLineSection(int sectionId = 0, TreeNode<CodeLine> sectionNode = null, bool? renderType = null, bool skipDiff = false)
+        public CodeLine[] GetCodeLineSection(int sectionId = 0, RenderType renderType = RenderType.Normal, bool skipDiff = false)
         {
             var result = new List<CodeLine>();
-            var section = sectionNode;
-
-            if (section == null && RenderResult.Sections.Count > sectionId)
-            {
-                section = RenderResult.Sections[sectionId];
-            }
                 
-            if (section != null)
+            if (RenderResult.Sections.Count > sectionId)
             {
+                var section = RenderResult.Sections[sectionId];
+
                 using (IEnumerator<TreeNode<CodeLine>> enumerator = section.GetEnumerator())
                 {
                     enumerator.MoveNext();
@@ -113,28 +115,10 @@ namespace APIViewWeb.Models
 
                         if (node.IsLeaf)
                         {
-                            int leafSectionId;
-                            bool parseWorked = Int32.TryParse(node.Data.DisplayString, out leafSectionId);
+                            CodeLine[] renderedLeafSection = GetDetachedLeafSectionLines(node, renderType: renderType, skipDiff: skipDiff);
 
-                            if (parseWorked && CodeFile.LeafSections.Count > leafSectionId)
+                            if (renderedLeafSection.Length > 0)
                             {
-                                var leafSection = CodeFile.LeafSections[leafSectionId];
-
-                                CodeLine[] renderedLeafSection;
-
-                                if (renderType == null)
-                                {
-                                    renderedLeafSection = CodeFileHtmlRenderer.Normal.Render(leafSection);
-                                }
-                                else if (renderType == true)
-                                {
-                                    renderedLeafSection = CodeFileHtmlRenderer.Instance.Render(leafSection, enableSkipDiff: skipDiff);
-                                }
-                                else
-                                {
-                                    renderedLeafSection = CodeFileHtmlRenderer.ReadOnly.Render(leafSection);
-                                }
-                                                                 
                                 var placeHolderLineNumber = node.Data.LineNumber;
                                 int index = 0;
                                 foreach (var codeLine in renderedLeafSection)
@@ -161,47 +145,104 @@ namespace APIViewWeb.Models
                     }
                 }
             }
-            return (result.ToArray(), section);
+            return result.ToArray();
         }
 
-        public TreeNode<CodeLine> FindCorrespondingDiffSection(int sectionId, TreeNode<CodeLine> sectionHead)
+        public InlineDiffLine<CodeLine>[] GetDiffCodeLineSection(TreeNode<InlineDiffLine<CodeLine>> sectionNode, RenderType renderType = RenderType.Normal, bool skipDiff = false)
         {
-            var section = sectionHead;
+            var result = new List<InlineDiffLine<CodeLine>>();
+
+            using (IEnumerator<TreeNode<InlineDiffLine<CodeLine>>> enumerator = sectionNode.GetEnumerator())
+            {
+                TreeNode<InlineDiffLine<CodeLine>> detachedLeafParent = null;
+                InlineDiffLine<CodeLine> diffLine;
+                int ? detachedLeafParentLineNo = null;
+
+                enumerator.MoveNext();
+                while (enumerator.MoveNext())
+                {
+                    var node = enumerator.Current;
+                    if (node.WasDetachedLeafParent)
+                    {
+                        detachedLeafParent = node;
+                        detachedLeafParentLineNo = detachedLeafParent.Data.Line.LineNumber;
+                        continue;
+                    }
+
+                    if (!node.IsLeaf)
+                    {
+                        detachedLeafParent = null;
+                        detachedLeafParentLineNo = null;
+                    }
+
+                    var lineClass = new List<string>();
+                    var level = (detachedLeafParent == null) ? node.Level : node.Level - 1;
+
+                    // Add classes for managing tree hierachy
+                    if (node.Children.Count > 0)
+                        lineClass.Add($"lvl_{level}_parent_{node.PositionAmongSiblings}");
+
+                    if (!node.IsRoot)
+                        lineClass.Add($"lvl_{level}_child_{node.PositionAmongSiblings}");
+
+                    if (level > 1)
+                        lineClass.Add("d-none");
+
+                    var lineClasses = String.Join(' ', lineClass);
+
+                    if (!String.IsNullOrWhiteSpace(node.Data.Line.LineClass))
+                        lineClasses = node.Data.Line.LineClass.Trim() + $" {lineClasses}";
+
+                    if (detachedLeafParent != null && detachedLeafParent.IsParentOf(node))
+                    {
+                        diffLine = new InlineDiffLine<CodeLine>(new CodeLine(node.Data.Line, lineClass: lineClasses, lineNumber: detachedLeafParentLineNo, indent: level), node.Data.Kind);
+                        result.Add(diffLine);
+                        detachedLeafParentLineNo++;
+                    }
+                    else
+                    {
+                        diffLine = new InlineDiffLine<CodeLine>(new CodeLine(node.Data.Line, lineClass: lineClasses, indent: level), node.Data.Kind);
+                        result.Add(diffLine);
+                    }
+                }
+            }
+            return result.ToArray();
+        }
+
+        public TreeNode<CodeLine> GetCodeLineSectionRoot(int sectionId)
+        {
             if (RenderResult.Sections.Count > sectionId)
             {
-                section = RenderResult.Sections[sectionId];
-                if (section.Data.DisplayString == sectionHead.Data.DisplayString)
-                    return section;
+                return RenderResult.Sections[sectionId];
             }
+            return null;
+        }
 
-            int indexDown = sectionId + 1;
-            int indexUp = sectionId - 1;
+        public CodeLine[] GetDetachedLeafSectionLines(TreeNode<CodeLine> parentNode, RenderType renderType = RenderType.Normal, bool skipDiff = false)
+        {
+            int leafSectionId;
+            bool parseWorked = Int32.TryParse(parentNode.Data.DisplayString, out leafSectionId);
+            CodeLine[] renderedLeafSection = new CodeLine[] { };
 
-            while (indexDown < RenderResult.Sections.Count || indexUp >= 0)
+            if (parseWorked && CodeFile.LeafSections.Count > leafSectionId)
             {
-                if (indexDown >= RenderResult.Sections.Count && indexUp >= RenderResult.Sections.Count)
+                var leafSection = CodeFile.LeafSections[leafSectionId];
+
+                if (renderType == RenderType.Normal)
                 {
-                    break;
+                    renderedLeafSection = CodeFileHtmlRenderer.Normal.Render(leafSection);
+                }
+                else if (renderType == RenderType.Text)
+                {
+                    renderedLeafSection = CodeFileHtmlRenderer.Instance.Render(leafSection, enableSkipDiff: skipDiff);
+                }
+                else
+                {
+                    renderedLeafSection = CodeFileHtmlRenderer.ReadOnly.Render(leafSection);
                 }
 
-                if (indexDown < RenderResult.Sections.Count)
-                {
-                    section = RenderResult.Sections[indexDown];
-                    if (section.Data.DisplayString == sectionHead.Data.DisplayString)
-                        return section;
-                }
-
-                if (indexUp >= 0)
-                {
-                    section = RenderResult.Sections[indexUp];
-                    if (section.Data.DisplayString == sectionHead.Data.DisplayString)
-                        return section;
-                }
-
-                indexDown++;
-                indexUp--;
             }
-            return sectionHead;
+            return renderedLeafSection;
         }
     }
 }

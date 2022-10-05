@@ -163,14 +163,14 @@
             var codeRemovedSign = @"<svg height='23' width='23'>
                                     <text x='20%' y='70%'>-</text>
                                     </svg>";
-            <div class="code-inner">@Html.Raw(codeRemovedSign)@Html.Raw(cellContent)</div>
+            <div class="code-inner">@Html.Raw(codeRemovedSign)@Html.Raw(cellContent)@Html.Raw(collapseMenu)</div>
         }
         else if(Model.Kind == DiffLineKind.Added)
         {
             var codeAddedSign = @"<svg height='23' width='23'>
                                         <text x='20%' y='70%'>+</text>
                                     </svg>";
-            <div class="code-inner">@Html.Raw(codeAddedSign)@Html.Raw(cellContent)</div>
+            <div class="code-inner">@Html.Raw(codeAddedSign)@Html.Raw(cellContent)@Html.Raw(collapseMenu)</div>
         }
         else 
         {

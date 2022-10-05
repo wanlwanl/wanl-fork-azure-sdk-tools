@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 namespace APIView.DIff
 {
@@ -8,6 +8,7 @@ namespace APIView.DIff
         {
             Line = line;
             Kind = kind;
+            OtherLine = default;
         }
 
         public InlineDiffLine(T lineA, T lineB, DiffLineKind kind)
@@ -18,7 +19,7 @@ namespace APIView.DIff
         }
 
         public T Line { get; }
-        public T OtherLine { get; } = default;
+        public T OtherLine { get; }
         public DiffLineKind Kind { get; }
 
         public override string ToString()
