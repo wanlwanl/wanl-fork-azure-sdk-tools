@@ -100,13 +100,6 @@ namespace APIViewWeb.Pages.Assemblies
             {
                 return RedirectToPage("LegacyReview", new { id = id });
             }
-
-            TaggableUsers = _commentsManager.TaggableUsers;
-
-            Comments = await _commentsManager.GetReviewCommentsAsync(id);
-            Revision = GetReviewRevision(revisionId);
-            PreviousRevisions = Review.Revisions.TakeWhile(r => r != Revision).ToArray();
-
             var renderedCodeFile = await _codeFileRepository.GetCodeFileAsync(Revision);
             CodeFile = renderedCodeFile.CodeFile;
 
@@ -275,6 +268,7 @@ namespace APIViewWeb.Pages.Assemblies
         private async Task GetReviewPageModelProperties(string id, string revisionId = null, string diffRevisionId = null, bool diffOnly = false)
         {
             Review = await _manager.GetReviewAsync(User, id);
+            TaggableUsers = _commentsManager.TaggableUsers;
             Comments = await _commentsManager.GetReviewCommentsAsync(id);
             Revision = revisionId != null ?
                 Review.Revisions.Single(r => r.RevisionId == revisionId) :
