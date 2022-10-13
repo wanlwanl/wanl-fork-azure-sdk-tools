@@ -188,7 +188,7 @@ namespace APIViewWeb.Pages.Assemblies
                     var previousRevisionFile = await _codeFileRepository.GetCodeFileAsync(DiffRevision);
                     var currentRootNode = renderedCodeFile.GetCodeLineSectionRoot((int)sectionKeyA);
                     var previousRootNode = previousRevisionFile.GetCodeLineSectionRoot((int)sectionKeyB!);
-                    var diffSectionRoot = ComputeSectionDiff(previousRootNode, currentRootNode, previousRevisionFile, renderedCodeFile);
+                    var diffSectionRoot = _manager.ComputeSectionDiff(previousRootNode, currentRootNode, previousRevisionFile, renderedCodeFile);
                     diffLines = renderedCodeFile.GetDiffCodeLineSection(diffSectionRoot);
                 }
                 else
@@ -436,68 +436,6 @@ namespace APIViewWeb.Pages.Assemblies
                 }
             }
             return activeThreads;
-        }
-
-        private TreeNode<InlineDiffLine<CodeLine>> ComputeSectionDiff(TreeNode<CodeLine> before, TreeNode<CodeLine> after, RenderedCodeFile beforeFile, RenderedCodeFile afterFile) 
-        {
-            InlineDiffLine<CodeLine> rootDiff = new InlineDiffLine<CodeLine>(after.Data, before.Data, DiffLineKind.Unchanged);
-            TreeNode<InlineDiffLine<CodeLine>> resultRoot = new TreeNode<InlineDiffLine<CodeLine>>(rootDiff);
-
-            Queue<(TreeNode<CodeLine> before, TreeNode<CodeLine> after, TreeNode<InlineDiffLine<CodeLine>> current)> 
-                queue = new Queue<(TreeNode<CodeLine> before, TreeNode<CodeLine> after, TreeNode<InlineDiffLine<CodeLine>> current)>();
-
-            queue.Enqueue((before, after, resultRoot));
-
-            while (queue.Count > 0)
-            {
-                var nodesInProcess = queue.Dequeue();
-                var (beforeHTMLLines, beforeTextLines) = GetCodeLinesForDiff(nodesInProcess.before, nodesInProcess.current, beforeFile);
-                var (afterHTMLLines, afterTextLines) = GetCodeLinesForDiff(nodesInProcess.after, nodesInProcess.current, afterFile);
-
-                var diffResult = InlineDiff.Compute(beforeHTMLLines, afterHTMLLines, beforeTextLines, afterTextLines);
-
-                foreach (var diff in diffResult)
-                {
-                    TreeNode<InlineDiffLine<CodeLine>> addedChild = nodesInProcess.current.AddChild(diff);
-
-                    switch (diff.Kind)
-                    {
-                        case DiffLineKind.Removed:
-                            queue.Enqueue((diff.Line.NodeRef, null, addedChild));
-                            break;
-                        case DiffLineKind.Added:
-                            queue.Enqueue((null, diff.Line.NodeRef, addedChild));
-                            break;
-                        case DiffLineKind.Unchanged:
-                            queue.Enqueue((diff.OtherLine.NodeRef, diff.Line.NodeRef, addedChild));
-                            break;
-                    }
-                }
-            }
-            return resultRoot;
-        }
-
-        private (CodeLine[] htmlLines, CodeLine[] textLines) GetCodeLinesForDiff(TreeNode<CodeLine> node, TreeNode<InlineDiffLine<CodeLine>> curr, RenderedCodeFile codeFile)
-        {
-            (CodeLine[] htmlLines, CodeLine[] textLines) result = (new CodeLine[] { }, new CodeLine[] { });
-            if (node != null)
-            {
-                if (node.IsLeaf)
-                {
-                    result.htmlLines = codeFile.GetDetachedLeafSectionLines(node);
-                    result.textLines = codeFile.GetDetachedLeafSectionLines(node, renderType: RenderType.Text, skipDiff: true);
-
-                    if (result.htmlLines.Count() > 0)
-                    {
-                        curr.WasDetachedLeafParent = true;
-                    }
-                }
-                else
-                {
-                    result.htmlLines = result.textLines = node.Children.Select(x => new CodeLine(x.Data, nodeRef: x)).ToArray();
-                }
-            }
-            return result;
         }
     }
 }

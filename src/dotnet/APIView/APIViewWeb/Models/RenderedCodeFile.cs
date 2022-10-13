@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -207,6 +207,36 @@ namespace APIViewWeb.Models
                 }
             }
             return result.ToArray();
+        }
+
+        public HashSet<int> GetLineNumbersForSectionHeadingsWithDiff(TreeNode<InlineDiffLine<CodeLine>> sectionNode)
+        {
+            var lineNumbersForHeadingOfSectiosnWithChanges = new HashSet<int>();
+            int rootLineNumber = (int)sectionNode.Data.Line.LineNumber;
+
+            using (IEnumerator<TreeNode<InlineDiffLine<CodeLine>>> enumerator = sectionNode.GetEnumerator())
+            {
+                enumerator.MoveNext();
+                while (enumerator.MoveNext())
+                {
+                    var node = enumerator.Current;
+                    if (node.WasDetachedLeafParent)
+                    {
+                        continue;
+                    }
+
+                    if (node.Data.Kind == DiffLineKind.Added || node.Data.Kind == DiffLineKind.Removed)
+                    {
+                        lineNumbersForHeadingOfSectiosnWithChanges.Add((int)node.Parent.Data.Line.LineNumber);
+                    }
+                }
+
+                if (lineNumbersForHeadingOfSectiosnWithChanges.Count > 0)
+                {
+                    lineNumbersForHeadingOfSectiosnWithChanges.Add(rootLineNumber);
+                }
+            }
+            return lineNumbersForHeadingOfSectiosnWithChanges;
         }
 
         public TreeNode<CodeLine> GetCodeLineSectionRoot(int sectionId)
