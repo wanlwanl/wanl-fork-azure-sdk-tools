@@ -415,6 +415,15 @@
         </div>
 
         <div id="review-right" class="col-@reviewRightSize rounded-1 border">
+            @if (Model.Lines.Any() && Model.Lines[0].IsDiffView && !Model.Lines[0].HeadingsWithDiff.Any())
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    Metadata for identifying sections containing diff changes is not yet available. Consider refreshing page.
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
             <table class="code-window">
                 <tbody>
                     @foreach (var line in Model.Lines)

@@ -1,4 +1,4 @@
-﻿@using ApiView
+@using ApiView
 @using APIView.Model
 @using APIView.DIff
 @using System.Text.RegularExpressions
@@ -23,6 +23,7 @@
 
     bool isSectionHeading = false;
     bool isSubSectionHeading = false;
+    bool isHeadingWithDelta = false;
     string headingClass = String.Empty;
     string documentationRow = String.Empty;
     string codeLineDisplay = String.Empty;
@@ -47,6 +48,12 @@
     {
         documentationRow = "code-line-documentation";
         codeLineDisplay = "hidden-row";
+    }
+
+    if (Model.HeadingsWithDiff != null && Model.HeadingsWithDiff.Contains(Model.LineNumber))
+    {
+        lineClass += " code-delta";
+        isHeadingWithDelta = true;
     }
 
     if (Regex.IsMatch(codeLineClass, @".*lvl_[0-9]+_parent.*"))
@@ -161,21 +168,31 @@
         @if (Model.Kind == DiffLineKind.Removed)
         {
             var codeRemovedSign = @"<svg height='23' width='23'>
-                                    <text x='20%' y='70%'>-</text>
+                                        <text x='20%' y='70%'>&#45;</text>
                                     </svg>";
             <div class="code-inner">@Html.Raw(codeRemovedSign)@Html.Raw(cellContent)@Html.Raw(collapseMenu)</div>
         }
         else if(Model.Kind == DiffLineKind.Added)
         {
             var codeAddedSign = @"<svg height='23' width='23'>
-                                        <text x='20%' y='70%'>+</text>
+                                        <text x='20%' y='70%'>&#43;</text>
                                     </svg>";
             <div class="code-inner">@Html.Raw(codeAddedSign)@Html.Raw(cellContent)@Html.Raw(collapseMenu)</div>
         }
         else 
         {
-            var initialIndent = "<svg height='23' width='23'></svg>";
-            <div class="code-inner">@Html.Raw(initialIndent)@Html.Raw(cellContent)@Html.Raw(collapseMenu)</div> 
+            var indentOrDelta = String.Empty;
+            if (isHeadingWithDelta)
+            {
+                indentOrDelta = @"<svg height='23' width='23'>
+                                        <text x='20%' y='70%'>&#177;</text>
+                                    </svg>";
+            }
+            else
+            {
+                indentOrDelta = "<svg height='23' width='23'></svg>";
+            }
+            <div class="code-inner">@Html.Raw(indentOrDelta)@Html.Raw(cellContent)@Html.Raw(collapseMenu)</div>
         }
     </td>
 </tr>

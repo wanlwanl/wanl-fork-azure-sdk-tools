@@ -20,6 +20,7 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.Extensions.Configuration;
 
 namespace APIViewWeb.Repositories
@@ -41,7 +42,7 @@ namespace APIViewWeb.Repositories
 
         private readonly NotificationManager _notificationManager;
 
-        private readonly DevopsArtifactRepository _devopsArtifactRepository;
+        private readonly IDevopsArtifactRepository _devopsArtifactRepository;
 
         private readonly PackageNameManager _packageNameManager;
 
@@ -55,9 +56,8 @@ namespace APIViewWeb.Repositories
             CosmosCommentsRepository commentsRepository,
             IEnumerable<LanguageService> languageServices,
             NotificationManager notificationManager,
-            DevopsArtifactRepository devopsClient,
-            PackageNameManager packageNameManager,
-            IConfiguration configuration)
+            IDevopsArtifactRepository devopsClient,
+            PackageNameManager packageNameManager)
         {
             _authorizationService = authorizationService;
             _reviewsRepository = reviewsRepository;
@@ -70,7 +70,7 @@ namespace APIViewWeb.Repositories
             _packageNameManager = packageNameManager;
         }
 
-        public async Task<ReviewModel> CreateReviewAsync(ClaimsPrincipal user, string originalName, string label, Stream fileStream, bool runAnalysis)
+        public async Task<ReviewModel> CreateReviewAsync(ClaimsPrincipal user, string originalName, string label, Stream fileStream, bool runAnalysis, bool awaitComputeDiff = false)
         {
             ReviewModel review = new ReviewModel
             {
@@ -80,7 +80,7 @@ namespace APIViewWeb.Repositories
                 Name = originalName,
                 FilterType = ReviewType.Manual
             };
-            await AddRevisionAsync(user, review, originalName, label, fileStream);
+            await AddRevisionAsync(user, review, originalName, label, fileStream, awaitComputeDiff);
             return review;
         }
 
@@ -231,11 +231,11 @@ namespace APIViewWeb.Repositories
             string reviewId,
             string name,
             string label,
-            Stream fileStream)
+            Stream fileStream, bool awaitComputeDiff = false)
         {
             var review = await GetReviewAsync(user, reviewId);
             await AssertAutomaticReviewModifier(user, review);
-            await AddRevisionAsync(user, review, name, label, fileStream);
+            await AddRevisionAsync(user, review, name, label, fileStream, awaitComputeDiff);
         }
 
         private async Task AddRevisionAsync(
@@ -243,7 +243,8 @@ namespace APIViewWeb.Repositories
             ReviewModel review,
             string name,
             string label,
-            Stream fileStream)
+            Stream fileStream,
+            bool awaitComputeDiff = false)
         {
             var revision = new ReviewRevisionModel();
 
@@ -278,7 +279,14 @@ namespace APIViewWeb.Repositories
             await _notificationManager.SubscribeAsync(review, user);
             await _reviewsRepository.UpsertReviewAsync(review);
             await _notificationManager.NotifySubscribersOnNewRevisionAsync(revision, user);
-            _ = Task.Run(async () => await ComputeDiffBetweenRevisions(review.ReviewId, revision));
+            if (awaitComputeDiff)
+            {
+                await ComputeDiffBetweenRevisions(review.ReviewId, revision);
+            }
+            else
+            {
+                _ = Task.Run(async () => await ComputeDiffBetweenRevisions(review.ReviewId, revision));
+            }
         }
 
         private async Task<ReviewCodeFileModel> CreateFileAsync(
@@ -792,61 +800,72 @@ namespace APIViewWeb.Repositories
 
         private async Task ComputeDiffBetweenRevisions(string reviewId, ReviewRevisionModel revision)
         {
-            ReviewModel review = new ReviewModel();
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            bool latestRevisionAdded = false;
-
-            while (sw.Elapsed < TimeSpan.FromSeconds(120))
+            try
             {
-                review = await _reviewsRepository.GetReviewAsync(reviewId);
-                if (review.Revisions.Contains(revision))
+                ReviewModel review = new ReviewModel();
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                bool latestRevisionAdded = false;
+
+                while (!latestRevisionAdded && sw.Elapsed < TimeSpan.FromSeconds(120))
                 {
-                    latestRevisionAdded = true;
-                    break;
-                }
-            }
-
-            sw.Stop();
-
-            if (!latestRevisionAdded)
-            {
-                _telemetryClient.TrackTrace($"Failed to retrieve review with reviewId : {review.ReviewId} containing revision with revisionId {revision.RevisionId}");
-            }
-
-            var codeFileA = await _codeFileRepository.GetCodeFileAsync(revision, false);
-            var htmlLinesA = codeFileA.RenderReadOnly(false);
-            var textLinesA = codeFileA.RenderText(false);
-            ReviewRevisionModelList updatedRevisions = new ReviewRevisionModelList(review);
-            updatedRevisions.Add(revision);
-
-            foreach (var rev in review.Revisions)
-            {
-                if (!rev.Equals(revision))
-                {
-                    var lineNumbersForHeadingOfSectiosnWithChanges = new HashSet<int>();
-                    var codeFileB = await _codeFileRepository.GetCodeFileAsync(rev, false);
-                    var htmlLinesB = codeFileB.RenderReadOnly(false);
-                    var textLinesB = codeFileB.RenderText(false);
-
-                    var diffLines = InlineDiff.Compute(textLinesB, textLinesA, htmlLinesB, htmlLinesA);
-
-                    foreach (var diffLine in diffLines)
+                    review = await _reviewsRepository.GetReviewAsync(reviewId);
+                    var enumerator = review.Revisions.GetEnumerator();
+                    while (enumerator.MoveNext())
                     {
-                        if (diffLine.Kind == DiffLineKind.Unchanged && (diffLine.Line.SectionKey != null && diffLine.OtherLine.SectionKey != null))
+                        if (enumerator.Current.RevisionId == revision.RevisionId)
                         {
-                            var rootNodeA = codeFileA.GetCodeLineSectionRoot((int)diffLine.Line.SectionKey);
-                            var rootNodeB = codeFileB.GetCodeLineSectionRoot((int)diffLine.OtherLine.SectionKey);
-                            var diffSectionRoot = ComputeSectionDiff(rootNodeB, rootNodeA, codeFileB, codeFileA);
-                            lineNumbersForHeadingOfSectiosnWithChanges.UnionWith(codeFileA.GetLineNumbersForSectionHeadingsWithDiff(diffSectionRoot));
+                            latestRevisionAdded = true;
+                            break;
                         }
                     }
-                    rev.DiffLines.Add(revision.RevisionId, lineNumbersForHeadingOfSectiosnWithChanges);
-                    updatedRevisions.Add(revision);
                 }
+
+                sw.Stop();
+
+                if (!latestRevisionAdded)
+                {
+                    _telemetryClient.TrackTrace($"Failed to retrieve review with reviewId : {review.ReviewId} containing revision with revisionId {revision.RevisionId}");
+                }
+
+                var codeFileA = await _codeFileRepository.GetCodeFileAsync(revision, false);
+                var htmlLinesA = codeFileA.RenderReadOnly(false);
+                var textLinesA = codeFileA.RenderText(false);
+                ReviewRevisionModelList updatedRevisions = new ReviewRevisionModelList(review);
+                updatedRevisions.Add(revision);
+
+                foreach (var rev in review.Revisions)
+                {
+                    if (rev.RevisionId !=  revision.RevisionId)
+                    {
+                        var lineNumbersForHeadingOfSectiosnWithChanges = new HashSet<int>();
+                        var codeFileB = await _codeFileRepository.GetCodeFileAsync(rev, false);
+                        var htmlLinesB = codeFileB.RenderReadOnly(false);
+                        var textLinesB = codeFileB.RenderText(false);
+
+                        var diffLines = InlineDiff.Compute(textLinesB, textLinesA, htmlLinesB, htmlLinesA);
+
+                        foreach (var diffLine in diffLines)
+                        {
+                            if (diffLine.Kind == DiffLineKind.Unchanged && (diffLine.Line.SectionKey != null && diffLine.OtherLine.SectionKey != null))
+                            {
+                                var rootNodeA = codeFileA.GetCodeLineSectionRoot((int)diffLine.Line.SectionKey);
+                                var rootNodeB = codeFileB.GetCodeLineSectionRoot((int)diffLine.OtherLine.SectionKey);
+                                var diffSectionRoot = ComputeSectionDiff(rootNodeB, rootNodeA, codeFileB, codeFileA);
+                                lineNumbersForHeadingOfSectiosnWithChanges.UnionWith(codeFileA.GetLineNumbersForSectionHeadingsWithDiff(diffSectionRoot));
+                            }
+                        }
+                        rev.DiffLines.Add(revision.RevisionId, lineNumbersForHeadingOfSectiosnWithChanges);
+                        updatedRevisions.Add(rev);
+                    }
+                }
+                review.Revisions = updatedRevisions;
+                await _reviewsRepository.UpsertReviewAsync(review);
             }
-            review.Revisions = updatedRevisions;
-            await _reviewsRepository.UpsertReviewAsync(review);
+            catch (Exception e) 
+            {
+                _telemetryClient.TrackTrace($"Error while computing Diff Between Sections {e}");
+            }
         }
 
         public TreeNode<InlineDiffLine<CodeLine>> ComputeSectionDiff(TreeNode<CodeLine> before, TreeNode<CodeLine> after, RenderedCodeFile beforeFile, RenderedCodeFile afterFile)

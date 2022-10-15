@@ -151,6 +151,15 @@ stages:
             parameters:
               StartParameters: '/noexplorer /noui /enablepreview /disableratelimiting /enableaadauthentication /partitioncount=50 /consistency=Strong'
 
+          - script: |
+              npm install -g azurite
+            displayName: 'Install Azurite'
+
+          - script: |
+              azurite --silent
+            workingDirectory: $(Agent.TempDirectory)
+            displayName: 'Run Azurite'
+
           - task: DotNetCoreInstaller@2
             displayName: 'Use .NET Core sdk 3.1.x'
             inputs:

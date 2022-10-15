@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using APIView.Model;
 
 namespace ApiView
@@ -45,7 +45,7 @@ namespace ApiView
 
         public bool Equals(CodeLine other)
         {
-            return DisplayString == other.DisplayString; // ElementId == other.ElementId;
+            return DisplayString == other.DisplayString && ElementId == other.ElementId;
         }
     }
 }

@@ -59,13 +59,12 @@ namespace APIViewWeb.Pages.Assemblies
         public ReviewRevisionModel Revision { get; set; }
         public ReviewRevisionModel DiffRevision { get; set; }
         public ReviewRevisionModel[] PreviousRevisions {get; set; }
-
         public CodeFile CodeFile { get; set; }
-
         public CodeLineModel[] Lines { get; set; }
         public InlineDiffLine<CodeLine>[] DiffLines { get; set; }
         public ReviewCommentsModel Comments { get; set; }
         public HashSet<GithubUser> TaggableUsers { get; set; }
+        public HashSet<int> HeadingsWithDiffInSections { get; set; }
 
         /// <summary>
         /// The number of active conversations for this iteration
@@ -94,7 +93,7 @@ namespace APIViewWeb.Pages.Assemblies
         {
             TempData["Page"] = "api";
 
-            await GetReviewPageModelProperties(id, revisionId);
+            await GetReviewPageModelPropertiesAsync(id, revisionId);
 
             if (!Review.Revisions.Any())
             {
@@ -174,7 +173,7 @@ namespace APIViewWeb.Pages.Assemblies
             string revisionId = null, string diffRevisionId = null, bool diffOnly = false)
         {
             var sectionId = sectionKeyA ?? sectionKey;
-            await GetReviewPageModelProperties(id, revisionId, diffRevisionId, diffOnly);
+            await GetReviewPageModelPropertiesAsync(id, revisionId, diffRevisionId, diffOnly);
             var renderedCodeFile = await _codeFileRepository.GetCodeFileAsync(Revision);
             var fileDiagnostics = renderedCodeFile.CodeFile.Diagnostics ?? Array.Empty<CodeDiagnostic>();
             CodeLine[] currentHtmlLines;
@@ -265,7 +264,7 @@ namespace APIViewWeb.Pages.Assemblies
             return _preferenceCache.GetUserPreferences(User).Result;
         }
 
-        private async Task GetReviewPageModelProperties(string id, string revisionId = null, string diffRevisionId = null, bool diffOnly = false)
+        private async Task GetReviewPageModelPropertiesAsync(string id, string revisionId = null, string diffRevisionId = null, bool diffOnly = false)
         {
             Review = await _manager.GetReviewAsync(User, id);
             TaggableUsers = _commentsManager.TaggableUsers;
@@ -279,6 +278,8 @@ namespace APIViewWeb.Pages.Assemblies
             DiffRevision = DiffRevisionId != null ?
                 PreviousRevisions.Single(r => r.RevisionId == DiffRevisionId) :
                 DiffRevision;
+            HeadingsWithDiffInSections = (DiffRevisionId != null && Revision.DiffLines.ContainsKey(DiffRevisionId)) ? Revision.DiffLines[DiffRevisionId] : new HashSet<int>();
+            
         }
 
         private InlineDiffLine<CodeLine>[] CreateDiffOnlyLines(InlineDiffLine<CodeLine>[] lines)
@@ -340,40 +341,42 @@ namespace APIViewWeb.Pages.Assemblies
                         // documentedByLines must include the index of a line, assuming that documentation lines are counted
                         documentedByLines.Add(++index);
                         return new CodeLineModel(
-                            diffLine.Kind,
-                            diffLine.Line,
-                            comments.TryGetThreadForLine(diffLine.Line.ElementId, out var thread) ?
+                            kind: diffLine.Kind,
+                            codeLine: diffLine.Line,
+                            commentThread: comments.TryGetThreadForLine(diffLine.Line.ElementId, out var thread) ?
                                 thread :
                                 null,
-                            diffLine.Kind != DiffLineKind.Removed ?
+                            diagnostics: diffLine.Kind != DiffLineKind.Removed ?
                                 diagnostics.Where(d => d.TargetId == diffLine.Line.ElementId).ToArray() :
                                 Array.Empty<CodeDiagnostic>(),
-                            lineNumberExcludingDocumentation,
-                            new int[] { },
-                            true,
-                            diffLine.Line.SectionKey != null ? ++diffSectionId : null,
-                            diffLine.Kind == DiffLineKind.Unchanged ?
-                                diffLine.OtherLine.SectionKey : null
+                            lineNumber: lineNumberExcludingDocumentation,
+                            documentedByLines: new int[] { },
+                            isDiffView: true,
+                            diffSectionId: diffLine.Line.SectionKey != null ? ++diffSectionId : null,
+                            otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ?
+                                diffLine.OtherLine.SectionKey : null,
+                            headingsWithDiff: HeadingsWithDiffInSections
                         );
                     }
                     else
                     {
                         CodeLineModel c = new CodeLineModel(
-                             diffLine.Kind,
-                             diffLine.Line,
-                             diffLine.Kind != DiffLineKind.Removed &&
-                             comments.TryGetThreadForLine(diffLine.Line.ElementId, out var thread) ?
-                                 thread :
-                                 null,
-                             diffLine.Kind != DiffLineKind.Removed ?
+                             kind: diffLine.Kind,
+                             codeLine: diffLine.Line,
+                             commentThread: diffLine.Kind != DiffLineKind.Removed &&
+                                 comments.TryGetThreadForLine(diffLine.Line.ElementId, out var thread) ?
+                                     thread :
+                                     null,
+                             diagnostics: diffLine.Kind != DiffLineKind.Removed ?
                                  diagnostics.Where(d => d.TargetId == diffLine.Line.ElementId).ToArray() :
                                  Array.Empty<CodeDiagnostic>(),
-                             diffLine.Line.LineNumber ?? ++lineNumberExcludingDocumentation,
-                             documentedByLines.ToArray(),
-                             true,
-                             diffLine.Line.SectionKey != null ? ++diffSectionId : null,
-                             diffLine.Kind == DiffLineKind.Unchanged ?
-                                diffLine.OtherLine.SectionKey : null
+                             lineNumber: diffLine.Line.LineNumber ?? ++lineNumberExcludingDocumentation,
+                             documentedByLines: documentedByLines.ToArray(),
+                             isDiffView: true,
+                             diffSectionId: diffLine.Line.SectionKey != null ? ++diffSectionId : null,
+                             otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ?
+                                diffLine.OtherLine.SectionKey : null,
+                             headingsWithDiff: HeadingsWithDiffInSections
 
                          );
                         documentedByLines.Clear();

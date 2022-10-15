@@ -33,6 +33,7 @@
     --code-diagnostics-info-color: lightblue;
     --code-added: #cee9d3;
     --code-removed: #fdcfce;
+    --code-delta: #fdefc6;
 }
 
 .dark-theme {
@@ -68,6 +69,7 @@
     --code-diagnostics-info-color: darkblue;
     --code-added: #14432d;
     --code-removed: #491d24;
+    --code-delta: #4c401a;
 }
 
 .dark-solarized-theme {
@@ -103,6 +105,7 @@
     --code-diagnostics-info-color: #5197f0;
     --code-added: #345039;
     --code-removed: #5d3837;
+    --code-delta: #695b32;
 }
 
 /* Mixins, Media, Include and Keyframes
@@ -468,6 +471,10 @@ code {
 
 .code-removed {
     background-color: rgba(248,81,73,0.3);
+}
+
+.code-delta {
+    background-color: rgba(248,201,67,0.3);
 }
 
 .enum {
@@ -996,6 +1003,11 @@ code {
 
 .line-details.code-removed {
     background-color: var(--code-removed);
+    color: var(--text-color);
+}
+
+.line-details.code-delta {
+    background-color: var(--code-delta);
     color: var(--text-color);
 }
 

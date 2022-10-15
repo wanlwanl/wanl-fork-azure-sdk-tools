@@ -23,6 +23,8 @@ using System.Threading.Tasks;
 using APIViewWeb.HostedServices;
 using APIViewWeb.Filters;
 using APIViewWeb.Account;
+using APIView.Identity;
+using SendGrid.Extensions.DependencyInjection;
 
 namespace APIViewWeb
 {
@@ -80,7 +82,7 @@ namespace APIViewWeb
             services.AddSingleton<CosmosReviewRepository>();
             services.AddSingleton<CosmosCommentsRepository>();
             services.AddSingleton<CosmosPullRequestsRepository>();
-            services.AddSingleton<DevopsArtifactRepository>();
+            services.AddSingleton<IDevopsArtifactRepository, DevopsArtifactRepository>();
             services.AddSingleton<CosmosUsageSampleRepository>();
             services.AddSingleton<BlobUsageSampleRepository>();
             services.AddSingleton<CosmosUserProfileRepository>();
