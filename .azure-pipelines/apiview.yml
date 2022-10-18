@@ -155,16 +155,10 @@ stages:
               npm install -g azurite
             displayName: 'Install Azurite'
 
-          - task: Powershell@2
-            inputs:
-              filePath: $(Build.SourcesDirectory)/eng/scripts/Start-LocalHostProcess.ps1
-              workingDirectory: $(Agent.TempDirectory)
-              arguments: >
-                -Process "azurite"
-                -ArgumentList "--silent"
-                -Port "10000"
-              pwsh: true
+          - script: |
+              start azurite /B
             displayName: 'Start Azurite'
+            workingDirectory: $(Agent.TempDirectory)
 
           - task: DotNetCoreInstaller@2
             displayName: 'Use .NET Core sdk 3.1.x'
@@ -185,9 +179,8 @@ stages:
           - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             - task: Powershell@2
               inputs:
-                filePath: $(Build.SourcesDirectory)/eng/scripts/Start-LocalHostProcess.ps1
+                filePath: $(Build.SourcesDirectory)/eng/scripts/Start-DotNetApp.ps1
                 arguments: >
-                  -Process "dotnet"
                   -ArgumentList "run --project $(Build.SourcesDirectory)\src\dotnet\APIView\APIViewWeb\APIViewWeb.csproj"
                   -Port "5000"
                 pwsh: true
@@ -198,7 +191,8 @@ stages:
                 APIVIEW_GITHUB__CLIENTID: $(apiview-github-clientid)
                 APIVIEW_GITHUB__CLIENTSECRET: $(apiview-github-clientid)
                 APIVIEW_AUTHENTICATIONSCHEME: "Test"
-
+                APIVIEW_SENDGRID__KEY: "Test"
+                
             - task: DotNetCoreCLI@2
               displayName: 'Build & Test'
               env:

@@ -74,7 +74,7 @@ namespace APIViewIntegrationTests
             BlobContainerClient blobOriginalContainerClient = new BlobContainerClient(config["AzuriteBlobConnectionString"], "originals");
             BlobCodeFileRepository blobCodeFileRepository = new BlobCodeFileRepository(null, memoryCache, blobCodeFileContainerClient);
             BlobOriginalsRepository blobOriginalsRepository = new BlobOriginalsRepository(null, blobOriginalContainerClient);
-            CosmosUserProfileRepository cosmosUserProfileRepository = new CosmosUserProfileRepository(config);
+            CosmosUserProfileRepository cosmosUserProfileRepository = new CosmosUserProfileRepository(config, cosmosClient);
 
             var authorizationServiceMoq = new Mock<IAuthorizationService>();
             authorizationServiceMoq.Setup(_ => _.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<Object>(), It.IsAny<IEnumerable<IAuthorizationRequirement>>()))

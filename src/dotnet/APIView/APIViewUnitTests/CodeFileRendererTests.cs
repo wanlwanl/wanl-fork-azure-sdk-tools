@@ -31,7 +31,7 @@ namespace APIViewUnitTests
         }
 
         [Fact]
-        public async Task RenderedResult_Sections_Correct_CodeLines()
+        public void RenderedResult_Sections_Correct_CodeLines()
         {
             var codeLines = renderedCodeFile.RenderResult.CodeLines;
 
@@ -44,7 +44,7 @@ namespace APIViewUnitTests
         }
 
         [Fact]
-        public async Task RenderedResult_Sections_Has_Detached_Leafs()
+        public void RenderedResult_Sections_Has_Detached_Leafs()
         {
             var sections = renderedCodeFile.RenderResult.Sections;
             Assert.Equal(3, sections.Count());
@@ -54,7 +54,7 @@ namespace APIViewUnitTests
         [InlineData(0, 3, 14)]
         [InlineData(1, 17, 57)]
         [InlineData(2, 59, 83)]
-        public async Task RenderedResult_Sections_Has_Correct_Lines_In_Sections(int sectionPosition, int firstLineNumber, int lastLineNumber)
+        public void RenderedResult_Sections_Has_Correct_Lines_In_Sections(int sectionPosition, int firstLineNumber, int lastLineNumber)
         {
             var sectionKey = renderedCodeFile.RenderResult.Sections[sectionPosition].Data.SectionKey;
             var codeLines = renderedCodeFile.GetCodeLineSection((int)sectionKey);
