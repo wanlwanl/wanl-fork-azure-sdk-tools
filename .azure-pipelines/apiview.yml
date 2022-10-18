@@ -155,10 +155,16 @@ stages:
               npm install -g azurite
             displayName: 'Install Azurite'
 
-          - script: |
-              azurite --silent
-            workingDirectory: $(Agent.TempDirectory)
-            displayName: 'Run Azurite'
+          - task: Powershell@2
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/scripts/Start-LocalHostProcess.ps1
+              workingDirectory: $(Agent.TempDirectory)
+              arguments: >
+                -Process "azurite"
+                -ArgumentList "--silent"
+                -Port "10000"
+              pwsh: true
+            displayName: 'Start Azurite'
 
           - task: DotNetCoreInstaller@2
             displayName: 'Use .NET Core sdk 3.1.x'
@@ -179,8 +185,9 @@ stages:
           - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             - task: Powershell@2
               inputs:
-                filePath: $(Build.SourcesDirectory)/eng/scripts/Start-DotNetApp.ps1
+                filePath: $(Build.SourcesDirectory)/eng/scripts/Start-LocalHostProcess.ps1
                 arguments: >
+                  -Process "dotnet"
                   -ArgumentList "run --project $(Build.SourcesDirectory)\src\dotnet\APIView\APIViewWeb\APIViewWeb.csproj"
                   -Port "5000"
                 pwsh: true
