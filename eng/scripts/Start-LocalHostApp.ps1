@@ -1,12 +1,13 @@
 [CmdletBinding()]
 param (
   [Parameter(Mandatory = $true)]
-  [string]$ArgumentList,
+  [string]$Process,
+  [string]$ArgumentList = "",
   [Parameter(Mandatory = $true)]
   [string]$Port
 )
 
-Start-Process dotnet -PassThru -ArgumentList $ArgumentList
+Start-Process $Process -PassThru -ArgumentList $ArgumentList
 $timeout = 100
 do
 {
@@ -14,12 +15,12 @@ do
     $listeningHost = Get-NetTCPConnection -State Listen | Where-Object { $_.LocalAddress -eq "127.0.0.1" -and $_.LocalPort -eq $Port }
     if ($listeningHost.Count -gt 0)
     {
-      Write-Host "Started APIView on localhost:${Port}"
+      Write-Host "Started $Process app on localhost:${Port}"
       exit(0)
     }
     else
     {
-      Write-Host "APIView not yet started"
+      Write-Host "$Process app not yet started"
     }
     $timeout -= 1
 }
