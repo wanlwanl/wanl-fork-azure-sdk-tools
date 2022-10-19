@@ -109,7 +109,7 @@ namespace APIViewIntegrationTests
             fileStreamB.Dispose();
         }
 
-        [Fact]
+        [Fact(Skip = "Azurite process fails to run on DevOps")]
         public async Task AddRevisionAsync_Computes_Diff_In_Background()
         {
             var review = await reviewManager.CreateReviewAsync(user, fileNameA, "Revision1", fileStreamA, false, true);
