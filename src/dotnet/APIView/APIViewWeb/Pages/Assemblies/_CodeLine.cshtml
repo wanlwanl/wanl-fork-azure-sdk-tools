@@ -50,15 +50,18 @@
         codeLineDisplay = "hidden-row";
     }
 
-    if (Model.HeadingsWithDiff != null && Model.HeadingsWithDiff.Contains(Model.LineNumber))
-    {
-        lineClass += " code-delta";
-        isHeadingWithDelta = true;
-    }
-
     if (Regex.IsMatch(codeLineClass, @".*lvl_[0-9]+_parent.*"))
     {
         isSubSectionHeading = true;
+    }
+
+    if (Model.Kind == DiffLineKind.Unchanged && 
+        Model.HeadingsOfSectionsWithDiff != null && 
+        Model.HeadingsOfSectionsWithDiff.Contains(Model.LineNumber) && 
+        (isSectionHeading || isSubSectionHeading))
+    {
+        lineClass += " code-delta";
+        isHeadingWithDelta = true;
     }
     var userPreference = TempData["UserPreference"] as UserPreferenceModel ?? new UserPreferenceModel();
     var rowClass = RemoveMultipleSpaces($"code-line {headingClass} {codeLineClass} {lineClass} {codeLineDisplay} {documentationRow}");

@@ -227,7 +227,14 @@ namespace APIViewWeb.Models
 
                     if (node.Data.Kind == DiffLineKind.Added || node.Data.Kind == DiffLineKind.Removed)
                     {
-                        lineNumbersForHeadingOfSectiosnWithChanges.Add((int)node.Parent.Data.Line.LineNumber - 1);
+                        if (node.IsLeaf)
+                        {
+                            lineNumbersForHeadingOfSectiosnWithChanges.Add((int)node.Parent.Data.Line.LineNumber - 1);
+                        }
+                        else
+                        {
+                            lineNumbersForHeadingOfSectiosnWithChanges.Add((int)node.Parent.Data.Line.LineNumber);
+                        }
                     }
                 }
 

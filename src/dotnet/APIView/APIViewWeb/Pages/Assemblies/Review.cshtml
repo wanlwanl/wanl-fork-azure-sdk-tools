@@ -415,7 +415,7 @@
         </div>
 
         <div id="review-right" class="col-@reviewRightSize rounded-1 border">
-            @if (Model.Lines.Any() && Model.Lines[0].IsDiffView && !Model.Lines[0].HeadingsWithDiff.Any())
+            @if (Model.Lines.Any() && Model.Lines[0].IsDiffView && !Model.Lines[0].HeadingsOfSectionsWithDiff.Any())
             {
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     Metadata for identifying sections containing diff changes is not yet available. Consider refreshing page.

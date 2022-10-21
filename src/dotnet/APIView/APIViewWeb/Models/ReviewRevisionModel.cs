@@ -22,7 +22,7 @@ namespace APIViewWeb
 
         public List<ReviewCodeFileModel> Files { get; set; } = new List<ReviewCodeFileModel>();
 
-        public Dictionary<string, HashSet<int>> DiffLines { get; set; } = new Dictionary<string, HashSet<int>>();
+        public Dictionary<string, HashSet<int>> HeadingsOfSectionsWithDiff { get; set; } = new Dictionary<string, HashSet<int>>();
 
         public DateTime CreationDate { get; set; } = DateTime.Now;
 

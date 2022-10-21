@@ -64,7 +64,7 @@ namespace APIViewWeb.Pages.Assemblies
         public InlineDiffLine<CodeLine>[] DiffLines { get; set; }
         public ReviewCommentsModel Comments { get; set; }
         public HashSet<GithubUser> TaggableUsers { get; set; }
-        public HashSet<int> HeadingsWithDiffInSections { get; set; }
+        public HashSet<int> HeadingsOfSectionsWithDiff { get; set; }
 
         /// <summary>
         /// The number of active conversations for this iteration
@@ -278,7 +278,7 @@ namespace APIViewWeb.Pages.Assemblies
             DiffRevision = DiffRevisionId != null ?
                 PreviousRevisions.Single(r => r.RevisionId == DiffRevisionId) :
                 DiffRevision;
-            HeadingsWithDiffInSections = (DiffRevisionId != null && Revision.DiffLines.ContainsKey(DiffRevisionId)) ? Revision.DiffLines[DiffRevisionId] : new HashSet<int>();
+            HeadingsOfSectionsWithDiff = (DiffRevisionId != null && Revision.HeadingsOfSectionsWithDiff.ContainsKey(DiffRevisionId)) ? Revision.HeadingsOfSectionsWithDiff[DiffRevisionId] : new HashSet<int>();
             
         }
 
@@ -355,7 +355,7 @@ namespace APIViewWeb.Pages.Assemblies
                             diffSectionId: diffLine.Line.SectionKey != null ? ++diffSectionId : null,
                             otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ?
                                 diffLine.OtherLine.SectionKey : null,
-                            headingsWithDiff: HeadingsWithDiffInSections
+                            headingsOfSectionsWithDiff: HeadingsOfSectionsWithDiff
                         );
                     }
                     else
@@ -376,7 +376,7 @@ namespace APIViewWeb.Pages.Assemblies
                              diffSectionId: diffLine.Line.SectionKey != null ? ++diffSectionId : null,
                              otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ?
                                 diffLine.OtherLine.SectionKey : null,
-                             headingsWithDiff: HeadingsWithDiffInSections
+                             headingsOfSectionsWithDiff: HeadingsOfSectionsWithDiff
 
                          );
                         documentedByLines.Clear();

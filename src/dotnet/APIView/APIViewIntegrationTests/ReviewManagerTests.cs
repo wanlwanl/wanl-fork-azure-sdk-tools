@@ -115,7 +115,7 @@ namespace APIViewIntegrationTests
             var review = await reviewManager.CreateReviewAsync(user, fileNameA, "Revision1", fileStreamA, false, true);
             await reviewManager.AddRevisionAsync(user, review.ReviewId, fileNameB, "Revision2", fileStreamB, true);
             review = await reviewManager.GetReviewAsync(user, review.ReviewId);
-            var headingWithDiffInSections = review.Revisions[1].DiffLines[review.Revisions[0].RevisionId];
+            var headingWithDiffInSections = review.Revisions[1].HeadingsOfSectionsWithDiff[review.Revisions[0].RevisionId];
             Assert.All(headingWithDiffInSections,
                 item => Assert.Contains(item, new int[] { 2, 17, 16 }));
         }

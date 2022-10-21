@@ -855,7 +855,7 @@ namespace APIViewWeb.Repositories
                                 lineNumbersForHeadingOfSectiosnWithChanges.UnionWith(codeFileA.GetLineNumbersForSectionHeadingsWithDiff(diffSectionRoot));
                             }
                         }
-                        rev.DiffLines.Add(revision.RevisionId, lineNumbersForHeadingOfSectiosnWithChanges);
+                        rev.HeadingsOfSectionsWithDiff.Add(revision.RevisionId, lineNumbersForHeadingOfSectiosnWithChanges);
                         updatedRevisions.Add(rev);
                     }
                 }
@@ -884,7 +884,7 @@ namespace APIViewWeb.Repositories
                 var (beforeHTMLLines, beforeTextLines) = GetCodeLinesForDiff(nodesInProcess.before, nodesInProcess.current, beforeFile);
                 var (afterHTMLLines, afterTextLines) = GetCodeLinesForDiff(nodesInProcess.after, nodesInProcess.current, afterFile);
 
-                var diffResult = InlineDiff.Compute(beforeHTMLLines, afterHTMLLines, beforeTextLines, afterTextLines);
+                var diffResult = InlineDiff.Compute(beforeTextLines, afterTextLines, beforeHTMLLines, afterHTMLLines);
 
                 foreach (var diff in diffResult)
                 {
