@@ -870,7 +870,7 @@ namespace APIViewWeb.Repositories
 
         public TreeNode<InlineDiffLine<CodeLine>> ComputeSectionDiff(TreeNode<CodeLine> before, TreeNode<CodeLine> after, RenderedCodeFile beforeFile, RenderedCodeFile afterFile)
         {
-            InlineDiffLine<CodeLine> rootDiff = new InlineDiffLine<CodeLine>(after.Data, before.Data, DiffLineKind.Unchanged);
+            InlineDiffLine<CodeLine> rootDiff = new InlineDiffLine<CodeLine>(before.Data, after.Data, DiffLineKind.Unchanged);
             TreeNode<InlineDiffLine<CodeLine>> resultRoot = new TreeNode<InlineDiffLine<CodeLine>>(rootDiff);
 
             Queue<(TreeNode<CodeLine> before, TreeNode<CodeLine> after, TreeNode<InlineDiffLine<CodeLine>> current)>
@@ -885,6 +885,14 @@ namespace APIViewWeb.Repositories
                 var (afterHTMLLines, afterTextLines) = GetCodeLinesForDiff(nodesInProcess.after, nodesInProcess.current, afterFile);
 
                 var diffResult = InlineDiff.Compute(beforeTextLines, afterTextLines, beforeHTMLLines, afterHTMLLines);
+
+                if (diffResult.Count() == 2 && 
+                    (diffResult[0]!.Line.NodeRef != null && diffResult[1]!.Line.NodeRef != null) &&
+                    (diffResult[0]!.Line.NodeRef.IsLeaf && diffResult[1]!.Line.NodeRef.IsLeaf)) // Detached Leaf Parents which are Eventually Discarded
+                {
+                    var inlineDiffLine = new InlineDiffLine<CodeLine>(diffResult[1].Line, diffResult[0].Line, DiffLineKind.Unchanged);
+                    diffResult = new InlineDiffLine<CodeLine>[] { inlineDiffLine };
+                }
 
                 foreach (var diff in diffResult)
                 {

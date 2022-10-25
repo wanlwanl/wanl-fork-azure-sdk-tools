@@ -220,29 +220,24 @@ namespace APIViewWeb.Models
                 while (enumerator.MoveNext())
                 {
                     var node = enumerator.Current;
-                    if (node.WasDetachedLeafParent)
-                    {
-                        continue;
-                    }
 
                     if (node.Data.Kind == DiffLineKind.Added || node.Data.Kind == DiffLineKind.Removed)
                     {
-                        if (node.IsLeaf)
+                        var nodeParent = node.Parent;
+                        if (nodeParent.WasDetachedLeafParent)
                         {
-                            lineNumbersForHeadingOfSectiosnWithChanges.Add((int)node.Parent.Data.Line.LineNumber - 1);
+                            nodeParent = nodeParent.Parent;
                         }
-                        else
-                        {
-                            lineNumbersForHeadingOfSectiosnWithChanges.Add((int)node.Parent.Data.Line.LineNumber);
-                        }
+                        lineNumbersForHeadingOfSectiosnWithChanges.Add((int)nodeParent.Data.Line.LineNumber);
                     }
                 }
-
-                if (lineNumbersForHeadingOfSectiosnWithChanges.Count > 0)
-                {
-                    lineNumbersForHeadingOfSectiosnWithChanges.Add(rootLineNumber);
-                }
             }
+
+            if (lineNumbersForHeadingOfSectiosnWithChanges.Count > 0)
+            {
+                lineNumbersForHeadingOfSectiosnWithChanges.Add(rootLineNumber);
+            }
+
             return lineNumbersForHeadingOfSectiosnWithChanges;
         }
 
