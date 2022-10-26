@@ -11,6 +11,7 @@ using APIView.DIff;
 using APIView.Model;
 using Markdig.Syntax.Inlines;
 using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+using Newtonsoft.Json.Linq;
 using Octokit;
 
 namespace APIViewWeb.Models
@@ -31,12 +32,17 @@ namespace APIViewWeb.Models
         public CodeFile CodeFile { get; }
         public RenderResult RenderResult { get; private set; }
 
+        public RenderResult RenderResultReadOnly { get; private set; }
+
+        public RenderResult RenderResultText { get; private set; }
+
         public CodeLine[] Render(bool showDocumentation)
         {
             //Always render when documentation is requested to avoid cach thrashing
             if (showDocumentation)
             {
-                return CodeFileHtmlRenderer.Normal.Render(CodeFile, showDocumentation: true).CodeLines;
+                RenderResult = CodeFileHtmlRenderer.Normal.Render(CodeFile, showDocumentation: true);
+                return RenderResult.CodeLines;
             }
 
             if (_rendered == null)
@@ -52,13 +58,14 @@ namespace APIViewWeb.Models
         {
             if (showDocumentation)
             {
-                return CodeFileHtmlRenderer.ReadOnly.Render(CodeFile, showDocumentation: true).CodeLines;
+                RenderResultReadOnly = CodeFileHtmlRenderer.ReadOnly.Render(CodeFile, showDocumentation: true);
+                return RenderResultReadOnly.CodeLines;
             }
 
             if (_renderedReadOnly == null)
             {
-                RenderResult = CodeFileHtmlRenderer.ReadOnly.Render(CodeFile);
-                _renderedReadOnly = RenderResult.CodeLines;
+                RenderResultReadOnly = CodeFileHtmlRenderer.ReadOnly.Render(CodeFile);
+                _renderedReadOnly = RenderResultReadOnly.CodeLines;
             }
 
             return _renderedReadOnly;
@@ -68,26 +75,27 @@ namespace APIViewWeb.Models
         {
             if (showDocumentation || skipDiff)
             {
-                RenderResult = CodeFileRenderer.Instance.Render(CodeFile, showDocumentation: showDocumentation, enableSkipDiff: skipDiff);
-                return RenderResult.CodeLines;
+                RenderResultText = CodeFileRenderer.Instance.Render(CodeFile, showDocumentation: showDocumentation, enableSkipDiff: skipDiff);
+                return RenderResultText.CodeLines;
             }
 
             if (_renderedText == null)
             {
-                RenderResult = CodeFileRenderer.Instance.Render(CodeFile);
-                _renderedText = RenderResult.CodeLines;
+                RenderResultText = CodeFileRenderer.Instance.Render(CodeFile);
+                _renderedText = RenderResultText.CodeLines;
             }
 
             return _renderedText;
         }
 
-        public CodeLine[] GetCodeLineSection(int sectionId = 0, RenderType renderType = RenderType.Normal, bool skipDiff = false)
+        public CodeLine[] GetCodeLineSection(int sectionId = 0, RenderType renderType = RenderType.Normal, bool showDocumentation = false, bool skipDiff = false)
         {
             var result = new List<CodeLine>();
-                
-            if (RenderResult.Sections.Count > sectionId)
+            RenderResult renderResult = GetRenderResult(renderType, showDocumentation, skipDiff);
+
+            if (renderResult.Sections.Count > sectionId)
             {
-                var section = RenderResult.Sections[sectionId];
+                var section = renderResult.Sections[sectionId];
 
                 using (IEnumerator<TreeNode<CodeLine>> enumerator = section.GetEnumerator())
                 {
@@ -148,7 +156,7 @@ namespace APIViewWeb.Models
             return result.ToArray();
         }
 
-        public InlineDiffLine<CodeLine>[] GetDiffCodeLineSection(TreeNode<InlineDiffLine<CodeLine>> sectionNode, RenderType renderType = RenderType.Normal, bool skipDiff = false)
+        public InlineDiffLine<CodeLine>[] GetDiffCodeLineSection(TreeNode<InlineDiffLine<CodeLine>> sectionNode, bool skipDiff = false)
         {
             var result = new List<InlineDiffLine<CodeLine>>();
 
@@ -241,11 +249,13 @@ namespace APIViewWeb.Models
             return lineNumbersForHeadingOfSectiosnWithChanges;
         }
 
-        public TreeNode<CodeLine> GetCodeLineSectionRoot(int sectionId)
+        public TreeNode<CodeLine> GetCodeLineSectionRoot(int sectionId, RenderType renderType = RenderType.Normal, bool showDocumentation = false, bool skipDiff = false)
         {
-            if (RenderResult.Sections.Count > sectionId)
+            RenderResult renderResult = GetRenderResult(renderType, showDocumentation, skipDiff);
+
+            if (renderResult.Sections.Count > sectionId)
             {
-                return RenderResult.Sections[sectionId];
+                return renderResult.Sections[sectionId];
             }
             return null;
         }
@@ -275,6 +285,32 @@ namespace APIViewWeb.Models
 
             }
             return renderedLeafSection;
+        }
+
+        private RenderResult GetRenderResult(RenderType renderType = RenderType.Normal, bool showDocumentation = false, bool skipDiff = false)
+        {
+            RenderResult renderResult;
+
+            switch (renderType)
+            {
+                case RenderType.Text:
+                    if (RenderResultText.Equals(default(RenderResult)))
+                        _ = RenderText(showDocumentation, skipDiff);
+                    renderResult = RenderResultText;
+                    break;
+                case RenderType.ReadOnly:
+                    if (RenderResultReadOnly.Equals(default(RenderResult)))
+                        _ = RenderReadOnly(showDocumentation);
+                    renderResult = RenderResultReadOnly;
+                    break;
+                default:
+                    if (RenderResult.Equals(default(RenderResult)))
+                        _ = Render(showDocumentation);
+                    renderResult = RenderResult;
+                    break;
+            }
+
+            return renderResult;
         }
     }
 }

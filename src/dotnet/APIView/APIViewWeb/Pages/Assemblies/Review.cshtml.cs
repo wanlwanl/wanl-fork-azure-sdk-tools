@@ -172,7 +172,6 @@ namespace APIViewWeb.Pages.Assemblies
             string id, int sectionKey, int? sectionKeyA = null, int? sectionKeyB = null,
             string revisionId = null, string diffRevisionId = null, bool diffOnly = false)
         {
-            var sectionId = sectionKeyA ?? sectionKey;
             await GetReviewPageModelPropertiesAsync(id, revisionId, diffRevisionId, diffOnly);
             var renderedCodeFile = await _codeFileRepository.GetCodeFileAsync(Revision);
             var fileDiagnostics = renderedCodeFile.CodeFile.Diagnostics ?? Array.Empty<CodeDiagnostic>();
@@ -181,21 +180,33 @@ namespace APIViewWeb.Pages.Assemblies
             if (DiffRevision != null)
             {
                 InlineDiffLine<CodeLine>[] diffLines;
-                
+                var previousRevisionFile = await _codeFileRepository.GetCodeFileAsync(DiffRevision);
+
                 if (sectionKeyA != null && sectionKeyB != null)
                 {
-                    var previousRevisionFile = await _codeFileRepository.GetCodeFileAsync(DiffRevision);
                     var currentRootNode = renderedCodeFile.GetCodeLineSectionRoot((int)sectionKeyA);
-                    var previousRootNode = previousRevisionFile.GetCodeLineSectionRoot((int)sectionKeyB!);
+                    var previousRootNode = previousRevisionFile.GetCodeLineSectionRoot((int)sectionKeyB);
                     var diffSectionRoot = _manager.ComputeSectionDiff(previousRootNode, currentRootNode, previousRevisionFile, renderedCodeFile);
                     diffLines = renderedCodeFile.GetDiffCodeLineSection(diffSectionRoot);
                 }
-                else
+                else if (sectionKeyA != null)
                 {
-                    currentHtmlLines = renderedCodeFile.GetCodeLineSection(sectionId);
+                    currentHtmlLines = renderedCodeFile.GetCodeLineSection((int)sectionKeyA);
                     var previousRevisionHtmlLines = new CodeLine[] { };
                     var previousRevisionTextLines = new CodeLine[] { };
-                    var currentRevisionTextLines = renderedCodeFile.GetCodeLineSection(sectionId, renderType: RenderType.Text);
+                    var currentRevisionTextLines = renderedCodeFile.GetCodeLineSection((int)sectionKeyA, renderType: RenderType.Text);
+                    diffLines = InlineDiff.Compute(
+                        previousRevisionTextLines,
+                        currentRevisionTextLines,
+                        previousRevisionHtmlLines,
+                        currentHtmlLines);
+                }
+                else 
+                {
+                    currentHtmlLines = new CodeLine[] { }; 
+                    var previousRevisionHtmlLines = previousRevisionFile.GetCodeLineSection((int)sectionKeyB, RenderType.ReadOnly);
+                    var previousRevisionTextLines = previousRevisionFile.GetCodeLineSection((int)sectionKeyB, renderType: RenderType.Text);
+                    var currentRevisionTextLines = new CodeLine[] { };
                     diffLines = InlineDiff.Compute(
                         previousRevisionTextLines,
                         currentRevisionTextLines,
@@ -206,7 +217,7 @@ namespace APIViewWeb.Pages.Assemblies
             }
             else
             {
-                currentHtmlLines = renderedCodeFile.GetCodeLineSection(sectionId);
+                currentHtmlLines = renderedCodeFile.GetCodeLineSection(sectionKey);
                 Lines = CreateLines(fileDiagnostics, currentHtmlLines, Comments, true);
             }
             TempData["CodeLineSection"] = Lines;
@@ -279,7 +290,6 @@ namespace APIViewWeb.Pages.Assemblies
                 PreviousRevisions.Single(r => r.RevisionId == DiffRevisionId) :
                 DiffRevision;
             HeadingsOfSectionsWithDiff = (DiffRevisionId != null && Revision.HeadingsOfSectionsWithDiff.ContainsKey(DiffRevisionId)) ? Revision.HeadingsOfSectionsWithDiff[DiffRevisionId] : new HashSet<int>();
-            
         }
 
         private InlineDiffLine<CodeLine>[] CreateDiffOnlyLines(InlineDiffLine<CodeLine>[] lines)
@@ -353,8 +363,7 @@ namespace APIViewWeb.Pages.Assemblies
                             documentedByLines: new int[] { },
                             isDiffView: true,
                             diffSectionId: diffLine.Line.SectionKey != null ? ++diffSectionId : null,
-                            otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ?
-                                diffLine.OtherLine.SectionKey : null,
+                            otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ? diffLine.OtherLine.SectionKey : null,
                             headingsOfSectionsWithDiff: HeadingsOfSectionsWithDiff
                         );
                     }
@@ -374,8 +383,7 @@ namespace APIViewWeb.Pages.Assemblies
                              documentedByLines: documentedByLines.ToArray(),
                              isDiffView: true,
                              diffSectionId: diffLine.Line.SectionKey != null ? ++diffSectionId : null,
-                             otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ?
-                                diffLine.OtherLine.SectionKey : null,
+                             otherLineSectionKey: diffLine.Kind == DiffLineKind.Unchanged ? diffLine.OtherLine.SectionKey : null,
                              headingsOfSectionsWithDiff: HeadingsOfSectionsWithDiff
 
                          );
