@@ -1,8 +1,9 @@
-const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { DuplicatesPlugin } = require("inspectpack/plugin");
+import path from "path";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import { DuplicatesPlugin } from "inspectpack/plugin/index.js";
+import {fileURLToPath} from 'url';
 
-module.exports = {
+const base = {
   mode: "production",
   entry: [
     './src/main.ts',
@@ -52,6 +53,8 @@ module.exports = {
   },
   output: {
     filename: 'main.js',
-    path: path.resolve(__dirname, '../wwwroot'),
+    path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../wwwroot'),
   },
-}
+};
+
+export { base };

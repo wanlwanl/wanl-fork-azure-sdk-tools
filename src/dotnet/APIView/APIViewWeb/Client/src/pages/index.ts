@@ -1,5 +1,6 @@
 import { rightOffCanvasNavToggle } from "../shared/off-canvas";
 import { updatePageSettings } from "../shared/helpers";
+import { debounce } from "underscore";
 
 $(() => {
   const defaultPageSize = 50;
@@ -14,10 +15,6 @@ $(() => {
   const languageSelect = $( '#review-language-select' );
   const reviewUploadForm = $( '#review-upload-form' );
   const reviewUploadSubmitBtn = $( '#review-upload-submit-btn' );
-
-
-  // Import underscorejs
-  var _ = require('underscore');
 
   // Computes the uri string using the values of search, pagination and various filters
   // Invokes partial page update to list of reviews using ajax
@@ -111,7 +108,7 @@ $(() => {
   });
 
   // Update list of reviews based on search input
-  searchBox.on('input', _.debounce(function(e) {
+  searchBox.on('input', debounce(function(e) {
     updateListedReviews();
   }, 600));
 

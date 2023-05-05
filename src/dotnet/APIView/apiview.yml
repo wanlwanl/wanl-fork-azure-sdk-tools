@@ -221,7 +221,18 @@ stages:
               APIVIEW_ENDPOINT: "http://localhost:5000"
               APIVIEW_BLOB__CONNECTIONSTRING: $(AzuriteConnectionString)
               APIVIEW_COSMOS__CONNECTIONSTRING: $(CosmosEmulatorConnectionString)
-  
+
+          - pwsh: |
+              Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass', { Invoke-WebRequest https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-windows.zip -OutFile $(Build.BinariesDirectory) } -Wait -NoNewWindow
+              Expand-Archive -LiteralPath "$(Build.BinariesDirectory)\PhantomJs-2.1.1.zip" -DestinationPath "$(Build.BinariesDirectory)"
+            displayName: Download PhantomJS
+
+          - pwsh: |
+              npm run tsc
+              & "$(Build.BinariesDirectory)\phantomjs-2.1.1-windows\bin\phantomjs.exe" qunit.dev-ops.js composite-tests.html
+            workingDirectory: $(Build.SourcesDirectory)\src\dotnet\APIView\APIViewWeb\Client\test
+            displayName: Client Side Tests
+
           - ${{ if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal')) }}:
             - template: /eng/pipelines/templates/steps/apiview-ui-tests.yml
               parameters:

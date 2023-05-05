@@ -5,3 +5,5 @@ wwwroot/*.css.map
 # Typescript output
 wwwroot/*.js
 wwwroot/*.js.map
+Client/js
+Client/js/*
