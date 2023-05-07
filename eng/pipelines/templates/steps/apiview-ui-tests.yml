@@ -31,56 +31,68 @@ steps:
   workingDirectory: '${{ parameters.WebClientProjectDirectory }}'
   displayName: "Build client assets"
 
-- task: Powershell@2
-  inputs:
-    filePath: $(Build.SourcesDirectory)/eng/scripts/Start-LocalHostApp.ps1
-    arguments: >
-      -Process "dotnet"
-      -ArgumentList "run --project $(Build.SourcesDirectory)\src\dotnet\APIView\APIViewWeb\APIViewWeb.csproj"
-      -Port "5000"
-    pwsh: true
-  displayName: 'Start APIView Application'
-  env:
-    APIVIEW_BLOB__CONNECTIONSTRING: '${{ parameters.AzuriteConnectionString }}'
-    APIVIEW_COSMOS__CONNECTIONSTRING: '${{ parameters.CosmosEmulatorConnectionString }}'
-    APIVIEW_GITHUB__CLIENTID: $(apiview-github-clientid)
-    APIVIEW_GITHUB__CLIENTSECRET: $(apiview-github-clientsecret)
-    APIVIEW_AUTHENTICATIONSCHEME: "Test"
-    APIVIEW_SENDGRID__KEY: "Test"
-    APIVIEW_APIKEY: "$(azuresdk-apiview-apikey)"
-    APIVIEW_APPCONFIG: "$(apiview-appconfig-connectionstring)"
-    AZURE_CLIENT_ID: "$(apiview-appconfig-client-id)"
-    AZURE_TENANT_ID: "$(apiview-appconfig-tenant-id)"
-    AZURE_CLIENT_SECRET: "$(apiview-appconfig-client-secret)"
-    APIVIEW_APPROVERS: "azure-sdk"
-    APIVIEW_SWAGGERMETADATABACKGROUNDTASKDISABLED: "true"
+- pwsh: |
+    Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass', { Invoke-WebRequest https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-windows.zip -OutFile $(Build.BinariesDirectory)/PhantomJs-2.1.1.zip } -Wait -NoNewWindow
+    Expand-Archive -LiteralPath "$(Build.BinariesDirectory)/PhantomJs-2.1.1.zip" -DestinationPath "$(Build.BinariesDirectory)"
+  displayName: Download PhantomJS
 
-- task: Powershell@2
-  inputs:
-    filePath: $(Build.SourcesDirectory)/eng/common/scripts/copy-from-blobstorage.ps1
-    arguments: >
-      -SourceBlobPath '${{ parameters.TestingDataContainer }}'
-      -ApplicationId $(apiviewstorageaccess-application-id)
-      -DestinationDirectory $(Build.BinariesDirectory)
-    pwsh: true
-  displayName: 'Copy from Test Files From Blob'
-  env:
-    AZCOPY_SPA_CLIENT_SECRET: $(apiviewstorageaccess-service-principal-key)
-    
-- task: DotNetCoreCLI@2
-  displayName: 'Build & Test (UI)'
-  env:
-    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-    DOTNET_CLI_TELEMETRY_OPTOUT: 1
-    DOTNET_MULTILEVEL_LOOKUP: 0
-    APIVIEW_APIKEY: "$(azuresdk-apiview-apikey)"
-    APIVIEW_URI: "http://localhost:5000/AutoReview/UploadAutoReview"
-    APIVIEW_TESTPKGPATH: "$(Build.BinariesDirectory)"
-    APIVIEW_ENDPOINT: "http://localhost:5000"
-    APIVIEW_BLOB__CONNECTIONSTRING: '${{ parameters.AzuriteConnectionString }}'
-    APIVIEW_COSMOS__CONNECTIONSTRING: '${{ parameters.CosmosEmulatorConnectionString }}'
-  inputs:
-    command: test
-    projects: src/dotnet/APIView/**/APIViewUITests.csproj
-    arguments: --logger trx
-    publishTestResults: false
+- pwsh: |
+    npm run tsc
+    & "$(Build.BinariesDirectory)\phantomjs-2.1.1-windows\bin\phantomjs.exe" qunit.dev-ops.js composite-tests.html
+  workingDirectory: $(Build.SourcesDirectory)\src\dotnet\APIView\APIViewWeb\Client\test
+  displayName: Client Side Tests
+
+- ${{ if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal')) }}:
+  - task: Powershell@2
+    inputs:
+      filePath: $(Build.SourcesDirectory)/eng/scripts/Start-LocalHostApp.ps1
+      arguments: >
+        -Process "dotnet"
+        -ArgumentList "run --project $(Build.SourcesDirectory)\src\dotnet\APIView\APIViewWeb\APIViewWeb.csproj"
+        -Port "5000"
+      pwsh: true
+    displayName: 'Start APIView Application'
+    env:
+      APIVIEW_BLOB__CONNECTIONSTRING: '${{ parameters.AzuriteConnectionString }}'
+      APIVIEW_COSMOS__CONNECTIONSTRING: '${{ parameters.CosmosEmulatorConnectionString }}'
+      APIVIEW_GITHUB__CLIENTID: $(apiview-github-clientid)
+      APIVIEW_GITHUB__CLIENTSECRET: $(apiview-github-clientsecret)
+      APIVIEW_AUTHENTICATIONSCHEME: "Test"
+      APIVIEW_SENDGRID__KEY: "Test"
+      APIVIEW_APIKEY: "$(azuresdk-apiview-apikey)"
+      APIVIEW_APPCONFIG: "$(apiview-appconfig-connectionstring)"
+      AZURE_CLIENT_ID: "$(apiview-appconfig-client-id)"
+      AZURE_TENANT_ID: "$(apiview-appconfig-tenant-id)"
+      AZURE_CLIENT_SECRET: "$(apiview-appconfig-client-secret)"
+      APIVIEW_APPROVERS: "azure-sdk"
+      APIVIEW_SWAGGERMETADATABACKGROUNDTASKDISABLED: "true"
+
+  - task: Powershell@2
+    inputs:
+      filePath: $(Build.SourcesDirectory)/eng/common/scripts/copy-from-blobstorage.ps1
+      arguments: >
+        -SourceBlobPath '${{ parameters.TestingDataContainer }}'
+        -ApplicationId $(apiviewstorageaccess-application-id)
+        -DestinationDirectory $(Build.BinariesDirectory)
+      pwsh: true
+    displayName: 'Copy from Test Files From Blob'
+    env:
+      AZCOPY_SPA_CLIENT_SECRET: $(apiviewstorageaccess-service-principal-key)
+      
+  - task: DotNetCoreCLI@2
+    displayName: 'Build & Test (UI)'
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_MULTILEVEL_LOOKUP: 0
+      APIVIEW_APIKEY: "$(azuresdk-apiview-apikey)"
+      APIVIEW_URI: "http://localhost:5000/AutoReview/UploadAutoReview"
+      APIVIEW_TESTPKGPATH: "$(Build.BinariesDirectory)"
+      APIVIEW_ENDPOINT: "http://localhost:5000"
+      APIVIEW_BLOB__CONNECTIONSTRING: '${{ parameters.AzuriteConnectionString }}'
+      APIVIEW_COSMOS__CONNECTIONSTRING: '${{ parameters.CosmosEmulatorConnectionString }}'
+    inputs:
+      command: test
+      projects: src/dotnet/APIView/**/APIViewUITests.csproj
+      arguments: --logger trx
+      publishTestResults: false

@@ -1,9 +1,9 @@
 import path from "path";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import { DuplicatesPlugin } from "inspectpack/plugin/index.js";
-import {fileURLToPath} from 'url';
+import { fileURLToPath } from 'url';
 
-const base = {
+export default {
   mode: "production",
   entry: [
     './src/main.ts',
@@ -56,5 +56,3 @@ const base = {
     path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../wwwroot'),
   },
 };
-
-export { base };
