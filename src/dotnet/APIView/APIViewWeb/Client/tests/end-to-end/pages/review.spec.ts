@@ -15,6 +15,7 @@ const baseURL = process.env.BASE_URL as string;
 const apiKey = process.env.APIVIEW_API_KEY as string;
 const http_proxy_setting = process.env.HTTP_PROXY as string;
 
+
 test.describe('CodeLine Section State Management', () => {
     test('getSectionHeadingRow should retrieve section heading row', async ({ page }) => {
         // Create an automatic Swagger Review using existing token file
@@ -42,10 +43,12 @@ test.describe('CodeLine Section State Management', () => {
         }
 
         await fetch(url, requestOptions)
-            .then(response => response.json())
+            .then(response => {
+              response.json()
+            })
             .then(result => console.log(result))
-            .catch(error => console.log("error uploading auto review", error));
-
-        await page.goto("/");
+            .catch(error => {
+              console.log("error uploading auto review", error)
+            });
     });
 });
