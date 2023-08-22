@@ -63,6 +63,11 @@ namespace Azure.Sdk.Tools.TestProxy.Store
         public string TagPrefix { get; set; }
 
         /// <summary>
+        /// The URI link where the test recordings have been stores on assets repo.
+        /// </summary>
+        public string Url { get; set; }
+
+        /// <summary>
         /// The location of the assets repo for this config.
         /// </summary>
         public NormalizedString AssetsRepoLocation

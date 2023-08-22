@@ -91,6 +91,7 @@ namespace Azure.Sdk.Tools.Assets.MaintenanceTool.Tests
             Assert.That(payload0.LanguageRepo, Is.EqualTo("azure/azure-sdk-assets-integration"));
             Assert.That(payload0.Tag, Is.EqualTo("js/agrifood/arm-agrifood_4f244d09c7"));
             Assert.That(payload0.AssetsRepo, Is.EqualTo("Azure/azure-sdk-assets"));
+            Assert.That(payload0.Url, Is.EqualTo("https://github.com/Azure/azure-sdk-assets/tree/js/agrifood/arm-agrifood_4f244d09c7"));
 
             Assert.That(payload1.AssetsLocation, Is.EqualTo("sdk/storage/storage-blob/assets.json"));
             Assert.That(payload1.Commit, Is.EqualTo("48bca526a2a9972e4219ec87d29a7aa31438581a"));

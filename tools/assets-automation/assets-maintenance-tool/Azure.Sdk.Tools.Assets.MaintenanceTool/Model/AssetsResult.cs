@@ -18,6 +18,7 @@ namespace Azure.Sdk.Tools.Assets.MaintenanceTool.Model
             AssetsRepo = tagRepo;
             BackupUri = backupUri;
             CreationDate = scanDate??DateTime.UtcNow;
+            Url = "https://github.com/" + tagRepo + tag;
         }
 
         public AssetsResult()
@@ -29,6 +30,7 @@ namespace Azure.Sdk.Tools.Assets.MaintenanceTool.Model
             AssetsRepo = string.Empty;
             BackupUri = string.Empty;
             CreationDate = DateTime.UtcNow;
+            Url = "https://github.com/" + tagRepo + tag;
         }
 
         /// <summary>
@@ -65,5 +67,10 @@ namespace Azure.Sdk.Tools.Assets.MaintenanceTool.Model
         /// Used as a datapoint for debugging and testing of the scanner. Creation datetime of this result.
         /// </summary>
         public DateTime CreationDate { get; set; }
+
+        /// <summary>
+        /// The URI link where the test recordings have been stores on assets repo.
+        /// </summary>
+        public string Url { get; set; }
     }
 }
