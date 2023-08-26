@@ -18,6 +18,7 @@ using System.Runtime.Intrinsics.X86;
 using Azure.Sdk.Tools.CodeownersUtils.Parsing;
 using Azure.Sdk.Tools.AI.Helper;
 using System.Threading;
+using System.Runtime.Intrinsics.X86;
 
 namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
 {
@@ -298,11 +299,23 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
                         issueEventPayload.Label.Name == LabelConstants.CustomerReported*/)
                     {
                         var knownIssueBot = new KnownIssueAIBot(new OpenAiConfig(), new SearchConfig());
-                        var suggestion = await knownIssueBot.GetSuggestionAsync(issueEventPayload.Issue.Title + "\r\n" + issueEventPayload.Issue.Body, cancellationToken);
+                        var suggestion = await knownIssueBot.GetSuggestionAsync(FormatIssue(issueEventPayload), cancellationToken);
                         gitHubEventClient.CreateComment(issueEventPayload.Repository.Id, issueEventPayload.Issue.Number, suggestion.ToComment(issueEventPayload.Issue.User.Login));
                     }
                 }
             }
+        }
+
+        private static string FormatIssue(IssueEventGitHubPayload issueEventPayload)
+        {
+            string description = issueEventPayload.Issue.Body;
+            int envStart = description.IndexOf("### Environment");
+            if (envStart > 0)
+            {
+                description = description.Substring(0, envStart);
+            }
+
+            return issueEventPayload.Issue.Title + "\r\n" + description;
         }
 
         /// <summary>
