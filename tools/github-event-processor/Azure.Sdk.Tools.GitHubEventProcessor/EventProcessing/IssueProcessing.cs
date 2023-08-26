@@ -16,6 +16,8 @@ using System.Security;
 using Azure.Sdk.Tools.CodeownersUtils.Verification;
 using System.Runtime.Intrinsics.X86;
 using Azure.Sdk.Tools.CodeownersUtils.Parsing;
+using Azure.Sdk.Tools.AI.Helper;
+using System.Threading;
 
 namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
 {
@@ -30,6 +32,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
         public static async Task ProcessIssueEvent(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload)
         {
             await InitialIssueTriage(gitHubEventClient, issueEventPayload);
+            await GetAiBotSuggestion(gitHubEventClient, issueEventPayload, default);
             ManualIssueTriage(gitHubEventClient, issueEventPayload);
             ServiceAttention(gitHubEventClient, issueEventPayload);
             ManualTriageAfterExternalAssignment(gitHubEventClient, issueEventPayload);
@@ -64,7 +67,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
         ///
         ///       # Note: No valid AzureSdkOwners means there were no CODEOWNERS entries for the ServiceLabel OR no
         ///       # CODEOWNERS entries for the ServiceLabel with AzureSdkOwners OR there is a CODEOWNERS entry with
-        ///       # AzureSdkOwners but none of them have permissions to be assigned to an issue for the repository. 
+        ///       # AzureSdkOwners but none of them have permissions to be assigned to an issue for the repository.
         ///       IF there are no valid AzureSdkOwners, but there are ServiceOwners, and the ServiceAttention rule is enabled
         ///         - Add "Service Attention" label to the issue and apply the logic from the "Service Attention" rule
         ///       ELSE
@@ -108,7 +111,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
                             bool hasValidAssignee = false;
                             if (codeownersEntry.AzureSdkOwners.Count > 0)
                             {
-                                // If there's only a single owner, 
+                                // If there's only a single owner,
                                 if (codeownersEntry.AzureSdkOwners.Count == 1)
                                 {
                                     if (await gitHubEventClient.OwnerCanBeAssignedToIssuesInRepo(
@@ -285,6 +288,22 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
         //        }
         //    }
         //}
+        private static async Task GetAiBotSuggestion(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload, CancellationToken cancellationToken)
+        {
+            if (gitHubEventClient.RulesConfiguration.RuleEnabled(RulesConstants.AiBotSuggestions))
+            {
+                if (issueEventPayload.Action == ActionConstants.Opened)
+                {
+                    if (issueEventPayload.Issue.State == ItemState.Open /*&&
+                        issueEventPayload.Label.Name == LabelConstants.CustomerReported*/)
+                    {
+                        var knownIssueBot = new KnownIssueAIBot(new OpenAiConfig(), new SearchConfig());
+                        var suggestion = await knownIssueBot.GetSuggestionAsync(issueEventPayload.Issue.Title + "\r\n" + issueEventPayload.Issue.Body, cancellationToken);
+                        gitHubEventClient.CreateComment(issueEventPayload.Repository.Id, issueEventPayload.Issue.Number, suggestion.ToComment(issueEventPayload.Issue.User.Login));
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Manual Issue Triage

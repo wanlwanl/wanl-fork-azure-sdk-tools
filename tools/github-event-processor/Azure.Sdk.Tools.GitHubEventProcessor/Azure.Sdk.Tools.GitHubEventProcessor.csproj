@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\codeowners-utils\Azure.Sdk.Tools.CodeownersUtils\Azure.Sdk.Tools.CodeownersUtils.csproj" />
+    <ProjectReference Include="..\Azure.Sdk.Tools.AI.Helper\Azure.Sdk.Tools.AI.Helper.csproj" />
   </ItemGroup>
 
 </Project>

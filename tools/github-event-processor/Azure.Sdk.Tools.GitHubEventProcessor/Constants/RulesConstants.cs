@@ -50,5 +50,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.Constants
         public const string LockClosedIssues = "LockClosedIssues";
         public const string EnforceMaxLifeOfIssues = "EnforceMaxLifeOfIssues";
 
+        // AI Bot
+        public const string AiBotSuggestions = "AiBotSuggestions";
     }
 }

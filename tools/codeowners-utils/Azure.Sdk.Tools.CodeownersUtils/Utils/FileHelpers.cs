@@ -55,6 +55,10 @@ namespace Azure.Sdk.Tools.CodeownersUtils.Utils
             int attempts = 1;
             int delayTimeInMs = 1000;
             using HttpClient client = new HttpClient();
+            if (url.StartsWith("https://raw.githubusercontent.com/"))
+            {
+                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + Environment.GetEnvironmentVariable("GITHUB_TOKEN"));
+            }
             while (attempts <= maxRetries)
             {
                 try
