@@ -104,7 +104,7 @@ Return the response as JSON with the following properties: ""solution"" and ""co
             messages = new[] { SystemPrompt, new { role = "user", content = message } },
             deployment = DeploymentName,
             temperature = 0,
-            top_p = 0.8,
+            top_p = 0.9,
             max_tokens = 800,
             stream = false,
             n = 1
@@ -164,12 +164,12 @@ Return the response as JSON with the following properties: ""solution"" and ""co
         internal QueryResponse(string solution, int confidendeLevel, IEnumerable<Reference> references)
         {
             var refList = new List<Reference>(references);
-            for (int i = 0; i < refList.Count; i ++)
+            for (int i = 1; i <= refList.Count; i ++)
             {
                 var marker = string.Concat("[doc", i, "]");
                 if (solution.Contains(marker))
                 {
-                    solution = solution.Replace(marker, $"(refer to {refList[i]})");
+                    solution = solution.Replace(marker, $"(refer to {refList[i - 1]})");
                 }
             }
             Solution = solution;
