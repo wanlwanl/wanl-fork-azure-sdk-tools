@@ -103,8 +103,8 @@ Return the response as JSON with the following properties: ""solution"" and ""co
             dataSources = _dataSources,
             messages = new[] { SystemPrompt, new { role = "user", content = message } },
             deployment = DeploymentName,
-            temperature = 0,
-            top_p = 0.9,
+            temperature = 0.5,
+            top_p = 1,
             max_tokens = 800,
             stream = false,
             n = 1
@@ -143,8 +143,8 @@ Return the response as JSON with the following properties: ""solution"" and ""co
                 endpoint = searchConfig.Endpoint,
                 key = searchConfig.Key,
                 indexName = searchConfig.IndexName,
-                semanticConfiguration = "",
-                queryType = "simple",
+                semanticConfiguration = "test",
+                queryType = "semantic",
                 fieldsMapping = new
                 {
                     contentFieldsSeparator = "\n",
