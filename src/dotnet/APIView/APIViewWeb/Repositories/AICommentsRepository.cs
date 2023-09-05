@@ -43,6 +43,7 @@ namespace APIViewWeb.Repositories
                 User = user,
                 ChangeDateTime = DateTime.UtcNow
             });
+            aiCommentModel.IsDeleted = true;
             await _aiCommentContainer.UpsertItemAsync(item: aiCommentModel, partitionKey: new PartitionKey(aiCommentModel.Id));
         }
 

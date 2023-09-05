@@ -263,6 +263,23 @@ namespace APIViewWeb
                 });
                 var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+                options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.ApiKey,
+                    In = ParameterLocation.Header,
+                    Name = "ApiKey",
+                    Description = "Authorization for accessing APIView API"
+                });
+                var key = new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "ApiKey"
+                    }
+                };
+                var requirement = new OpenApiSecurityRequirement { { key, new List<string>() } };
+                options.AddSecurityRequirement(requirement);
             });
         }
 
