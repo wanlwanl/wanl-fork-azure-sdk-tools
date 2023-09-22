@@ -51,7 +51,10 @@ namespace Azure.Sdk.Tools.TestProxy
             var tName = RecordingHandler.GetHeader(Request, "x-abstraction-identifier");
             var recordingId = RecordingHandler.GetHeader(Request, "x-recording-id", allowNulls: true);
 
-            ResponseTransform t = (ResponseTransform)GetTransform(tName, await HttpRequestInteractions.GetBody(Request));
+            var body = await HttpRequestInteractions.GetBody(Request);
+            _logger.LogDebug(body.RootElement.GetRawText());
+
+            ResponseTransform t = (ResponseTransform)GetTransform(tName, body);
 
             if (recordingId != null)
             {
@@ -70,7 +73,10 @@ namespace Azure.Sdk.Tools.TestProxy
             var sName = RecordingHandler.GetHeader(Request, "x-abstraction-identifier");
             var recordingId = RecordingHandler.GetHeader(Request, "x-recording-id", allowNulls: true);
 
-            RecordedTestSanitizer s = (RecordedTestSanitizer)GetSanitizer(sName, await HttpRequestInteractions.GetBody(Request));
+            var body = await HttpRequestInteractions.GetBody(Request);
+            _logger.LogDebug(body.RootElement.GetRawText());
+
+            RecordedTestSanitizer s = (RecordedTestSanitizer)GetSanitizer(sName, body);
 
             if (recordingId != null)
             {
@@ -89,7 +95,16 @@ namespace Azure.Sdk.Tools.TestProxy
             var recordingId = RecordingHandler.GetHeader(Request, "x-recording-id", allowNulls: true);
 
             // parse all of them first, any exceptions should pop here
-            var workload = (await HttpRequestInteractions.GetBody<List<SanitizerBody>>(Request)).Select(s => (RecordedTestSanitizer)GetSanitizer(s.Name, s.Body)).ToList();
+            var requestBodies = await HttpRequestInteractions.GetBody<List<SanitizerBody>>(Request);
+
+            // we only want to add this heavy conversion + string join to the workload of the server if we are actually
+            // logging debug.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(String.Join("\n", requestBodies.Select(x => x.Body.RootElement.GetRawText())));
+            }
+            
+            var workload = requestBodies.Select(s => (RecordedTestSanitizer)GetSanitizer(s.Name, s.Body)).ToList();
 
             if (workload.Count == 0)
             {
@@ -119,7 +134,10 @@ namespace Azure.Sdk.Tools.TestProxy
             var mName = RecordingHandler.GetHeader(Request, "x-abstraction-identifier");
             var recordingId = RecordingHandler.GetHeader(Request, "x-recording-id", allowNulls: true);
 
-            RecordMatcher m = (RecordMatcher)GetMatcher(mName, await HttpRequestInteractions.GetBody(Request));
+            var body = await HttpRequestInteractions.GetBody(Request);
+            _logger.LogDebug(body.RootElement.GetRawText());
+
+            RecordMatcher m = (RecordMatcher)GetMatcher(mName, body);
 
             if (recordingId != null)
             {
