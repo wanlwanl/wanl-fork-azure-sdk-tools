@@ -1,5 +1,5 @@
 export const environment = {
     production: true,
     apiUrl: 'api/',
-    webAppUrl: 'https://apiviewstaging.azurewebsites.net/'
+    webAppUrl: 'https://apiviewuxtest.com/'
 };

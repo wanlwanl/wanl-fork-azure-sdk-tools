@@ -1,6 +1,7 @@
 {
   "/api": {
-    "target": "https://apiviewstaging.azurewebsites.net",
-    "secure": true
+    "target": "https://apiviewuxtest.com",
+    "secure": true,
+    "logLevel": "debug"
   }
 }
