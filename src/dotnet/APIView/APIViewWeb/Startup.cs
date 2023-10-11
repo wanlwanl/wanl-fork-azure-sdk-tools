@@ -229,7 +229,11 @@ namespace APIViewWeb
             services.AddCors(options => {
                 options.AddPolicy("AllowCredentials", builder =>
                 {
-                    builder.WithOrigins("https://localhost:4200")
+                    string [] origins = new string[] { 
+                        "https://localhost:4200",
+                        "https://apiviewuitest.z5.web.core.windows.net"
+                    };
+                    builder.WithOrigins(origins)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
