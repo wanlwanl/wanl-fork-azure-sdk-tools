@@ -231,7 +231,8 @@ namespace APIViewWeb
                 {
                     string [] origins = new string[] { 
                         "https://localhost:4200",
-                        "https://apiviewuitest.z5.web.core.windows.net"
+                        "https://apiviewuxtest.com/",
+                        "https://spa.apiviewuxtest.com/"
                     };
                     builder.WithOrigins(origins)
                         .AllowAnyHeader()
