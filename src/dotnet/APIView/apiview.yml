@@ -62,7 +62,7 @@ stages:
             inputs:
               versionSpec: '$(NodeVersion)'
             displayName: 'Use NodeJS $(NodeVersion)'
-
+  
           - task: GoTool@0
             inputs:
               version: '$(GoVersion)'
@@ -139,7 +139,7 @@ stages:
             inputs:
               pathtoPublish: '$(Build.ArtifactStagingDirectory)'
               artifactName: 'APIView'
-              
+            displayName: 'Publish APIView Artifacts'
 
       #- job: 'Test'
 #

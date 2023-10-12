@@ -223,8 +223,21 @@ namespace APIViewWeb
             }
 
             services.AddAuthorization();
+            services.AddCors(options => {
+                options.AddPolicy("AllowCredentials", builder =>
+                {
+                    string [] origins = new string[] { 
+                        "https://localhost:4200",
+                        "https://apiviewuxtest.com",
+                        "https://spa.apiviewuxtest.com"
+                    };
+                    builder.WithOrigins(origins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
             services.AddSingleton<IConfigureOptions<AuthorizationOptions>, ConfigureOrganizationPolicy>();
-
             services.AddSingleton<IAuthorizationHandler, OrganizationRequirementHandler>();
             services.AddSingleton<IAuthorizationHandler, CommentOwnerRequirementHandler>();
             services.AddSingleton<IAuthorizationHandler, ReviewOwnerRequirementHandler>();
@@ -316,7 +329,7 @@ namespace APIViewWeb
             app.UseStaticFiles();
 
             app.UseRouting();
-
+            app.UseCors("AllowCredentials");
             app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseAuthorization();

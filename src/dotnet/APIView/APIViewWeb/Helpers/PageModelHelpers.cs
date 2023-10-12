@@ -18,7 +18,6 @@ using SharpCompress.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-
 namespace APIViewWeb.Helpers
 {
     public static class PageModelHelpers
@@ -63,6 +62,7 @@ namespace APIViewWeb.Helpers
             }
             return false;
         }
+
         /// <summary>
         /// Create the CodelIneModel from Diffs
         /// </summary>
@@ -150,6 +150,7 @@ namespace APIViewWeb.Helpers
         /// <param name="comments"></param>
         /// <param name="hideCommentRows"></param>
         /// <returns></returns>
+
         public static CodeLineModel[] CreateLines(CodeDiagnostic[] diagnostics, CodeLine[] lines, ReviewCommentsModel comments, bool hideCommentRows = false)
         {
             List<int> documentedByLines = new List<int>();
@@ -532,6 +533,7 @@ namespace APIViewWeb.Helpers
         /// <param name="reviewDiffContextSize"></param>
         /// <param name="diffContextSeparator"></param>
         /// <returns></returns>
+
         private static InlineDiffLine<CodeLine>[] CreateDiffOnlyLines(InlineDiffLine<CodeLine>[] lines, int reviewDiffContextSize, string diffContextSeparator)
         {
             var filteredLines = new List<InlineDiffLine<CodeLine>>();
