@@ -38,6 +38,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using APIViewWeb.Helpers;
+using APIViewWeb.Managers.Interfaces;
 
 namespace APIViewWeb
 {
@@ -98,6 +99,7 @@ namespace APIViewWeb
             services.AddSingleton<IBlobOriginalsRepository, BlobOriginalsRepository>();
             services.AddSingleton<IBlobUsageSampleRepository, BlobUsageSampleRepository>();
             services.AddSingleton<ICosmosReviewRepository,CosmosReviewRepository>();
+            services.AddSingleton<ICosmosReviewRevisionsRepository, CosmosReviewRevisionsRepository>();
             services.AddSingleton<ICosmosCommentsRepository, CosmosCommentsRepository>();
             services.AddSingleton<ICosmosPullRequestsRepository, CosmosPullRequestsRepository>();
             services.AddSingleton<ICosmosUsageSampleRepository, CosmosUsageSampleRepository>();
@@ -106,6 +108,7 @@ namespace APIViewWeb
             services.AddSingleton<IAICommentsRepository, AICommentsRepository>();
 
             services.AddSingleton<IReviewManager, ReviewManager>();
+            services.AddSingleton<IReviewRevisionsManager, ReviewRevisionsManager>();
             services.AddSingleton<ICommentsManager, CommentsManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
             services.AddSingleton<IPullRequestManager, PullRequestManager>();
@@ -223,8 +226,21 @@ namespace APIViewWeb
             }
 
             services.AddAuthorization();
+            services.AddCors(options => {
+                options.AddPolicy("AllowCredentials", builder =>
+                {
+                    string [] origins = new string[] { 
+                        "https://localhost:4200",
+                        "https://apiviewuxtest.com",
+                        "https://spa.apiviewuxtest.com"
+                    };
+                    builder.WithOrigins(origins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
             services.AddSingleton<IConfigureOptions<AuthorizationOptions>, ConfigureOrganizationPolicy>();
-
             services.AddSingleton<IAuthorizationHandler, OrganizationRequirementHandler>();
             services.AddSingleton<IAuthorizationHandler, CommentOwnerRequirementHandler>();
             services.AddSingleton<IAuthorizationHandler, ReviewOwnerRequirementHandler>();
@@ -315,7 +331,7 @@ namespace APIViewWeb
             app.UseStaticFiles();
 
             app.UseRouting();
-
+            app.UseCors("AllowCredentials");
             app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseAuthorization();

@@ -12,7 +12,9 @@ using System.Threading.Tasks;
 using ApiView;
 using APIView.DIff;
 using APIView.Model;
+using APIViewWeb.Helpers;
 using APIViewWeb.Hubs;
+using APIViewWeb.LeanModels;
 using APIViewWeb.Models;
 using APIViewWeb.Repositories;
 using Microsoft.ApplicationInsights;
@@ -113,6 +115,28 @@ namespace APIViewWeb.Managers
                 NextPage: currentPage >= totalPages ? null : currentPage + 1
             );
             return resultToReturn;
+        }
+
+        /// <summary>
+        /// Retrieve Reviews from the Reviews container in CosmosDb after applying filter to the query.
+        /// Uses lean reviewListModels to reduce the size of the response. Used for ClientSPA
+        /// </summary>
+        /// <param name="pageParams"></param> Contains paginationinfo
+        /// <param name="filterAndSortParams"></param> Contains filter and sort parameters
+        /// <returns></returns>
+        public async Task<PagedList<ReviewListItemModel>> GetReviewsAsync(PageParams pageParams, ReviewFilterAndSortParams filterAndSortParams)
+        {
+            return await _reviewsRepository.GetReviewsAsync(pageParams, filterAndSortParams);
+        }
+
+        /// <summary>
+        /// Retrieve Reviews from the Reviews container in CosmosDb using the reviewId
+        /// </summary>
+        /// <param name="reviewId"></param> Contains paginationinfo
+        /// <returns></returns>
+        public async Task<ReviewListItemModel> GetReviewAsync(string reviewId)
+        {
+            return await _reviewsRepository.GetReviewNewAsync(reviewId);
         }
 
         public async Task DeleteReviewAsync(ClaimsPrincipal user, string id)

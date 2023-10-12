@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using ApiView;
 using APIView.DIff;
 using APIView.Model;
+using APIViewWeb.Helpers;
+using APIViewWeb.LeanModels;
 using APIViewWeb.Models;
 
 namespace APIViewWeb.Managers
@@ -42,5 +44,21 @@ namespace APIViewWeb.Managers
         public TreeNode<InlineDiffLine<CodeLine>> ComputeSectionDiff(TreeNode<CodeLine> before, TreeNode<CodeLine> after, RenderedCodeFile beforeFile, RenderedCodeFile afterFile);
         public Task<bool> IsApprovedForFirstRelease(string language, string packageName);
         public Task<int> GenerateAIReview(string reviewId, string revisionId);
+
+        /// <summary>
+        /// Retrieve Reviews from the Reviews container in CosmosDb after applying filter to the query.
+        /// Uses lean reviewListModels to reduce the size of the return. Used for ClientSPA
+        /// </summary>
+        /// <param name="pageParams"></param> Contains paginationinfo
+        /// <param name="filterAndSortParams"></param> Contains filter and sort parameters
+        /// <returns></returns>
+        public Task<PagedList<ReviewListItemModel>> GetReviewsAsync(PageParams pageParams, ReviewFilterAndSortParams filterAndSortParams);
+
+        /// <summary>
+        /// Retrieve Reviews from the Reviews container in CosmosDb using only reviewId
+        /// </summary>
+        /// <param name="reviewId"></param> Contains paginationinfo
+        /// <returns></returns>
+        public Task<ReviewListItemModel> GetReviewAsync(string reviewId);
     }
 }

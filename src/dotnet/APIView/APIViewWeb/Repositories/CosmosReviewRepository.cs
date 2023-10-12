@@ -6,20 +6,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using APIViewWeb.Helpers;
+using APIViewWeb.LeanModels;
 using APIViewWeb.Repositories;
+using ColorCode;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
-
+using Microsoft.Identity.Client;
 
 namespace APIViewWeb
 {
     public class CosmosReviewRepository : ICosmosReviewRepository
     {
         private readonly Container _reviewsContainer;
+        private readonly Container _reviewContainerNew;
 
         public CosmosReviewRepository(IConfiguration configuration, CosmosClient cosmosClient)
         {
             _reviewsContainer = cosmosClient.GetContainer("APIView", "Reviews");
+            _reviewContainerNew = cosmosClient.GetContainer("APIViewV2", "Reviews");
         }
 
         public async Task UpsertReviewAsync(ReviewModel reviewModel)
@@ -97,7 +102,7 @@ namespace APIViewWeb
             if (filterTypes != null && filterTypes.Count() > 0)
             {
                 var filterTypesAsInts = filterTypes.Cast<int>().ToList();
-                var filterTypeAsQueryStr = ArrayToQueryString<int>(filterTypesAsInts);
+                var filterTypeAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<int>(filterTypesAsInts);
                 queryStringBuilder.Append($" AND r.FilterType IN {filterTypeAsQueryStr} ");
             }
 
@@ -157,7 +162,7 @@ namespace APIViewWeb
 
             if (search != null && search.Any())
             {
-                var searchAsQueryStr = ArrayToQueryString<string>(search);
+                var searchAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<string>(search);
                 var searchAsSingleString = '"' + String.Join(' ', search) + '"';
 
                 var hasExactMatchQuery = search.Any(
@@ -223,7 +228,7 @@ namespace APIViewWeb
 
             if (languages != null && languages.Any())
             {
-                var languagesAsQueryStr = ArrayToQueryString<string>(languages);
+                var languagesAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<string>(languages);
                 queryStringBuilder.Append($" AND r.Revisions[0].Files[0].Language IN {languagesAsQueryStr}");
             }
 
@@ -234,7 +239,7 @@ namespace APIViewWeb
 
             if (filterTypes != null && filterTypes.Any())
             {
-                var filterTypeAsQueryStr = ArrayToQueryString<int>(filterTypes);
+                var filterTypeAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<int>(filterTypes);
                 queryStringBuilder.Append($" AND r.FilterType IN {filterTypeAsQueryStr}");
             }
 
@@ -275,6 +280,148 @@ namespace APIViewWeb
             return result;
         }
 
+        /// <summary>
+        /// Retrieve Reviews from the Reviews container in CosmosDb after applying filter to the query
+        /// Used for ClientSPA
+        /// </summary>
+        /// <param name="pageParams"></param> Contains paginationinfo
+        /// <param name="filterAndSortParams"></param> Contains filter and sort parameters
+        /// <returns></returns>
+        public async Task<PagedList<ReviewListItemModel>> GetReviewsAsync(PageParams pageParams, ReviewFilterAndSortParams filterAndSortParams)
+        {
+            var queryStringBuilder = new StringBuilder(@"
+SELECT VALUE {
+    Id: c.id,
+    PackageName: c.PackageName,
+    PackageDisplayName: c.PackageDisplayName,
+    ServiceName: c.ServiceName,
+    Language: c.Language,
+    ReviewRevisions: c.ReviewRevisions,
+    Subscribers: c.Subscribers,
+    ChangeHistory: c.ChangeHistory,
+    State: c.State,
+    Status: c.Status,
+    IsDeleted: c.IsDeleted
+} FROM Reviews c");
+            queryStringBuilder.Append(" WHERE c.IsDeleted = false");
+
+            if (!string.IsNullOrEmpty(filterAndSortParams.Name)){
+                var hasExactMatchQuery = filterAndSortParams.Name.StartsWith("package:") ||
+                    filterAndSortParams.Name.StartsWith("service:");
+
+                if (hasExactMatchQuery)
+                {
+                    if (filterAndSortParams.Name.StartsWith("package:"))
+                    {
+                        var query = '"' + $"{filterAndSortParams.Name.Replace("package:", "")}" + '"';
+                        queryStringBuilder.Append($" AND STRINGEQUALS(c.PackageName, {query}, true)");
+                    }
+                    else if (filterAndSortParams.Name.StartsWith("service:"))
+                    {
+                        var query = '"' + $"{filterAndSortParams.Name.Replace("service:", "")}" + '"';
+                        queryStringBuilder.Append($" AND STRINGEQUALS(c.ServiceName, {query}, true)");
+                    }
+                    else
+                    {
+                        var query = '"' + $"{filterAndSortParams.Name}" + '"';
+                        queryStringBuilder.Append($" AND CONTAINS(c.PackageName, {query}, true)");
+                    }
+                }
+                else
+                {
+                    var query = '"' + $"{filterAndSortParams.Name}" + '"';
+                    queryStringBuilder.Append($" AND (CONTAINS(c.PackageName, {query}, true)");
+                    queryStringBuilder.Append($" OR CONTAINS(c.PackageDisplayName, {query}, true)");
+                    queryStringBuilder.Append($" OR CONTAINS(c.ServiceName, {query}, true)");
+                    queryStringBuilder.Append($")");
+                }
+            }
+
+            if (filterAndSortParams.Languages != null && filterAndSortParams.Languages.Count() > 0) 
+            {
+                var languagesAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<string>(filterAndSortParams.Languages);
+                queryStringBuilder.Append($" AND c.Language IN {languagesAsQueryStr}");
+            }
+
+            if (filterAndSortParams.Details != null && filterAndSortParams.Details.Count() > 0)
+            {
+                foreach (var item in filterAndSortParams.Details)
+                {
+                    switch (item)
+                    {
+                        case "Open":
+                                queryStringBuilder.Append($" AND c.State = 'Open'");
+                            break;
+                        case "Closed":
+                                queryStringBuilder.Append($" AND c.State = 'Closed'");
+                            break;
+                        case "Pending":
+                            queryStringBuilder.Append($" AND c.Status = 'Pending'");
+                            break;
+                        case "Approved":
+                            queryStringBuilder.Append($" AND c.Status = 'Approved'");
+                            break;
+                    }
+                }
+            }
+
+            int totalCount = 0;
+            var countQuery = $"SELECT VALUE COUNT(1) FROM({queryStringBuilder})";
+            QueryDefinition countQueryDefinition = new QueryDefinition(countQuery);
+            using FeedIterator<int> countFeedIterator = _reviewContainerNew.GetItemQueryIterator<int>(countQueryDefinition);
+            while (countFeedIterator.HasMoreResults)
+            {
+                totalCount = (await countFeedIterator.ReadNextAsync()).SingleOrDefault();
+            }
+
+            switch (filterAndSortParams.SortField)
+            {
+                case "name":
+                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                    break;
+                case "noOfRevisions":
+                    queryStringBuilder.Append($" ORDER BY c.cp_NumberOfReviewRevisions");
+                    break;
+                default:
+                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                    break;
+            }
+
+            if(filterAndSortParams.SortOrder == 1)
+            {
+                queryStringBuilder.Append(" DESC");
+            }
+            else 
+            {
+                queryStringBuilder.Append(" ASC");
+            }
+
+            queryStringBuilder.Append(" OFFSET @offset LIMIT @limit");
+            var reviews = new List<ReviewListItemModel>();
+            QueryDefinition queryDefinition = new QueryDefinition(queryStringBuilder.ToString())
+                .WithParameter("@offset", pageParams.NoOfItemsRead)
+                .WithParameter("@limit", pageParams.PageSize)
+                .WithParameter("@sortField", filterAndSortParams.SortField);
+
+            using FeedIterator<ReviewListItemModel> feedIterator = _reviewContainerNew.GetItemQueryIterator<ReviewListItemModel>(queryDefinition);
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ReviewListItemModel> response = await feedIterator.ReadNextAsync();
+                reviews.AddRange(response);
+            }
+            var noOfItemsRead = pageParams.NoOfItemsRead + reviews.Count();
+            return new PagedList<ReviewListItemModel>((IEnumerable<ReviewListItemModel>)reviews, noOfItemsRead, totalCount, pageParams.PageSize);
+        }
+
+        /// <summary>
+        /// Retrieve Reviews from the Reviews container in CosmosDb using only the revewId
+        /// </summary>
+        /// <param name="reviewId"></param> Contains paginationinfo
+        /// <returns></returns>
+        public async Task<ReviewListItemModel> GetReviewNewAsync(string reviewId) {
+            return await _reviewContainerNew.ReadItemAsync<ReviewListItemModel>(reviewId, new PartitionKey(reviewId));
+        }
+
         public async Task<IEnumerable<ReviewModel>> GetApprovedForFirstReleaseReviews(string language, string packageName)
         {
             var query = $"SELECT * FROM Reviews r WHERE r.IsClosed = false AND IS_DEFINED(r.IsApprovedForFirstRelease) AND r.IsApprovedForFirstRelease = true AND " +
@@ -304,27 +451,6 @@ namespace APIViewWeb
             }
 
             return allReviews;
-        }
-
-        private static string ArrayToQueryString<T>(IEnumerable<T> items)
-        {
-            var result = new StringBuilder();
-            result.Append("(");
-            foreach (var item in items)
-            {
-                if (item is int)
-                {
-                    result.Append($"{item},");
-                }
-                else
-                {
-                    result.Append($"\"{item}\",");
-                }
-
-            }
-            result.Remove(result.Length - 1, 1);
-            result.Append(")");
-            return result.ToString();
         }
     }
 }
