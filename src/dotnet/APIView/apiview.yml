@@ -90,7 +90,7 @@ stages:
             displayName: "Install Client SPA Packages"
 
           - script: |
-              ng build --output-path=$(Build.ArtifactStagingDirectory)/client-app --configuration production
+              npm run-script build
             workingDirectory: $(SPAClientProjectDirectory)
             displayName: "Build Client SPA assets"
 
