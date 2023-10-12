@@ -230,9 +230,7 @@ namespace APIViewWeb
                 options.AddPolicy("AllowCredentials", builder =>
                 {
                     string [] origins = new string[] { 
-                        "https://localhost:4200",
-                        "https://apiviewuxtest.com/",
-                        "https://spa.apiviewuxtest.com/"
+                        "https://localhost:4200"
                     };
                     builder.WithOrigins(origins)
                         .AllowAnyHeader()
@@ -343,7 +341,15 @@ namespace APIViewWeb
                 endpoints.MapRazorPages();
                 endpoints.MapDefaultControllerRoute();
                 endpoints.MapHub<SignalRHub>("hubs/notification");
+                endpoints.Map("api/{**slug}", HandleApiFallback);
+                endpoints.MapFallbackToFile("{**slug}", "index.html");
             });
+        }
+
+        private Task HandleApiFallback(HttpContext context)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return Task.CompletedTask;
         }
     }
 }

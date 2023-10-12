@@ -1,7 +1,7 @@
 {
-  "/api": {
+  "/api/**": {
     "target": "https://apiviewuxtest.com",
     "secure": true,
-    "logLevel": "debug"
+    "changeOrigin": true
   }
 }
