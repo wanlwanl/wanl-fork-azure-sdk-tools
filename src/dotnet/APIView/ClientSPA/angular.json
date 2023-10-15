@@ -45,6 +45,8 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "./",
+              "deployUrl": "./spa/",
               "budgets": [
                 {
                   "type": "initial",
@@ -81,7 +83,6 @@
           "configurations": {
             "production": {
               "browserTarget": "ClientAPP:build:production",
-              "proxyConfig": "src/proxy.conf.json"
             },
             "development": {
               "browserTarget": "ClientAPP:build:development",
