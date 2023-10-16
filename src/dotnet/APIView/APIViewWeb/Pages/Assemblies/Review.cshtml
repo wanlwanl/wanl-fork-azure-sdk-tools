@@ -450,6 +450,11 @@
                 <partial name="Shared/_ReviewBadge" model="Model.Review" />
 
                 <span class="input-group-text">Revision:</span>
+                <select id="revision-type-select" aria-label="Revision Type Select">
+                    <option value="">Manual</option>
+                    <option value="">Automatic</option>
+                    <option value="">Pull Request</option>
+                </select>
 
                 <select id="revision-select" aria-label="Revision Select">
                     @foreach (var revision in Model.Review.Revisions.Reverse())
@@ -499,6 +504,11 @@
                         });
                         <a class="input-group-text" href="@urlValue">Diff:</a>
                     }
+                    <select id="diff-revision-type-select" aria-label="Revision Type Select">
+                        <option value="">Manual</option>
+                        <option value="">Automatic</option>
+                        <option value="">Pull Request</option>
+                    </select>
                     <select id="diff-select" aria-label="Diff Select">
                         if (@Model.DiffRevisionId == null)
                         {
