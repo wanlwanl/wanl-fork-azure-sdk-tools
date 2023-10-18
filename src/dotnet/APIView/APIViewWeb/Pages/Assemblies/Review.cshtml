@@ -4,10 +4,10 @@
 @using APIViewWeb.Models
 @{
     Layout = "Shared/_Layout";
-    ViewData["Title"] = Model.Review.DisplayName;
+    ViewData["Title"] = Model.ReviewContent.Review.PackageName;
     var userPreference = PageModelHelpers.GetUserPreference(Model._preferenceCache, User);
     TempData["UserPreference"] = userPreference;
-    TempData["LanguageCssSafeName"] = Model.Review.GetLanguageCssSafeName();
+    TempData["LanguageCssSafeName"] = PageModelHelpers.GetLanguageCssSafeName(Model.ReviewContent.Review.Language);
     TempData["Comments"] = Model.Comments;
     ViewBag.HasSections = (Model.CodeFile.LeafSections?.Count > 0) ? true : false;
 }
@@ -31,7 +31,7 @@
         }
         <ul class="list-group collapse mb-3@(approvalCollapseState)" id="approveCollapse">
             <li class="list-group-item text-center">
-                <form asp-resource="@Model.Review" class="form-inline" asp-page-handler="ToggleApproval" method="post" asp-requirement="@ApproverRequirement.Instance">
+                <form asp-resource="@Model.ReviewContent.ActiveRevision" class="form-inline" asp-page-handler="ToggleReviewApproval" method="post" asp-requirement="@ApproverRequirement.Instance">
                     <input type="hidden" name="revisionId" value="@Model.Revision.RevisionId" />
                     @if (Model.DiffRevision == null || Model.DiffRevision.Approvers.Count > 0)
                     {

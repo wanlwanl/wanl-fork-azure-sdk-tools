@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using APIViewWeb.LeanModels;
 
 namespace APIViewWeb.Repositories
 {
     public interface ICosmosReviewRepository
     {
-        public Task UpsertReviewAsync(ReviewModel reviewModel);
+        public Task UpsertReviewAsync(ReviewListItemModel reviewModel);
         public Task DeleteReviewAsync(ReviewModel reviewModel);
         public Task<ReviewModel> GetReviewAsync(string reviewId);
         public Task<ReviewModel> GetMasterReviewForPackageAsync(string language, string packageName);

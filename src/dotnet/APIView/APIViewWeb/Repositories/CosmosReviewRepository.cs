@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using APIViewWeb.LeanModels;
 using APIViewWeb.Repositories;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
@@ -16,15 +17,17 @@ namespace APIViewWeb
     public class CosmosReviewRepository : ICosmosReviewRepository
     {
         private readonly Container _reviewsContainer;
+        private readonly Container _reviewsContainerNew;
 
         public CosmosReviewRepository(IConfiguration configuration, CosmosClient cosmosClient)
         {
             _reviewsContainer = cosmosClient.GetContainer("APIView", "Reviews");
+            _reviewsContainerNew = cosmosClient.GetContainer("APIViewV2", "Reviews");
         }
 
-        public async Task UpsertReviewAsync(ReviewModel reviewModel)
+        public async Task UpsertReviewAsync(ReviewListItemModel review)
         {
-            await _reviewsContainer.UpsertItemAsync(reviewModel, new PartitionKey(reviewModel.ReviewId));
+            await _reviewsContainerNew.UpsertItemAsync(review, new PartitionKey(review.Id));
         }
 
         public async Task DeleteReviewAsync(ReviewModel reviewModel)

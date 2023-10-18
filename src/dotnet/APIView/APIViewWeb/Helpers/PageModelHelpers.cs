@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using APIViewWeb.Models;
 using APIViewWeb.Repositories;
 
@@ -19,6 +19,19 @@ namespace APIViewWeb.Helpers
                 hiddenApiClass += " d-none";
             }
             return hiddenApiClass;
+        }
+
+        public static string GetLanguageCssSafeName(string language)
+        {
+            switch (language.ToLower())
+            {
+                case "c#":
+                    return "csharp";
+                case "c++":
+                    return "cplusplus";
+                default:
+                    return language.ToLower();
+            }
         }
     }
 }

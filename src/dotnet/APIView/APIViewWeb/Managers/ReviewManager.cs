@@ -24,6 +24,8 @@ using Microsoft.Extensions.Configuration;
 using System.Net.Http;
 using System.Text.Json;
 using System.Data;
+using APIViewWeb.LeanModels;
+using APIViewWeb.Helpers;
 
 namespace APIViewWeb.Managers
 {
@@ -294,29 +296,28 @@ namespace APIViewWeb.Managers
             await _reviewsRepository.UpsertReviewAsync(review);
         }
 
-        public async Task ToggleApprovalAsync(ClaimsPrincipal user, string id, string revisionId)
+        public async Task ToggleReviewApprovalAsync(ClaimsPrincipal user, ReviewListItemModel review, string notes="")
         {
-            var review = await GetReviewAsync(user, id);
-            var revision = review.Revisions.Single(r => r.RevisionId == revisionId);
-            await AssertApprover(user, revision);
+            await AssertApprover<ReviewListItemModel>(user, review);
             var userId = user.GetGitHubLogin();
-            bool approvalStatus;
-            if (revision.Approvers.Contains(userId))
-            {
-                //Revert approval
-                revision.Approvers.Remove(userId);
-                approvalStatus = false;
-            }
-            else
-            {
-                //Approve revision
-                revision.Approvers.Add(userId);
-                review.ApprovalDate = DateTime.Now;
-                approvalStatus = true;
-            }
-            await _signalRHubContext.Clients.Group(user.GetGitHubLogin()).SendAsync("ReceiveApprovalSelf", review.ReviewId, revisionId, approvalStatus);
-            await _signalRHubContext.Clients.All.SendAsync("ReceiveApproval", review.ReviewId, revisionId, userId, approvalStatus);
+            var changeUpdate = ManagerHelpers.UpdatBinaryChangeAction<ReviewChangeHistoryModel, ReviewChangeAction>(
+                review.ChangeHistory, ReviewChangeAction.Approved, ReviewChangeAction.ApprovalReverted, userId, notes);
+            review.ChangeHistory = changeUpdate.ChangeHistory;
+            review.ApprovalStatus = (changeUpdate.ChangeStatus) ? ApprovalStatus.Approved : ApprovalStatus.Pending;
+
             await _reviewsRepository.UpsertReviewAsync(review);
+        }
+
+        public async Task ToggleRevisionApprovalAsync(ClaimsPrincipal user, ReviewRevisionListItemModel revision, string notes="")
+        {
+            await AssertApprover<ReviewRevisionListItemModel>(user, revision);
+            var userId = user.GetGitHubLogin();
+            var changeUpdate = ManagerHelpers.UpdatBinaryChangeAction<ReviewRevisionChangeHistoryModel, ReviewRevisionChangeAction>(
+                revision.ChangeHistory, ReviewRevisionChangeAction.Approved, ReviewRevisionChangeAction.ApprovalReverted, userId, notes);
+            revision.ChangeHistory = changeUpdate.ChangeHistory;
+            revision.ApprovalStatus = (changeUpdate.ChangeStatus) ? ApprovalStatus.Approved : ApprovalStatus.Pending;
+
+            //await _reviewsRepository.UpsertReviewAsync(review);
         }
 
         public async Task ApprovePackageNameAsync(ClaimsPrincipal user, string id)
@@ -902,11 +903,11 @@ namespace APIViewWeb.Managers
             }
         }
 
-        private async Task AssertApprover(ClaimsPrincipal user, ReviewRevisionModel revisionModel)
+        private async Task AssertApprover<T>(ClaimsPrincipal user, T model)
         {
             var result = await _authorizationService.AuthorizeAsync(
                 user,
-                revisionModel,
+                model,
                 new[] { ApproverRequirement.Instance });
             if (!result.Succeeded)
             {

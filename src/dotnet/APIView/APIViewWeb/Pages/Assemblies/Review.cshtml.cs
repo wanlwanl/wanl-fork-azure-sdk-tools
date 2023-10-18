@@ -10,11 +10,13 @@ using APIView.DIff;
 using APIView.Model;
 using APIViewWeb.Helpers;
 using APIViewWeb.Hubs;
+using APIViewWeb.LeanModels;
 using APIViewWeb.Managers;
 using APIViewWeb.Models;
 using APIViewWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 
@@ -57,6 +59,8 @@ namespace APIViewWeb.Pages.Assemblies
             _configuration = configuration;
             _signalRHubContext = signalRHub;
         }
+
+        public ReviewContentModel ReviewContent { get; set; }
 
         public ReviewModel Review { get; set; }
         public ReviewRevisionModel Revision { get; set; }
@@ -248,10 +252,44 @@ namespace APIViewWeb.Pages.Assemblies
             return RedirectToPage(new { id = id });
         }
 
-        public async Task<IActionResult> OnPostToggleApprovalAsync(string id, string revisionId)
+        /// <summary>
+        /// Approve or Revert Approval for a Review
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="notes"></param>
+        /// <returns></returns>
+        public async Task<IActionResult> OnPostToggleReviewApprovalAsync()
         {
-            await _manager.ToggleApprovalAsync(User, id, revisionId);
-            return RedirectToPage(new { id = id });
+            var review = ReviewContent.Review;
+            var revisionId = ReviewContent.ActiveRevision.Id;
+            var userId = User.GetGitHubLogin();
+
+            await _manager.ToggleReviewApprovalAsync(User, review);
+
+            await _signalRHubContext.Clients.Group(userId).SendAsync("ReceiveApprovalSelf", review.Id, revisionId, review.ApprovalStatus);
+            await _signalRHubContext.Clients.All.SendAsync("ReceiveApproval", review.Id, revisionId, userId, review.ApprovalStatus);
+
+            return RedirectToPage(new { id = review.Id });
+        }
+
+        /// <summary>
+        /// Approve or Revert Approval for a Revision
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="notes"></param>
+        /// <returns></returns>
+        public async Task<IActionResult> OnPostToggleRevisionApprovalAsync()
+        {
+            var review = ReviewContent.Review;
+            var revision = ReviewContent.ActiveRevision;
+            var userId = User.GetGitHubLogin();
+
+            await _manager.ToggleRevisionApprovalAsync(User, revision);
+
+            await _signalRHubContext.Clients.Group(userId).SendAsync("ReceiveApprovalSelf", review.Id, revision.Id, review.ApprovalStatus);
+            await _signalRHubContext.Clients.All.SendAsync("ReceiveApproval", review.Id, revision.Id, userId, review.ApprovalStatus);
+
+            return RedirectToPage(new { id = review.Id });
         }
 
         public async Task<ActionResult> OnPostRequestReviewersAsync(string id, HashSet<string> reviewers)

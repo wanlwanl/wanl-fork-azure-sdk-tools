@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ApiView;
 using APIView.DIff;
 using APIView.Model;
+using APIViewWeb.LeanModels;
 using APIViewWeb.Models;
 
 namespace APIViewWeb.Managers
@@ -26,7 +27,8 @@ namespace APIViewWeb.Managers
         public Task DeleteRevisionAsync(ClaimsPrincipal user, string id, string revisionId);
         public Task UpdateRevisionLabelAsync(ClaimsPrincipal user, string id, string revisionId, string label);
         public Task ToggleIsClosedAsync(ClaimsPrincipal user, string id);
-        public Task ToggleApprovalAsync(ClaimsPrincipal user, string id, string revisionId);
+        public Task ToggleReviewApprovalAsync(ClaimsPrincipal user, ReviewListItemModel review, string notes="");
+        public Task ToggleRevisionApprovalAsync(ClaimsPrincipal user, ReviewRevisionListItemModel revision, string notes="");
         public Task ApprovePackageNameAsync(ClaimsPrincipal user, string id);
         public Task<bool> IsReviewSame(ReviewRevisionModel revision, RenderedCodeFile renderedCodeFile);
         public Task<ReviewRevisionModel> CreateMasterReviewAsync(ClaimsPrincipal user, string originalName, string label, Stream fileStream, bool compareAllRevisions);
