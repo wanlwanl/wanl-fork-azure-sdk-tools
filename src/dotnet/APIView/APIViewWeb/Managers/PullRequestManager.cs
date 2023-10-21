@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ApiView;
 using APIView.DIff;
+using APIViewWeb.Managers.Interfaces;
 using APIViewWeb.Models;
 using APIViewWeb.Repositories;
 using Microsoft.ApplicationInsights;
@@ -29,6 +30,7 @@ namespace APIViewWeb.Managers
         readonly TelemetryClient _telemetryClient = new TelemetryClient(TelemetryConfiguration.CreateDefault());
 
         private readonly IReviewManager _reviewManager;
+        private readonly IAPIRevisionsManager _apiRevisionsManager;
         private readonly ICosmosPullRequestsRepository _pullRequestsRepository;
         private readonly IConfiguration _configuration;
         private readonly ICosmosReviewRepository _reviewsRepository;
@@ -36,6 +38,7 @@ namespace APIViewWeb.Managers
         private readonly IDevopsArtifactRepository _devopsArtifactRepository;
         private readonly IAuthorizationService _authorizationService;
         private readonly IOpenSourceRequestManager _openSourceManager;
+        private readonly ICodeFileManager _codeFileManager;
         private readonly int _pullRequestCleanupDays;
         private HashSet<string> _allowedListBotAccounts;
         private readonly bool _isGitClientAvailable;
@@ -43,15 +46,18 @@ namespace APIViewWeb.Managers
         public PullRequestManager(
             IAuthorizationService authorizationService,
             IReviewManager reviewManager,
-            ICosmosReviewRepository reviewsRepository,
+            IAPIRevisionsManager apiRevisionsManager,
+        ICosmosReviewRepository reviewsRepository,
             ICosmosPullRequestsRepository pullRequestsRepository,
             IBlobCodeFileRepository codeFileRepository,
             IDevopsArtifactRepository devopsArtifactRepository,
             IConfiguration configuration,
-            IOpenSourceRequestManager openSourceRequestManager
+            IOpenSourceRequestManager openSourceRequestManager,
+            ICodeFileManager codeFileManager
             )
         {
             _reviewManager = reviewManager;
+            _apiRevisionsManager = apiRevisionsManager;
             _pullRequestsRepository = pullRequestsRepository;
             _configuration = configuration;
             _reviewsRepository = reviewsRepository;
@@ -59,6 +65,7 @@ namespace APIViewWeb.Managers
             _devopsArtifactRepository = devopsArtifactRepository;
             _authorizationService = authorizationService;
             _openSourceManager = openSourceRequestManager;
+            _codeFileManager = codeFileManager;
             var ghToken = _configuration["github-access-token"];
             if (!string.IsNullOrEmpty(ghToken))
             {
@@ -230,7 +237,7 @@ namespace APIViewWeb.Managers
                     RepoName = repoName,
                     PullRequestNumber = prNumber,
                     FilePath = originalFile,
-                    Author = pullRequest.User.Login,
+                    CreatedBy = pullRequest.User.Login,
                     PackageName = packageName,
                     Language = language,
                     Assignee = pullRequest.Assignee?.Login
@@ -255,7 +262,7 @@ namespace APIViewWeb.Managers
         {
             foreach (var revision in review.Revisions.Reverse())
             {
-                if (await _reviewManager.IsReviewSame(revision, renderedCodeFile))
+                if (await _apiRevisionsManager.IsAPIRevisionTheSame(revision, renderedCodeFile))
                 {
                     return true;
                 }
@@ -271,10 +278,10 @@ namespace APIViewWeb.Managers
         {
             var newRevision = new ReviewRevisionModel()
             {
-                Author = prModel.Author,
+                Author = prModel.CreatedBy,
                 Label = $"Baseline for PR {prModel.PullRequestNumber}"
             };
-            var reviewCodeFileModel = await _reviewManager.CreateReviewCodeFileModel(newRevision.RevisionId, baseLineStream, baselineCodeFile);
+            var reviewCodeFileModel = await _codeFileManager.CreateReviewCodeFileModel(newRevision.RevisionId, baseLineStream, baselineCodeFile);
             reviewCodeFileModel.FileName = fileName;
             newRevision.Files.Add(reviewCodeFileModel);
             return newRevision;
@@ -284,7 +291,7 @@ namespace APIViewWeb.Managers
         {
             return new ReviewModel()
             {
-                Author = prModel.Author,
+                Author = prModel.CreatedBy,
                 CreationDate = DateTime.Now,
                 Name = prModel.PackageName,
                 IsClosed = false,
@@ -305,7 +312,7 @@ namespace APIViewWeb.Managers
         {
             var newRevision = new ReviewRevisionModel()
             {
-                Author = pullRequestModel.Author,
+                Author = pullRequestModel.CreatedBy,
                 Label = $"Created for PR {prNumber}"
             };
 
@@ -352,7 +359,7 @@ namespace APIViewWeb.Managers
                 }
             }
 
-            var reviewCodeFileModel = await _reviewManager.CreateReviewCodeFileModel(newRevision.RevisionId, memoryStream, codeFile);
+            var reviewCodeFileModel = await _codeFileManager.CreateReviewCodeFileModel(newRevision.RevisionId, memoryStream, codeFile);
             reviewCodeFileModel.FileName = originalFileName;
             newRevision.Files.Add(reviewCodeFileModel);
             review.Revisions.Add(newRevision);
@@ -361,7 +368,7 @@ namespace APIViewWeb.Managers
             await _reviewsRepository.UpsertReviewAsync(review);
             if (!String.IsNullOrEmpty(review.Language) && review.Language == "Swagger")
             {
-                await _reviewManager.GetLineNumbersOfHeadingsOfSectionsWithDiff(review.ReviewId, newRevision);
+                await _apiRevisionsManager.GetLineNumbersOfHeadingsOfSectionsWithDiff(review.ReviewId, newRevision);
             }
             await _pullRequestsRepository.UpsertPullRequestAsync(pullRequestModel);
         }
@@ -401,11 +408,11 @@ namespace APIViewWeb.Managers
             // If API review is not created for PR then also fetch review from main branch.
             if (forceBaseline || pullRequestModel.ReviewId == null)
             {
-                var autoReview = await _reviewsRepository.GetMasterReviewForPackageAsync(Language, packageName);
+                var autoReview = await _reviewsRepository.GetReviewAsync(Language, packageName);
                 if (autoReview != null)
                 {
                     review = CloneReview(autoReview);
-                    review.Author = pullRequestModel.Author;
+                    review.Author = pullRequestModel.CreatedBy;
                 }
             }
 
@@ -469,12 +476,12 @@ namespace APIViewWeb.Managers
         private async Task AssertPullRequestCreatorPermission(PullRequestModel prModel)
         {
             // White list bot accounts to create API reviews from PR automatically
-            if (!_allowedListBotAccounts.Contains(prModel.Author))
+            if (!_allowedListBotAccounts.Contains(prModel.CreatedBy))
             {
-                var isAuthorized = await _openSourceManager.IsAuthorizedUser(prModel.Author);
+                var isAuthorized = await _openSourceManager.IsAuthorizedUser(prModel.CreatedBy);
                 if (!isAuthorized)
                 {
-                    _telemetryClient.TrackTrace($"API change detection permission failed for user {prModel.Author}. API review is only created if PR author is an internal user.");
+                    _telemetryClient.TrackTrace($"API change detection permission failed for user {prModel.CreatedBy}. API review is only created if PR author is an internal user.");
                     throw new AuthorizationFailedException();
                 }
             }

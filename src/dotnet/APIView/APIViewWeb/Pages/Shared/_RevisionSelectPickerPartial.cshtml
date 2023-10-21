@@ -1,0 +1,52 @@
+
+@using APIViewWeb.Helpers
+@using APIViewWeb.LeanModels
+@using APIViewWeb.Models
+@model (IEnumerable<APIRevisionListItemModel> revisions, APIRevisionListItemModel activeRevision, APIRevisionListItemModel diffRevision, bool forDiff, bool showDocumentation, bool showDiffOnly)
+
+@if (Model.revisions.Any())
+{
+    var selectedRevisionLabel = String.Empty;
+    if (!@Model.forDiff)
+    {
+        selectedRevisionLabel = PageModelHelpers.ResolveRevisionLabel(@Model.activeRevision);
+    }
+    else if (@Model.diffRevision != null)
+    {
+        selectedRevisionLabel = PageModelHelpers.ResolveRevisionLabel(@Model.diffRevision);
+    }
+    @foreach (var revision in Model.revisions)
+    {
+        var optionClass = (revision.IsApproved) ? "option-approved" : "option-pending";
+
+        var urlValue = @Url.ActionLink("Review", "Assemblies", new
+        {
+            id = revision.ReviewId,
+            revisionId = @revision.Id,
+            doc = @Model.showDocumentation
+        });
+
+        if (Model.diffRevision != null)
+        {
+            urlValue = @Url.ActionLink("Review", "Assemblies", new
+            {
+                id = revision.ReviewId,
+                revisionId = @Model.activeRevision.Id,
+                diffOnly = Model.showDiffOnly,
+                doc = @Model.showDocumentation,
+                diffRevisionId = @revision.Id
+            });
+        }
+
+        var revisionLabel = PageModelHelpers.ResolveRevisionLabel(@revision);
+        
+        if (revisionLabel == selectedRevisionLabel)
+        {
+            <option selected value="@urlValue" class="@optionClass">@revisionLabel</option>
+        }
+        else
+        {
+            <option value="@urlValue" class="@optionClass">@revisionLabel</option>
+        }
+    }
+}

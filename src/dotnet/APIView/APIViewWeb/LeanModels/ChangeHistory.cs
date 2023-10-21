@@ -21,30 +21,34 @@ namespace APIViewWeb.LeanModels
         Approved,
         ApprovalReverted,
         Deleted,
-        Undeleted
+        UnDeleted
     }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum ReviewRevisionChangeAction
+    public enum APIRevisionChangeAction
     {
         Created = 0,
         Approved,
         ApprovalReverted,
         Deleted,
-        Undeleted
+        UnDeleted
     }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum ReviewRevisionUserInteraction
+    public enum CommentChangeAction
     {
-        Viewed = 0,
-        Commented,
+        Created = 0,
+        Edited,
+        Resolved,
+        UnResolved,
+        Deleted,
+        Undeleted
     }
 
     public abstract class ChangeHistoryModel
     {
-        public string User { get; set; }
-        public DateTime? ChangeDateTime { get; set; }
+        public string ChangedBy { get; set; }
+        public DateTime? ChangedOn { get; set; }
         public string Notes { get; set; }
     }
 
@@ -58,8 +62,13 @@ namespace APIViewWeb.LeanModels
         public ReviewChangeAction ChangeAction { get; set; }
     }
 
-    public class ReviewRevisionChangeHistoryModel : ChangeHistoryModel
+    public class APIRevisionChangeHistoryModel : ChangeHistoryModel
     {
-        public ReviewRevisionChangeAction ChangeAction { get; set; }
+        public APIRevisionChangeAction ChangeAction { get; set; }
+    }
+
+    public class CommentChangeHistoryModel : ChangeHistoryModel
+    {
+        public CommentChangeAction ChangeAction { get; set; }
     }
 }

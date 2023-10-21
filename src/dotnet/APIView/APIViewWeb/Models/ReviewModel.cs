@@ -29,7 +29,7 @@ namespace APIViewWeb
         public ReviewRevisionModelList Revisions { get; set; }
 
         [Obsolete("Back compat")]
-        public List<ReviewCodeFileModel> Files { get; set; } = new List<ReviewCodeFileModel>();
+        public List<APICodeFileModel> Files { get; set; } = new List<APICodeFileModel>();
 
         [JsonIgnore]
         public bool UpdateAvailable { get; set; }

@@ -100,7 +100,7 @@ namespace APIViewWeb
             services.AddSingleton<ICosmosReviewRepository,CosmosReviewRepository>();
             services.AddSingleton<ICosmosCommentsRepository, CosmosCommentsRepository>();
             services.AddSingleton<ICosmosPullRequestsRepository, CosmosPullRequestsRepository>();
-            services.AddSingleton<ICosmosUsageSampleRepository, CosmosUsageSampleRepository>();
+            services.AddSingleton<ICosmosSamplesRevisionsRepository, CosmosSamplesRevisionsRepository>();
             services.AddSingleton<ICosmosUserProfileRepository, CosmosUserProfileRepository>();
             services.AddSingleton<IDevopsArtifactRepository, DevopsArtifactRepository>();
             services.AddSingleton<IAICommentsRepository, AICommentsRepository>();
@@ -110,7 +110,7 @@ namespace APIViewWeb
             services.AddSingleton<INotificationManager, NotificationManager>();
             services.AddSingleton<IPullRequestManager, PullRequestManager>();
             services.AddSingleton<IPackageNameManager, PackageNameManager>();
-            services.AddSingleton<IUsageSampleManager, UsageSampleManager>();
+            services.AddSingleton<ISamplesRevisionsManager, SamplesRevisionsManager>();
             services.AddSingleton<IUserProfileManager, UserProfileManager>();
             services.AddSingleton<IOpenSourceRequestManager, OpenSourceRequestManager>();
             services.AddSingleton<IAICommentsManager, AICommentsManager>();
@@ -232,7 +232,7 @@ namespace APIViewWeb
             services.AddSingleton<IAuthorizationHandler, ApproverRequirementHandler>();
             services.AddSingleton<IAuthorizationHandler, ResolverRequirementHandler>();
             services.AddSingleton<IAuthorizationHandler, AutoReviewModifierRequirementHandler>();
-            services.AddSingleton<IAuthorizationHandler, UsageSampleOwnerRequirementHandler>();
+            services.AddSingleton<IAuthorizationHandler, SamplesRevisionOwnerRequirementHandler>();
             services.AddSingleton<CosmosClient>(x =>
             {
                 return new CosmosClient(Configuration["Cosmos:ConnectionString"]);

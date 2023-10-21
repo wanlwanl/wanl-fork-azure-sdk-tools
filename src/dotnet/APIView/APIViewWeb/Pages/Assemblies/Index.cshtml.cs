@@ -55,7 +55,7 @@ namespace APIViewWeb.Pages.Assemblies
                 languages = userPreference.Language;
                 state = userPreference.State;
                 status = userPreference.Status;
-                type = userPreference.FilterType.Select(x => x.ToString());
+                type = userPreference.ReviewRevisionType.Select(x => x.ToString());
                 await RunGetRequest(search, languages, state, status, type, pageNo, pageSize, sortField, false);
             }
             else 
@@ -162,7 +162,7 @@ namespace APIViewWeb.Pages.Assemblies
             IEnumerable<int> filterTypesAsInt = filterTypes.Select(x => (int)x);
 
             _preferenceCache.UpdateUserPreference(new UserPreferenceModel {
-                FilterType = filterTypes,
+                ReviewRevisionType = filterTypes,
                 Language = languages,
                 State = state,
                 Status = status
@@ -186,7 +186,7 @@ namespace APIViewWeb.Pages.Assemblies
 
             languages = LanguageServiceHelpers.MapLanguageAliases(languages);
 
-            PagedResults = await _manager.GetPagedReviewsAsync(search, languages, isClosed, filterTypesAsInt, isApproved, offset, pageSize, sortField);
+            PagedResults = await _manager.GetPagedReviewListAsync(search, languages, isClosed, filterTypesAsInt, isApproved, offset, pageSize, sortField);
         }
     }
 

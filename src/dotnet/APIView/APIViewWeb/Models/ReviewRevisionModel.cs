@@ -20,7 +20,7 @@ namespace APIViewWeb
         [JsonProperty("id")]
         public string RevisionId { get; set; } = IdHelper.GenerateId();
 
-        public List<ReviewCodeFileModel> Files { get; set; } = new List<ReviewCodeFileModel>();
+        public List<APICodeFileModel> Files { get; set; } = new List<APICodeFileModel>();
 
         public Dictionary<string, HashSet<int>> HeadingsOfSectionsWithDiff { get; set; } = new Dictionary<string, HashSet<int>>();
 
@@ -33,7 +33,7 @@ namespace APIViewWeb
         }
 
         [JsonIgnore]
-        public ReviewCodeFileModel SingleFile => Files.Single();
+        public APICodeFileModel SingleFile => Files.Single();
 
         [JsonIgnore]
         public ReviewModel Review { get; set; }

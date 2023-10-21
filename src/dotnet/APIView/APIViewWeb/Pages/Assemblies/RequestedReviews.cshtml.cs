@@ -28,7 +28,7 @@ namespace APIViewWeb.Pages.Assemblies
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var requestedReviews = await _manager.GetRequestedReviews(User.GetGitHubLogin());
+            var requestedReviews = await _manager.GetReviewsAssignedToUser(User.GetGitHubLogin());
             ActiveReviews = requestedReviews.Where(r => r.IsApproved == false).OrderByDescending(r => r.ApprovalRequestedOn);
             // Remove all approvals over a week old
             ApprovedReviews = requestedReviews.Where(r => r.IsApproved == true).Where(r => r.ApprovalDate >= DateTime.Now.AddDays(-7)).OrderByDescending(r => r.ApprovalDate);

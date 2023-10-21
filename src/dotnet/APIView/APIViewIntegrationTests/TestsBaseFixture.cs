@@ -18,6 +18,7 @@ using APIView.Identity;
 using APIViewWeb.Managers;
 using APIViewWeb.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using APIViewWeb.Managers.Interfaces;
 
 namespace APIViewIntegrationTests
 {
@@ -29,8 +30,10 @@ namespace APIViewIntegrationTests
         
         public PackageNameManager PackageNameManager { get; private set; }
         public ReviewManager ReviewManager { get; private set; }
+        public APIRevisionsManager APIRevisionManager { get; private set; }
         public BlobCodeFileRepository BlobCodeFileRepository { get; private set; }
         public CosmosReviewRepository ReviewRepository { get; private set; }
+        public CosmosAPIRevisionsRepository APIRevisionRepository { get; private set; }
         public CosmosCommentsRepository CommentRepository { get; private set; }
         public ClaimsPrincipal User { get; private set; }
         public  string TestDataPath { get; private set; }
@@ -70,6 +73,7 @@ namespace APIViewIntegrationTests
             dataBaseResponse.Database.CreateContainerIfNotExistsAsync("Comments", "/ReviewId").Wait();
             dataBaseResponse.Database.CreateContainerIfNotExistsAsync("Profiles", "/id").Wait();
             ReviewRepository = new CosmosReviewRepository(config, _cosmosClient);
+            APIRevisionRepository = new CosmosAPIRevisionsRepository(config, _cosmosClient);
             CommentRepository = new CosmosCommentsRepository(config, _cosmosClient);
             var cosmosUserProfileRepository = new CosmosUserProfileRepository(config, _cosmosClient);
 
@@ -99,6 +103,8 @@ namespace APIViewIntegrationTests
             ReviewManager = new ReviewManager(
                 authorizationServiceMoq.Object, ReviewRepository, BlobCodeFileRepository, blobOriginalsRepository, CommentRepository,
                 languageService, notificationManager, devopsArtifactRepositoryMoq.Object, PackageNameManager, signalRHubContextMoq.Object);
+
+            APIRevisionManager = new APIRevisionsManager(authorizationServiceMoq.Object, ReviewManager, APIRevisionRepository, signalRHubContextMoq.Object);
 
             TestDataPath = config["TestPkgPath"];
         }

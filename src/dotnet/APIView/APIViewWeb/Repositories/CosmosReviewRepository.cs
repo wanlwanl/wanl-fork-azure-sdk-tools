@@ -17,33 +17,38 @@ namespace APIViewWeb
     public class CosmosReviewRepository : ICosmosReviewRepository
     {
         private readonly Container _reviewsContainer;
-        private readonly Container _reviewsContainerNew;
 
         public CosmosReviewRepository(IConfiguration configuration, CosmosClient cosmosClient)
         {
-            _reviewsContainer = cosmosClient.GetContainer("APIView", "Reviews");
-            _reviewsContainerNew = cosmosClient.GetContainer("APIViewV2", "Reviews");
+            _reviewsContainer = cosmosClient.GetContainer("APIViewV2", "Reviews");
         }
 
         public async Task UpsertReviewAsync(ReviewListItemModel review)
         {
-            await _reviewsContainerNew.UpsertItemAsync(review, new PartitionKey(review.Id));
+            review.LastUpdatedOn = DateTime.UtcNow;
+            await _reviewsContainer.UpsertItemAsync(review, new PartitionKey(review.Id));
         }
 
-        public async Task DeleteReviewAsync(ReviewModel reviewModel)
+        public async Task<ReviewListItemModel> GetReviewAsync(string reviewId)
         {
-            await _reviewsContainer.DeleteItemAsync<ReviewModel>(reviewModel.ReviewId, new PartitionKey(reviewModel.ReviewId));
+            return await _reviewsContainer.ReadItemAsync<ReviewListItemModel>(reviewId, new PartitionKey(reviewId));
         }
 
-        public async Task<ReviewModel> GetReviewAsync(string reviewId)
+        public async Task<ReviewListItemModel> GetReviewAsync(string language, string packageName, bool isClosed = false)
         {
-            return await _reviewsContainer.ReadItemAsync<ReviewModel>(reviewId, new PartitionKey(reviewId));
-        }
+            var queryStringBuilder = new StringBuilder("SELECT * FROM Reviews r WHERE r.IsClosed = false");
+            queryStringBuilder.Append(" AND r.Language = @language");
+            queryStringBuilder.Append(" AND r.PackageName = @packageName");
+            queryStringBuilder.Append(" AND r.IcClosed = @isClosed");
 
-        public async Task<ReviewModel> GetMasterReviewForPackageAsync(string language, string packageName)
-        {
-            var reviews = await GetReviewsAsync(false, language, packageName, ReviewType.Automatic);
-            return reviews.FirstOrDefault();
+            var queryDefinition = new QueryDefinition(queryStringBuilder.ToString())
+                .WithParameter("@language", language)
+                .WithParameter("@packageName", packageName)
+                .WithParameter("@isClosed", isClosed);
+
+            var itemQueryIterator = _reviewsContainer.GetItemQueryIterator<ReviewListItemModel>(queryDefinition);
+            var result = await itemQueryIterator.ReadNextAsync();
+            return result.Resource.FirstOrDefault();    
         }
 
         public async Task<IEnumerable<ReviewModel>> GetReviewsAsync(bool isClosed, string language, string packageName = null, ReviewType? filterType = null, bool fetchAllPages = false)
@@ -118,19 +123,22 @@ namespace APIViewWeb
             return reviews.OrderBy(r => r.Name).ThenByDescending(r => r.LastUpdated);
         }
 
-        public async Task<IEnumerable<ReviewModel>> GetRequestedReviews(string userName)
+        public async Task<IEnumerable<ReviewListItemModel>> GetReviewsAssignedToUser(string userName)
         {
-            var query = $"SELECT * FROM Reviews r WHERE IS_DEFINED(r.RequestedReviewers) AND ARRAY_CONTAINS(r.RequestedReviewers, @userName)";
-            var allReviews = new List<ReviewModel>();
+            var query = $"SELECT * FROM Reviews r" +
+                $" JOIN ar IN r.AssignedReviewers" +
+                $" WHERE ar.AssingedTo = @userName";
+
+            var reviews = new List<ReviewListItemModel>();
             var queryDefinition = new QueryDefinition(query).WithParameter("@userName", userName);
-            var itemQueryIterator = _reviewsContainer.GetItemQueryIterator<ReviewModel>(queryDefinition);
+            var itemQueryIterator = _reviewsContainer.GetItemQueryIterator<ReviewListItemModel>(queryDefinition);
             while (itemQueryIterator.HasMoreResults)
             {
                 var result = await itemQueryIterator.ReadNextAsync();
-                allReviews.AddRange(result.Resource);
+                reviews.AddRange(result.Resource);
             }
 
-            return allReviews.OrderByDescending(r => r.LastUpdated);
+            return reviews.OrderByDescending(r => r.LastUpdatedOn);
         }
 
         public async Task<IEnumerable<string>> GetReviewFirstLevelPropertiesAsync(string propertyName)
@@ -149,14 +157,25 @@ namespace APIViewWeb
             return properties;
         }
 
-        public async Task<(IEnumerable<ReviewModel> Reviews, int TotalCount)> GetReviewsAsync(
-            IEnumerable<string> search, IEnumerable<string> languages, bool? isClosed, IEnumerable<int> filterTypes, bool? isApproved, int offset, int limit, string orderBy)
+        /// <summary>
+        /// Get Reviews based on search criteria
+        /// </summary>
+        /// <param name="search"></param>
+        /// <param name="languages"></param>
+        /// <param name="isClosed"></param>
+        /// <param name="isApproved"></param>
+        /// <param name="offset"></param>
+        /// <param name="limit"></param>
+        /// <param name="orderBy"></param>
+        /// <returns></returns>
+        public async Task<(IEnumerable<ReviewListItemModel> Reviews, int TotalCount)> GetReviewsAsync(
+            IEnumerable<string> search, IEnumerable<string> languages, bool? isClosed, bool? isApproved, int offset, int limit, string orderBy)
         {
-            (IEnumerable<ReviewModel> Reviews, int TotalCount) result = (Reviews: new List<ReviewModel>(), TotalCount: 0);
+            (IEnumerable<ReviewListItemModel> Reviews, int TotalCount) result = (Reviews: new List<ReviewListItemModel>(), TotalCount: 0);
 
             // Build up Query
             var queryStringBuilder = new StringBuilder("SELECT * FROM Reviews r");
-            queryStringBuilder.Append(" WHERE IS_DEFINED(r.id)"); // Allows for appending the other query parts as AND's in any order
+            queryStringBuilder.Append(" WHERE r.IsDeleted"); // Allows for appending the other query parts as AND's in any order
 
             if (search != null && search.Any())
             {
@@ -166,9 +185,7 @@ namespace APIViewWeb
                 var hasExactMatchQuery = search.Any(
                     s => (
                     s.StartsWith("package:") || 
-                    s.StartsWith("pr:") || 
                     s.StartsWith("author:") || 
-                    s.StartsWith("service:") ||
                     s.StartsWith("name:")
                 ));
 
@@ -179,32 +196,22 @@ namespace APIViewWeb
                         if (item.StartsWith("package:"))
                         {
                             var query = '"' + $"{item.Replace("package:", "")}" + '"';
-                            queryStringBuilder.Append($" AND STRINGEQUALS(ARRAY_SLICE(r.Revisions, -1)[0].Files[0].PackageName, {query}, true)");
+                            queryStringBuilder.Append($" AND STRINGEQUALS(r.PackageName, {query}, true)");
                         }
                         else if (item.StartsWith("author:"))
                         {
                             var query = '"' + $"{item.Replace("author:", "")}" + '"';
-                            queryStringBuilder.Append($" AND STRINGEQUALS(r.Author, {query}, true)");
-                        }
-                        else if (item.StartsWith("service:"))
-                        {
-                            var query = '"' + $"{item.Replace("service:", "")}" + '"';
-                            queryStringBuilder.Append($" AND STRINGEQUALS(r.ServiceName, {query}, true)");
-                        }
-                        else if (item.StartsWith("pr:"))
-                        {
-                            var query = '"' + $"{item.Replace("pr:", "")}" + '"';
-                            queryStringBuilder.Append($" AND ENDSWITH(ARRAY_SLICE(r.Revisions, -1)[0].Label, {query}, true)");
+                            queryStringBuilder.Append($" AND STRINGEQUALS(r.CreatedBy, {query}, true)");
                         }
                         else if (item.StartsWith("name:"))
                         {
                             var query = '"' + $"{item.Replace("name:", "")}" + '"';
-                            queryStringBuilder.Append($" AND CONTAINS(ARRAY_SLICE(r.Revisions, -1)[0].Name, {query}, true)");
+                            queryStringBuilder.Append($" AND CONTAINS(r.PackageName, {query}, true)");
                         }
                         else
                         {
                             var query = '"' + $"{item}" + '"';
-                            queryStringBuilder.Append($" AND CONTAINS(ARRAY_SLICE(r.Revisions, -1)[0].Name, {query}, true)");
+                            queryStringBuilder.Append($" AND CONTAINS(r.PackageName, {query}, true)");
                         }
                     }
                 }
@@ -214,11 +221,7 @@ namespace APIViewWeb
                     foreach (var item in search) 
                     {
                         var query = '"' + $"{item}" + '"';
-                        queryStringBuilder.Append($" OR CONTAINS(ARRAY_SLICE(r.Revisions, -1)[0].Name, {query}, true)");
-                        queryStringBuilder.Append($" OR CONTAINS(r.Name, {query}, true)");
-                        queryStringBuilder.Append($" OR CONTAINS(r.ServiceName, {query}, true)");
-                        queryStringBuilder.Append($" OR CONTAINS(r.PackageDisplayName, {query}, true)");
-                        queryStringBuilder.Append($" OR CONTAINS(ARRAY_SLICE(r.Revisions, -1)[0].Label, {query}, true)");
+                        queryStringBuilder.Append($" OR CONTAINS(r.PackageName, {query}, true)");
                     }
                     queryStringBuilder.Append($")");
                 }
@@ -227,7 +230,7 @@ namespace APIViewWeb
             if (languages != null && languages.Any())
             {
                 var languagesAsQueryStr = ArrayToQueryString<string>(languages);
-                queryStringBuilder.Append($" AND r.Revisions[0].Files[0].Language IN {languagesAsQueryStr}");
+                queryStringBuilder.Append($" AND r.Language IN {languagesAsQueryStr}");
             }
 
             if (isClosed != null)
@@ -235,15 +238,9 @@ namespace APIViewWeb
                 queryStringBuilder.Append(" AND r.IsClosed = @isClosed");
             }
 
-            if (filterTypes != null && filterTypes.Any())
-            {
-                var filterTypeAsQueryStr = ArrayToQueryString<int>(filterTypes);
-                queryStringBuilder.Append($" AND r.FilterType IN {filterTypeAsQueryStr}");
-            }
-
             if (isApproved != null)
             {
-                queryStringBuilder.Append(" AND ARRAY_SLICE(r.Revisions, -1)[0].IsApproved = @isApproved");
+                queryStringBuilder.Append(" AND r.IsApproved = @isApproved");
             }
 
             // First get the total count to help with paging
@@ -261,17 +258,17 @@ namespace APIViewWeb
             queryStringBuilder.Append($" ORDER BY r.{orderBy} DESC");
             queryStringBuilder.Append(" OFFSET @offset LIMIT @limit");
 
-            var reviews = new List<ReviewModel>();
+            var reviews = new List<ReviewListItemModel>();
             QueryDefinition queryDefinition = new QueryDefinition(queryStringBuilder.ToString())
                 .WithParameter("@isClosed", isClosed)
                 .WithParameter("@isApproved", isApproved)
                 .WithParameter("@offset", offset)
                 .WithParameter("@limit", limit);
 
-            using FeedIterator<ReviewModel> feedIterator = _reviewsContainer.GetItemQueryIterator<ReviewModel>(queryDefinition);
+            using FeedIterator<ReviewListItemModel> feedIterator = _reviewsContainer.GetItemQueryIterator<ReviewListItemModel>(queryDefinition);
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<ReviewModel> response = await feedIterator.ReadNextAsync();
+                FeedResponse<ReviewListItemModel> response = await feedIterator.ReadNextAsync();
                 reviews.AddRange(response);
             }
             result.Reviews = reviews;

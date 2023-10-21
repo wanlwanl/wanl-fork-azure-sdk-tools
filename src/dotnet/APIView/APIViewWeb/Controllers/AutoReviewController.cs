@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using APIViewWeb.Filters;
+using APIViewWeb.LeanModels;
 using APIViewWeb.Managers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -57,11 +58,10 @@ namespace APIViewWeb.Controllers
 
             ReviewType filtertype = (firstReleaseStatusOnly == true) ? ReviewType.All : ReviewType.Automatic;
 
-            ReviewModel review;
+            ReviewListItemModel review;
             if (String.IsNullOrEmpty(reviewId))
             {
-                IEnumerable<ReviewModel> reviews = await _reviewManager.GetReviewsAsync(false, language, packageName: packageName, filtertype);
-                review = reviews.FirstOrDefault();
+                review =  await _reviewManager.GetReviewAsync(language, packageName);
             }
             else
             {

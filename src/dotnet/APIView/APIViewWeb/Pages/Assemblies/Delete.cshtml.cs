@@ -39,7 +39,7 @@ namespace APIViewWeb.Pages.Assemblies
                 return NotFound();
             }
 
-            await _manager.DeleteReviewAsync(User, id);
+            await _manager.SoftDeleteReviewAsync(User, id);
 
             return RedirectToPage("./Index");
         }
