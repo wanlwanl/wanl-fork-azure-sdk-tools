@@ -19,7 +19,7 @@ namespace APIViewWeb.Pages.Assemblies
     {
         private readonly ICommentsManager _commentsManager;
         private readonly IReviewManager _reviewManager;
-        private readonly IAPIRevisionsManager _reviewRevisionsManager;
+        private readonly IAPIRevisionsManager _apiRevisionsManager;
         private readonly ISamplesRevisionsManager _samplesManager;
         private const string ENDPOINT_SETTING = "Endpoint";
         private readonly IBlobCodeFileRepository _codeFileRepository;
@@ -39,14 +39,14 @@ namespace APIViewWeb.Pages.Assemblies
             IBlobCodeFileRepository codeFileRepository,
             ICommentsManager commentsManager,
             IReviewManager reviewManager,
-            IAPIRevisionsManager reviewRevisionsManager,
+            IAPIRevisionsManager apiRevisionsManager,
             UserPreferenceCache preferenceCache,
             ISamplesRevisionsManager samplesManager)
         {
             _codeFileRepository = codeFileRepository;
             _commentsManager = commentsManager;
             _reviewManager = reviewManager;
-            _reviewRevisionsManager = reviewRevisionsManager;
+            _apiRevisionsManager = apiRevisionsManager;
             Endpoint = configuration.GetValue<string>(ENDPOINT_SETTING);
             _preferenceCache = preferenceCache;
             _samplesManager = samplesManager;
@@ -57,7 +57,7 @@ namespace APIViewWeb.Pages.Assemblies
             TaggableUsers = _commentsManager.GetTaggableUsers();
             TempData["Page"] = "conversation";
             Review = await _reviewManager.GetReviewAsync(User, id);
-            LatestAPIRevision = await _reviewRevisionsManager.GetLatestAPIRevisionsAsync(Review.Id);
+            LatestAPIRevision = await _apiRevisionsManager.GetLatestAPIRevisionsAsync(Review.Id);
             SamplesRevisions = await _samplesManager.GetSamplesRevisionsAsync(id);
             var comments = await _commentsManager.GetReviewCommentsAsync(id);
             Threads = await ParseThreads(comments.Threads);
@@ -69,7 +69,7 @@ namespace APIViewWeb.Pages.Assemblies
         private async Task<IOrderedEnumerable<KeyValuePair<APIRevisionListItemModel, List<CommentThreadModel>>>> ParseThreads(IEnumerable<CommentThreadModel> threads)
         {
             var threadDict = new Dictionary<APIRevisionListItemModel, List<CommentThreadModel>>();
-            var revisions = await _reviewRevisionsManager.GetAPIRevisionsAsync(Review.Id);
+            var revisions = await _apiRevisionsManager.GetAPIRevisionsAsync(Review.Id);
 
             foreach (var thread in threads)
             {

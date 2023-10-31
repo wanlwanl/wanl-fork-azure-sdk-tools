@@ -27,7 +27,7 @@ namespace APIViewWeb.Pages.Assemblies
             }
 
             var reviewModel = await _manager.GetReviewAsync(User, id);
-            AssemblyName = reviewModel.DisplayName;
+            AssemblyName = reviewModel.PackageName;
 
             return Page();
         }

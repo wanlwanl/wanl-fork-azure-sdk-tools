@@ -60,7 +60,6 @@ namespace APIViewWeb.LeanModels
         public HashSet<string> Subscribers { get; set; } = new HashSet<string>();
         public List<ReviewChangeHistoryModel> ChangeHistory { get; set; } = new List<ReviewChangeHistoryModel>();
         public List<ReviewAssignmentModel> AssignedReviewers { get; set; } = new List<ReviewAssignmentModel>();
-
         public bool IsClosed { get; set; }
         public bool IsApproved { get; set; }
         public string CreatedBy { get; set; }

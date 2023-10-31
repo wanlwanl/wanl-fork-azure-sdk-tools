@@ -160,7 +160,6 @@ namespace APIViewWeb.Managers
             bool awaitComputeDiff = false)
         {
             var review = await _reviewManager.GetReviewAsync(user, reviewId);
-            await _reviewManager.AssertAutomaticReviewModifier(user, review);
             await AddAPIRevisionAsync(user, review, name, label, fileStream, language, awaitComputeDiff);
         }
 

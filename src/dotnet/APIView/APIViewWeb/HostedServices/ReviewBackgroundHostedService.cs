@@ -56,8 +56,9 @@ namespace APIViewWeb.HostedServices
             {
                 try
                 {
-                    await _reviewManager.UpdateReviewBackground(_upgradeDisabledLangs, _backgroundBatchProcessCount);
-                    await ArchiveInactiveReviews(stoppingToken, _autoArchiveInactiveGracePeriodMonths);
+                    // Removed temporarily to allow work on Review Revision Restructure
+                    //await _reviewManager.UpdateReviewBackground(_upgradeDisabledLangs, _backgroundBatchProcessCount);
+                    //await ArchiveInactiveReviews(stoppingToken, _autoArchiveInactiveGracePeriodMonths);
                 }
                 catch (Exception ex)
                 {
@@ -72,7 +73,7 @@ namespace APIViewWeb.HostedServices
             {
                 try
                 {
-                    await _reviewManager.AutoArchiveReviews(archiveAfter);
+                   //  await _reviewManager.AutoArchiveReviews(archiveAfter);
                 }
                 catch(Exception ex)
                 {

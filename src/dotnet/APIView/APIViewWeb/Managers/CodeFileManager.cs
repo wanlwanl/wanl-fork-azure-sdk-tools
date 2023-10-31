@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using ApiView;
@@ -14,13 +15,76 @@ namespace APIViewWeb.Managers
         private readonly IEnumerable<LanguageService> _languageServices;
         private readonly IBlobCodeFileRepository _codeFileRepository;
         private readonly IBlobOriginalsRepository _originalsRepository;
+        private readonly IDevopsArtifactRepository _devopsArtifactRepository;
+
         public CodeFileManager(
             IEnumerable<LanguageService> languageServices, IBlobCodeFileRepository codeFileRepository,
-            IBlobOriginalsRepository originalsRepository)
+            IBlobOriginalsRepository originalsRepository, IDevopsArtifactRepository devopsArtifactRepository)
         {
             _originalsRepository = originalsRepository;
             _codeFileRepository = codeFileRepository;
             _languageServices = languageServices;
+            _devopsArtifactRepository = devopsArtifactRepository;
+        }
+
+        /// <summary>
+        /// Get CodeFile
+        /// </summary>
+        /// <param name="repoName"></param>
+        /// <param name="buildId"></param>
+        /// <param name="artifactName"></param>
+        /// <param name="packageName"></param>
+        /// <param name="originalFileName"></param>
+        /// <param name="codeFileName"></param>
+        /// <param name="originalFileStream"></param>
+        /// <param name="baselineCodeFileName"></param>
+        /// <param name="baselineStream"></param>
+        /// <param name="project"></param>
+        /// <returns></returns>
+        public async Task<CodeFile> GetCodeFileAsync(string repoName,
+            string buildId,
+            string artifactName,
+            string packageName,
+            string originalFileName,
+            string codeFileName,
+            MemoryStream originalFileStream,
+            string baselineCodeFileName = "",
+            MemoryStream baselineStream = null,
+            string project = "public"
+            )
+        {
+            Stream stream = null;
+            CodeFile codeFile = null;
+            if (string.IsNullOrEmpty(codeFileName))
+            {
+                // backward compatibility until all languages moved to sandboxing of codefile to pipeline
+                stream = await _devopsArtifactRepository.DownloadPackageArtifact(repoName, buildId, artifactName, originalFileName, format: "file", project: project);
+                codeFile = await CreateCodeFileAsync(Path.GetFileName(originalFileName), stream, false, originalFileStream);
+            }
+            else
+            {
+                stream = await _devopsArtifactRepository.DownloadPackageArtifact(repoName, buildId, artifactName, packageName, format: "zip", project: project);
+                var archive = new ZipArchive(stream);
+                foreach (var entry in archive.Entries)
+                {
+                    var fileName = Path.GetFileName(entry.Name);
+                    if (fileName == originalFileName)
+                    {
+                        await entry.Open().CopyToAsync(originalFileStream);
+                    }
+
+                    if (fileName == codeFileName)
+                    {
+                        codeFile = await CodeFile.DeserializeAsync(entry.Open());
+                    }
+                    else if (fileName == baselineCodeFileName)
+                    {
+                        await entry.Open().CopyToAsync(baselineStream);
+                    }
+                }
+            }
+
+            return codeFile;
         }
 
         /// <summary>
