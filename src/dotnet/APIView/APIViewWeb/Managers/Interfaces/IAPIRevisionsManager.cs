@@ -13,7 +13,7 @@ namespace APIViewWeb.Managers.Interfaces
 {
     public interface IAPIRevisionsManager
     {
-        public Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, ReviewRevisionsFilterAndSortParams filterAndSortParams);
+        public Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, APIRevisionsFilterAndSortParams filterAndSortParams);
         public Task<IEnumerable<APIRevisionListItemModel>> GetAPIRevisionsAsync(string reviewId);
         public Task<APIRevisionListItemModel> GetLatestAPIRevisionsAsync(string reviewId, IEnumerable<APIRevisionListItemModel> reviewRevision = null);
         public Task<APIRevisionListItemModel> GetAPIRevisionAsync(ClaimsPrincipal user, string revisionId);
@@ -22,6 +22,7 @@ namespace APIViewWeb.Managers.Interfaces
         public Task AddAPIRevisionAsync(ClaimsPrincipal user, ReviewListItemModel review, string name, string label, Stream fileStream, string language, bool awaitComputeDiff = false);
         public Task RunAPIRevisionGenerationPipeline(List<APIRevisionGenerationPipelineParamModel> reviewGenParams, string language);
         public Task SoftDeleteAPIRevisionAsync(ClaimsPrincipal user, string reviewId, string revisionId);
+        public Task SoftDeleteAPIRevisionAsync(ClaimsPrincipal user, APIRevisionListItemModel revision);
         public Task UpdateAPIRevisionLabelAsync(ClaimsPrincipal user, string revisionId, string label);
         public Task<bool> IsAPIRevisionTheSame(APIRevisionListItemModel revision, RenderedCodeFile renderedCodeFile);
         public Task GetLineNumbersOfHeadingsOfSectionsWithDiff(string reviewId, APIRevisionListItemModel revision);

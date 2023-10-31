@@ -194,7 +194,7 @@ namespace APIViewWeb.Managers
                 return;
             }
 
-            await SendEmail(user.Email, $"Notification from APIView - {review.PackageDisplayName}", htmlContent);
+            await SendEmail(user.Email, $"Notification from APIView - {review.PackageName}", htmlContent);
         }
         private async Task SendEmailsAsync(ReviewListItemModel review, ClaimsPrincipal user, string htmlContent, ISet<string> notifiedUsers)
         {

@@ -59,7 +59,7 @@ namespace APIViewWeb.Repositories
         {
             if (_cache.TryGetValue(userName, out UserPreferenceModel _preference))
             {
-                return _preference.ReviewRevisionType;
+                return _preference.APIRevisionType;
             }
             return new List<APIRevisionType> { defaultType };
         }

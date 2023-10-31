@@ -30,7 +30,7 @@ namespace APIViewWeb.Pages.Assemblies
         private static int REVIEW_DIFF_CONTEXT_SIZE = 3;
         private const string DIFF_CONTEXT_SEPERATOR = "<br><span>.....</span><br>";
         private readonly IReviewManager _reviewManager;
-        private readonly IAPIRevisionsManager _reviewRevisionManager;
+        private readonly IAPIRevisionsManager _apiRevisionsManager;
         private readonly IPullRequestManager _pullRequestManager;
         private readonly IBlobCodeFileRepository _codeFileRepository;
         private readonly ICommentsManager _commentsManager;
@@ -53,7 +53,7 @@ namespace APIViewWeb.Pages.Assemblies
             IHubContext<SignalRHub> signalRHub)
         {
             _reviewManager = reviewManager;
-            _reviewRevisionManager = reviewRevisionManager;
+            _apiRevisionsManager = reviewRevisionManager;
             _pullRequestManager = pullRequestManager;
             _codeFileRepository = codeFileRepository;
             _commentsManager = commentsManager;
@@ -80,12 +80,12 @@ namespace APIViewWeb.Pages.Assemblies
 
             ReviewContent = await PageModelHelpers.GetReviewContentAsync(configuration: _configuration,
                 reviewManager: _reviewManager, preferenceCache: _preferenceCache, userProfileRepository: _userProfileRepository,
-                reviewRevisionsManager: _reviewRevisionManager, commentManager: _commentsManager, codeFileRepository: _codeFileRepository,
+                reviewRevisionsManager: _apiRevisionsManager, commentManager: _commentsManager, codeFileRepository: _codeFileRepository,
                 signalRHubContext: _signalRHubContext, user: User, reviewId: id, revisionId: revisionId, diffRevisionId: DiffRevisionId,
                 showDocumentation: ShowDocumentation, showDiffOnly: ShowDiffOnly, diffContextSize: REVIEW_DIFF_CONTEXT_SIZE,
                 diffContextSeperator: DIFF_CONTEXT_SEPERATOR);
 
-            if (!ReviewContent.ReviewRevisions.Any())
+            if (!ReviewContent.APIRevisions.Any())
             {
                 return RedirectToPage("LegacyReview", new { id = id });
             }
@@ -100,7 +100,7 @@ namespace APIViewWeb.Pages.Assemblies
             await GetReviewPageModelPropertiesAsync(id, revisionId, diffRevisionId, diffOnly);
 
             var codeLines = PageModelHelpers.GetCodeLineSection(user: User, reviewManager: _reviewManager,
-            apiRevisionsManager: _reviewRevisionManager, commentManager: _commentsManager,
+            apiRevisionsManager: _apiRevisionsManager, commentManager: _commentsManager,
             codeFileRepository: _codeFileRepository, reviewId: id, sectionKey: sectionKey, revisionId: revisionId,
             diffRevisionId: diffRevisionId, diffContextSize: REVIEW_DIFF_CONTEXT_SIZE, diffContextSeperator: DIFF_CONTEXT_SEPERATOR,
             sectionKeyA: sectionKeyA, sectionKeyB: sectionKeyB
@@ -154,7 +154,7 @@ namespace APIViewWeb.Pages.Assemblies
         /// <returns></returns>
         public async Task<IActionResult> OnPostToggleRevisionApprovalAsync(string id, string revisionId)
         {
-            await _reviewRevisionManager.ToggleAPIRevisionApprovalAsync(User, id, revisionId);
+            await _apiRevisionsManager.ToggleAPIRevisionApprovalAsync(User, id, revisionId);
             return RedirectToPage(new { id = id });
         }
 
@@ -167,7 +167,7 @@ namespace APIViewWeb.Pages.Assemblies
         /// <returns></returns>
         public async Task<ActionResult> OnPostRequestReviewersAsync(string id, string revisionId, HashSet<string> reviewers)
         {
-            await _reviewRevisionManager.RequestAPIRevisionReviewersAsync(User, revisionId, reviewers);
+            await _reviewManager.AssignReviewersToReviewAsync(User, revisionId, reviewers);
             await _notificationManager.NotifyApproversOfReview(User, id, reviewers);
             return RedirectToPage(new { id = id });
         }

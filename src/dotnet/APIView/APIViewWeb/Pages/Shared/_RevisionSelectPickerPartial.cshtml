@@ -4,18 +4,18 @@
 @using APIViewWeb.Models
 @model (IEnumerable<APIRevisionListItemModel> revisions, APIRevisionListItemModel activeRevision, APIRevisionListItemModel diffRevision, bool forDiff, bool showDocumentation, bool showDiffOnly)
 
-@if (Model.revisions.Any())
+@if (@Model.revisions.Any())
 {
     var selectedRevisionLabel = String.Empty;
     if (!@Model.forDiff)
     {
         selectedRevisionLabel = PageModelHelpers.ResolveRevisionLabel(@Model.activeRevision);
     }
-    else if (@Model.diffRevision != null)
+    else if (@Model.diffRevision != default(APIRevisionListItemModel))
     {
         selectedRevisionLabel = PageModelHelpers.ResolveRevisionLabel(@Model.diffRevision);
     }
-    @foreach (var revision in Model.revisions)
+    @foreach (var revision in @Model.revisions)
     {
         var optionClass = (revision.IsApproved) ? "option-approved" : "option-pending";
 

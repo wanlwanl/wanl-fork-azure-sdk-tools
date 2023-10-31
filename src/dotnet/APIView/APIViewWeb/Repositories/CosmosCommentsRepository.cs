@@ -21,7 +21,7 @@ namespace APIViewWeb
 
         public async Task<IEnumerable<CommentItemModel>> GetCommentsAsync(string reviewId)
         {
-            return await GetCommentsFromQueryAsync($"SELECT * FROM Comments c WHERE c.ReviewId = '{reviewId}' AND c.IsDeleted == false");
+            return await GetCommentsFromQueryAsync($"SELECT * FROM Comments c WHERE c.ReviewId = '{reviewId}' AND c.IsDeleted = false");
         }
 
         public async Task UpsertCommentAsync(CommentItemModel commentModel)
@@ -36,7 +36,7 @@ namespace APIViewWeb
 
         public async Task<IEnumerable<CommentItemModel>> GetCommentsAsync(string reviewId, string lineId)
         {
-            return await GetCommentsFromQueryAsync($"SELECT * FROM Comments c WHERE c.ReviewId = '{reviewId}' AND c.ElementId = '{lineId}' AND c.IsDeleted == false");
+            return await GetCommentsFromQueryAsync($"SELECT * FROM Comments c WHERE c.ReviewId = '{reviewId}' AND c.ElementId = '{lineId}' AND c.IsDeleted = false");
         }
 
         private async Task<IEnumerable<CommentItemModel>> GetCommentsFromQueryAsync(string query)

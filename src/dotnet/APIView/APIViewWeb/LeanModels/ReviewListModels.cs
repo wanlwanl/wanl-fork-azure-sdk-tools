@@ -45,7 +45,7 @@ namespace APIViewWeb.LeanModels
     public class ReviewRevisionListModel
     {
         public int TotalNumberOfReviewRevisions { get; set; }
-        public List<APIRevisionListItemModel> ReviewRevisions { get; set; }
+        public List<APIRevisionListItemModel> APIRevisions { get; set; }
     }
 
     public class ReviewListItemModel
@@ -53,10 +53,7 @@ namespace APIViewWeb.LeanModels
         [JsonProperty("id")]
         public string Id { get; set; } = IdHelper.GenerateId();
         public string PackageName { get; set; }
-        public string PackageDisplayName { get; set; }
-        public string ServiceName { get; set; }
         public string Language { get; set; }
-        public HashSet<string> APIRevisions { get; set; } = new HashSet<string>();
         public HashSet<string> Subscribers { get; set; } = new HashSet<string>();
         public List<ReviewChangeHistoryModel> ChangeHistory { get; set; } = new List<ReviewChangeHistoryModel>();
         public List<ReviewAssignmentModel> AssignedReviewers { get; set; } = new List<ReviewAssignmentModel>();
@@ -80,7 +77,6 @@ namespace APIViewWeb.LeanModels
         public List<APIRevisionChangeHistoryModel> ChangeHistory { get; set; } = new List<APIRevisionChangeHistoryModel>();
         public APIRevisionType APIRevisionType { get; set; }
         public Dictionary<string, HashSet<int>> HeadingsOfSectionsWithDiff { get; set; } = new Dictionary<string, HashSet<int>>();
-        public List<ReviewAssignmentModel> AssignedReviewers { get; set; } = new List<ReviewAssignmentModel>();
         public bool IsApproved { get; set; }
         public HashSet<string> Approvers { get; set; } = new HashSet<string>();
         public string CreatedBy { get; set; }

@@ -194,7 +194,7 @@
                             {
                                 <li class="list-group-item">
                                     <div class="form-check">
-                                    @if (Model.ReviewContent.ActiveRevision.AssignedReviewers != null && Model.ReviewContent.ActiveRevision.AssignedReviewers.ContainsKey(approver))
+                                    @if (Model.ReviewContent.Review.AssignedReviewers != null && Model.ReviewContent.Review.AssignedReviewers.Where(a => a.AssingedTo == approver).Any())
                                         {
                                             <input class="form-check-input selectReviewerForRequest" type="checkbox" name="reviewers" value="@approver" id="@(approver)CheckBox" checked>
                                             <label class="form-check-label" for="@(approver)CheckBox">
@@ -462,19 +462,20 @@
                 </select>
                 <select id="revision-select" aria-label="Revision Select">
                     @{
-                        var revisionSelectModel = (
-                            revisions: Model.ReviewContent.ReviewRevisions["Automatic"],
+                        var revisionsToSelectFrom = (Model.ReviewContent.APIRevisions.ContainsKey("Automatic")) ? Model.ReviewContent.APIRevisions["Automatic"] : Model.ReviewContent.APIRevisions[Model.ReviewContent.APIRevisions.Keys.First()];
+                        (IEnumerable<APIRevisionListItemModel> revisions, APIRevisionListItemModel activeRevision, APIRevisionListItemModel diffRevision, bool forDiff, bool showDocumentation, bool showDiffOnly) revisionSelectModel = (
+                            revisions: revisionsToSelectFrom,
                             activeRevision: Model.ReviewContent.ActiveRevision,
+                            diffRevision: default(APIRevisionListItemModel),
                             forDiff: false,
                             showDocumentation: Model.ShowDocumentation,
                             showDiffOnly: Model.ShowDiffOnly
                         );
                     }
-                    <partial name="_RevisionSelectPickerPartial" model="revisionSelectModel" />
+                    <partial name="Shared/_RevisionSelectPickerPartial" model="revisionSelectModel" />
                 </select>
 
-                @if (@Model.ReviewContent.ReviewRevisions["Automatic"].Any() ||
-                     @Model.ReviewContent.ReviewRevisions["Manual"].Any() || @Model.ReviewContent.ReviewRevisions["PullRequest"].Any())
+                @if (@Model.ReviewContent.APIRevisions.Where(x => x.Value.Any()).Any())
                 {
                     @if (Model.DiffRevisionId != null)
                     {
@@ -490,11 +491,12 @@
                     }
                     else
                     {
+                        var diffRevisionForButton = (Model.ReviewContent.APIRevisions.ContainsKey("Automatic")) ? Model.ReviewContent.APIRevisions["Automatic"] : Model.ReviewContent.APIRevisions[Model.ReviewContent.APIRevisions.Keys.First()];
                         var urlValue = @Url.ActionLink("Review", "Assemblies", new
                         {
                             id = @Model.ReviewContent.Review.Id,
                             revisionId = @Model.ReviewContent.ActiveRevision.Id,
-                            diffRevisionId = @Model.ReviewContent.ReviewRevisions["Automatic"].First().Id,
+                            diffRevisionId = diffRevisionForButton.First().Id,
                             doc = @Model.ShowDocumentation,
                             diffOnly = @Model.ShowDiffOnly
                         });
@@ -507,8 +509,9 @@
                     </select>
                     <select id="diff-select" aria-label="Diff Select">
                         @{
-                            var diffRevisionSelectModel = (
-                            revisions: Model.ReviewContent.ReviewRevisions["Automatic"],
+                            var diffRevisionsToSelectFrom = (Model.ReviewContent.APIRevisions.ContainsKey("Automatic")) ? Model.ReviewContent.APIRevisions["Automatic"] : Model.ReviewContent.APIRevisions[Model.ReviewContent.APIRevisions.Keys.First()];
+                            (IEnumerable<APIRevisionListItemModel> revisions, APIRevisionListItemModel activeRevision, APIRevisionListItemModel diffRevision, bool forDiff, bool showDocumentation, bool showDiffOnly) diffRevisionSelectModel = (
+                            revisions: diffRevisionsToSelectFrom,
                             activeRevision: Model.ReviewContent.ActiveRevision,
                             diffRevision: Model.ReviewContent.DiffRevision,
                             forDiff: false,
@@ -516,11 +519,11 @@
                             showDiffOnly: Model.ShowDiffOnly
                             );
                         }
-                        <partial name="_RevisionSelectPickerPartial" model="diffRevisionSelectModel" />
+                        <partial name="Shared/_RevisionSelectPickerPartial" model="diffRevisionSelectModel" />
                     </select>
                 }
                 @{
-                    var popOverContent = $"<b>{Model.ReviewContent.ActiveConversationsInActiveReviewRevision}</b> active revision threads.<br><b>{Model.ReviewContent.ActiveConversationsInSampleRevisions}</b> active usage sample threads.<br><b>{Model.ReviewConten.TotalActiveConversations}</b> total active threads.<br>"
+                    var popOverContent = $"<b>{Model.ReviewContent.ActiveConversationsInActiveReviewRevision}</b> active revision threads.<br><b>{Model.ReviewContent.ActiveConversationsInSampleRevisions}</b> active usage sample threads.<br><b>{Model.ReviewContent.TotalActiveConversiations}</b> total active threads.<br>"
                     + $"<b>Current Revision:</b> <em>{PageModelHelpers.ResolveRevisionLabel(@Model.ReviewContent.ActiveRevision)}</ em >";
                     @if (Model.DiffRevisionId != null)
                     {

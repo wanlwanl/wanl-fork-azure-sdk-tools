@@ -10,6 +10,7 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
+#if false
 namespace APIViewWeb.HostedServices
 {
     public class ReviewBackgroundHostedService : BackgroundService
@@ -56,9 +57,8 @@ namespace APIViewWeb.HostedServices
             {
                 try
                 {
-                    // Removed temporarily to allow work on Review Revision Restructure
-                    //await _reviewManager.UpdateReviewBackground(_upgradeDisabledLangs, _backgroundBatchProcessCount);
-                    //await ArchiveInactiveReviews(stoppingToken, _autoArchiveInactiveGracePeriodMonths);
+                    await _reviewManager.UpdateReviewBackground(_upgradeDisabledLangs, _backgroundBatchProcessCount);
+                    await ArchiveInactiveReviews(stoppingToken, _autoArchiveInactiveGracePeriodMonths);
                 }
                 catch (Exception ex)
                 {
@@ -89,3 +89,4 @@ namespace APIViewWeb.HostedServices
         }
     }
 }
+#endif

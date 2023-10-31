@@ -15,7 +15,5 @@ namespace APIViewWeb.Repositories
         public Task<IEnumerable<string>> GetReviewFirstLevelPropertiesAsync(string propertyName);
         public Task<(IEnumerable<ReviewListItemModel> Reviews, int TotalCount)> GetReviewsAsync(
             IEnumerable<string> search, IEnumerable<string> languages, bool? isClosed, bool? isApproved, int offset, int limit, string orderBy);
-        public Task<IEnumerable<ReviewModel>> GetApprovedForFirstReleaseReviews(string language, string packageName);
-        public Task<IEnumerable<ReviewModel>> GetApprovedReviews(string language, string packageName);
     }
 }

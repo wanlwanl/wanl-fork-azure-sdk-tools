@@ -21,7 +21,7 @@ namespace APIViewWeb
 
         public CosmosAPIRevisionsRepository(IConfiguration configuration, CosmosClient cosmosClient)
         {
-            _reviewRevisionContainer = cosmosClient.GetContainer("APIViewV2", "Revisions");
+            _reviewRevisionContainer = cosmosClient.GetContainer("APIViewV2", "APIRevisions");
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace APIViewWeb
         public async Task UpsertAPIRevisionAsync(APIRevisionListItemModel revision)
         {
             revision.LastUpdatedOn = DateTime.UtcNow;
-            await _reviewRevisionContainer.UpsertItemAsync(revision, new PartitionKey(revision.Id));
+            await _reviewRevisionContainer.UpsertItemAsync(revision, new PartitionKey(revision.ReviewId));
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace APIViewWeb
         /// <param name="pageParams"></param> Contains paginationinfo
         /// <param name="filterAndSortParams"></param> Contains filter and sort parameters
         /// <returns></returns>
-        public async Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, ReviewRevisionsFilterAndSortParams filterAndSortParams)
+        public async Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, APIRevisionsFilterAndSortParams filterAndSortParams)
         {
             var queryStringBuilder = new StringBuilder(@"SELECT * FROM Revisions c");
             queryStringBuilder.Append(" WHERE c.IsDeleted = false");
@@ -191,7 +191,11 @@ namespace APIViewWeb
         /// <returns></returns>
         public async Task<APIRevisionListItemModel> GetReviewRevisionAsync(string revisionId)
         {
-            return await _reviewRevisionContainer.ReadItemAsync<APIRevisionListItemModel>(revisionId, new PartitionKey(revisionId));
+            var query = $"SELECT * FROM Revisions c WHERE c.id = '{revisionId}'";
+            QueryDefinition queryDefinition = new QueryDefinition(query);
+            using FeedIterator<APIRevisionListItemModel> feedIterator = _reviewRevisionContainer.GetItemQueryIterator<APIRevisionListItemModel>(queryDefinition);
+            FeedResponse<APIRevisionListItemModel> response = await feedIterator.ReadNextAsync();
+            return response.Single();
         }
     }
 }

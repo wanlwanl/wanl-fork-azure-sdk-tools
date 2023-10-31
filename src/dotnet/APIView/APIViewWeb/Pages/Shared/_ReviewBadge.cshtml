@@ -10,11 +10,13 @@
 @if (Model.review.Language != null)
 {
     string iconClassName = "icon-" + PageModelHelpers.GetLanguageCssSafeName(Model.review.Language);
-    @if (!string.IsNullOrEmpty(Model.activeRevision.Files.First().LanguageVariant) && Model.activeRevision.Files.First().LanguageVariant.ToLower() != "default")
+    string langVariant = String.Empty;
+    @if (Model.activeRevision != default(APIRevisionListItemModel) && !string.IsNullOrEmpty(Model.activeRevision.Files.First().LanguageVariant) && Model.activeRevision.Files.First().LanguageVariant.ToLower() != "default")
     {
+        langVariant = @Model.activeRevision.Files.First().LanguageVariant.ToLower();
         iconClassName += "-" + @Model.activeRevision.Files.First().LanguageVariant.ToLower();
     }
-    <span role="img" class="input-group-text icon-language @iconClassName" aria-label="@Model.review.Language @Model.activeRevision.Files.First().LanguageVariant"></span>
+    <span role="img" class="input-group-text icon-language @iconClassName" aria-label="@Model.review.Language @langVariant"></span>
 }
 @{
     var packageFieldWidth = 3;

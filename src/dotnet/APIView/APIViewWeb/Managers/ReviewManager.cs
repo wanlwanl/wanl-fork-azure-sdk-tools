@@ -3,18 +3,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using ApiView;
 using APIViewWeb.Hubs;
 using APIViewWeb.Models;
 using APIViewWeb.Repositories;
 using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -35,24 +31,16 @@ namespace APIViewWeb.Managers
         private readonly IAPIRevisionsManager _apiRevisionsManager;
         private readonly ICommentsManager _commentManager;
         private readonly IBlobCodeFileRepository _codeFileRepository;
-        private readonly IBlobOriginalsRepository _originalsRepository;
         private readonly ICosmosCommentsRepository _commentsRepository;
-        private readonly IEnumerable<LanguageService> _languageServices;
-        private readonly INotificationManager _notificationManager;
-        private readonly IDevopsArtifactRepository _devopsArtifactRepository;
-        private readonly IPackageNameManager _packageNameManager;
         private readonly IHubContext<SignalRHub> _signalRHubContext;
-        private readonly ICodeFileManager _codeFileManager;
 
         static TelemetryClient _telemetryClient = new(TelemetryConfiguration.CreateDefault());
 
         public ReviewManager (
             IAuthorizationService authorizationService, ICosmosReviewRepository reviewsRepository,
             IAPIRevisionsManager apiRevisionsManager, ICommentsManager commentManager,
-            IBlobCodeFileRepository codeFileRepository, IBlobOriginalsRepository originalsRepository,
-            ICosmosCommentsRepository commentsRepository, IEnumerable<LanguageService> languageServices,
-            INotificationManager notificationManager, IDevopsArtifactRepository devopsClient, IPackageNameManager packageNameManager,
-            IHubContext<SignalRHub> signalRHubContext, ICodeFileManager codeFileManager)
+            IBlobCodeFileRepository codeFileRepository, ICosmosCommentsRepository commentsRepository, 
+            IHubContext<SignalRHub> signalRHubContext)
 
         {
             _authorizationService = authorizationService;
@@ -60,14 +48,8 @@ namespace APIViewWeb.Managers
             _apiRevisionsManager = apiRevisionsManager;
             _commentManager = commentManager;
             _codeFileRepository = codeFileRepository;
-            _originalsRepository = originalsRepository;
             _commentsRepository = commentsRepository;
-            _languageServices = languageServices;
-            _notificationManager = notificationManager;
-            _devopsArtifactRepository = devopsClient;
-            _packageNameManager = packageNameManager;
             _signalRHubContext = signalRHubContext;
-            _codeFileManager = codeFileManager;
         }
 
         public Task<ReviewListItemModel> GetReviewAsync(string language, string packageName, bool isClosed = false)
@@ -122,6 +104,7 @@ namespace APIViewWeb.Managers
         public async Task SoftDeleteReviewAsync(ClaimsPrincipal user, string id)
         {
             var review = await _reviewsRepository.GetReviewAsync(id);
+            var revisions = await _apiRevisionsManager.GetAPIRevisionsAsync(id);
             await AssertReviewOwnerAsync(user, review);
 
             var changeUpdate = ChangeHistoryHelpers.UpdateBinaryChangeAction(review.ChangeHistory, ReviewChangeAction.Deleted, user.GetGitHubLogin());
@@ -129,9 +112,9 @@ namespace APIViewWeb.Managers
             review.IsDeleted = changeUpdate.ChangeStatus;
             await _reviewsRepository.UpsertReviewAsync(review);
 
-            foreach (var apiRevisionId in review.APIRevisions)
+            foreach (var revision in revisions)
             {
-                await _apiRevisionsManager.SoftDeleteAPIRevisionAsync(user, review.Id, apiRevisionId);
+                await _apiRevisionsManager.SoftDeleteAPIRevisionAsync(user, revision);
             }
             await _commentManager.SoftDeleteCommentsAsync(user, review.Id);
         }

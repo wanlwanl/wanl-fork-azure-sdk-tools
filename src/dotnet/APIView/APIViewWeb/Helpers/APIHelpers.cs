@@ -32,7 +32,7 @@ namespace APIViewWeb.Helpers
         public int SortOrder { get; set; } = 1;
     }
 
-    public class ReviewRevisionsFilterAndSortParams : ReviewFilterAndSortParams
+    public class APIRevisionsFilterAndSortParams : ReviewFilterAndSortParams
     {
         public string Author { get; set; }
         public string ReviewId { get; set; }

@@ -23,7 +23,6 @@ namespace APIViewWeb.Managers
     public class APIRevisionsManager : IAPIRevisionsManager
     {
         private readonly IAuthorizationService _authorizationService;
-        private readonly IReviewManager _reviewManager;
         private readonly ICosmosReviewRepository _reviewsRepository;
         private readonly IBlobCodeFileRepository _codeFileRepository;
         private readonly ICosmosAPIRevisionsRepository _apiRevisionsRepository;
@@ -37,7 +36,6 @@ namespace APIViewWeb.Managers
 
         public APIRevisionsManager(
             IAuthorizationService authorizationService,
-            IReviewManager reviewManager,
             ICosmosReviewRepository reviewsRepository,
             ICosmosAPIRevisionsRepository reviewsRevisionsRepository,
             IHubContext<SignalRHub> signalRHubContext,
@@ -48,7 +46,6 @@ namespace APIViewWeb.Managers
             IBlobOriginalsRepository originalsRepository,
             INotificationManager notificationManager)
         {
-            _reviewManager = reviewManager;
             _reviewsRepository = reviewsRepository;
             _apiRevisionsRepository = reviewsRevisionsRepository;
             _authorizationService = authorizationService;
@@ -67,7 +64,7 @@ namespace APIViewWeb.Managers
         /// <param name="pageParams"></param> Contains paginationinfo
         /// <param name="filterAndSortParams"></param> Contains filter and sort parameters
         /// <returns></returns>
-        public async Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, ReviewRevisionsFilterAndSortParams filterAndSortParams)
+        public async Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, APIRevisionsFilterAndSortParams filterAndSortParams)
         {
              return await _apiRevisionsRepository.GetAPIRevisionsAsync(pageParams, filterAndSortParams);
         }
@@ -159,7 +156,7 @@ namespace APIViewWeb.Managers
             string language = "",
             bool awaitComputeDiff = false)
         {
-            var review = await _reviewManager.GetReviewAsync(user, reviewId);
+            var review = await _reviewsRepository.GetReviewAsync(reviewId);
             await AddAPIRevisionAsync(user, review, name, label, fileStream, language, awaitComputeDiff);
         }
 
@@ -301,7 +298,6 @@ namespace APIViewWeb.Managers
             revision.Files.Add(codeFile);
             revision.CreatedBy = user.GetGitHubLogin();
             revision.Label = label;
-            review.APIRevisions.Add(revision.Id);
 
             var languageService = language != null ? _languageServices.FirstOrDefault(l => l.Name == language) : _languageServices.FirstOrDefault(s => s.IsSupportedFile(name));
             // Run pipeline to generate the review if sandbox is enabled
@@ -360,8 +356,18 @@ namespace APIViewWeb.Managers
         /// <returns></returns>
         public async Task SoftDeleteAPIRevisionAsync(ClaimsPrincipal user, string reviewId, string revisionId)
         {
-            var review = await _reviewsRepository.GetReviewAsync(reviewId);
             var revision = await _apiRevisionsRepository.GetReviewRevisionAsync(revisionId);
+            AssertAPIRevisionDeletion(revision);
+            await AssertAPIRevisionOwner(user, revision);
+            await SoftDeleteAPIRevisionAsync(user, revision);
+        }
+
+        /// <summary>
+        /// Delete APIRevisions
+        /// <param name="revisionId"></param>
+        /// <returns></returns>
+        public async Task SoftDeleteAPIRevisionAsync(ClaimsPrincipal user, APIRevisionListItemModel revision)
+        {
             AssertAPIRevisionDeletion(revision);
             await AssertAPIRevisionOwner(user, revision);
 
@@ -369,12 +375,6 @@ namespace APIViewWeb.Managers
             revision.ChangeHistory = changeUpdate.ChangeHistory;
             revision.IsDeleted = changeUpdate.ChangeStatus;
 
-            if (review.APIRevisions.Contains(revisionId))
-            {
-                review.APIRevisions.Remove(revisionId);
-            }
-            
-            await _reviewsRepository.UpsertReviewAsync(review);
             await _apiRevisionsRepository.UpsertAPIRevisionAsync(revision);
         }
 

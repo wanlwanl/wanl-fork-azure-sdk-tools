@@ -21,6 +21,8 @@ $(() => {
     // Enable SumoSelect
     (<any>$("#revision-select")).SumoSelect({ search: true, searchText: 'Search Revisions...' });
     (<any>$("#diff-select")).SumoSelect({ search: true, searchText: 'Search Revisons for Diff...' });
+    (<any>$("#revision-type-select")).SumoSelect();
+    (<any>$("#diff-revision-type-select")).SumoSelect();
 
     // Update codeLine Section state after page refresh
     const shownSectionHeadingLineNumbers = sessionStorage.getItem("shownSectionHeadingLineNumbers");

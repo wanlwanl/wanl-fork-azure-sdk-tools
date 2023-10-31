@@ -175,7 +175,7 @@ namespace APIViewWeb
 
             // Build up Query
             var queryStringBuilder = new StringBuilder("SELECT * FROM Reviews r");
-            queryStringBuilder.Append(" WHERE r.IsDeleted"); // Allows for appending the other query parts as AND's in any order
+            queryStringBuilder.Append(" WHERE r.IsDeleted = false"); // Allows for appending the other query parts as AND's in any order
 
             if (search != null && search.Any())
             {

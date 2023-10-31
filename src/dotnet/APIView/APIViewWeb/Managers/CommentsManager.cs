@@ -141,7 +141,6 @@ namespace APIViewWeb.Managers
         /// </summary>
         /// <param name="user"></param>
         /// <param name="reviewId"></param>
-        /// <param name="commentId"></param>
         /// <returns></returns>
         public async Task SoftDeleteCommentsAsync(ClaimsPrincipal user, string reviewId)
         {

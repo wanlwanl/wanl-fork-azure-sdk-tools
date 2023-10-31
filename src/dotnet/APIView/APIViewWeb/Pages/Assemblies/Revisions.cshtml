@@ -12,7 +12,7 @@
     <div class="row mx-1 px-0 py-2">
         <div class="col-md-4">
             <div class="input-group-sm input-group">
-                <partial name="Shared/_ReviewBadge" model="(Model.Review, Model.LatestRevision)" />
+                <partial name="Shared/_ReviewBadge" model="(Model.Review, Model.LatestAPIRevision)" />
             </div>
         </div>
         <div class="col-md-4">
@@ -24,7 +24,7 @@
 </div>
 
 <div class="container" id="revisions-main-container">
-    <div class="row" asp-resource="@Model.Review" asp-requirement="@AutoReviewModifierRequirement.Instance">
+    <div class="row" asp-resource="@Model.LatestAPIRevision" asp-requirement="@AutoReviewModifierRequirement.Instance">
         <div id="add-revision-button">
             <button type="button" class="btn btn-primary" id="add-revision-button" data-bs-toggle="modal" data-bs-target="#uploadModel"><small>ADD</small><br><i class="fas fa-sm fa-plus"></i><br><small>REVISION</small></button>
         </div>
@@ -85,7 +85,7 @@
     <div class="row mx-0 px-0 py-2">
         <div class="col-lg-12 mx-0 px-0">
             <ul class="list-group">
-                @foreach (var revision in Model.ReviewRevisions["Automatic"])
+                @foreach (var revision in Model.APIRevisions["Automatic"])
                 {
                     <li class="list-group-item">
                         <form class="form-inline revision-rename-form float-left" asp-page-handler="Rename" method="post">
@@ -98,10 +98,11 @@
                                     <a href="#" class="text-decoration-none cancel-revision-rename">❌</a>
                                 </span>
                             </span>
-                            <span class="revision-name-label">PageModelHelpers.ResolveRevisionLabel(@revision.Label)</span>
+                            <span class="revision-name-label">@revision.Label</span>
                             <span class="font-italic pl-3">
+                                <span>@revision.APIRevisionType.ToString(), Created: </span>
                                 <span date="@revision.CreatedOn"></span>
-                                <span>by @revision.CreatedBy</span>
+                                <span>By: @revision.CreatedBy</span>
                             </span>
                         </form>
                         <form asp-resource="@revision" asp-requirement="@RevisionOwnerRequirement.Instance"
@@ -113,7 +114,7 @@
                 }
             </ul>
             <ul class="list-group">
-                @foreach (var revision in Model.ReviewRevisions["PullRequest"])
+                @foreach (var revision in Model.APIRevisions["PullRequest"])
                 {
                     <li class="list-group-item">
                         <form class="form-inline revision-rename-form float-left" asp-page-handler="Rename" method="post">
@@ -126,10 +127,11 @@
                                     <a href="#" class="text-decoration-none cancel-revision-rename">❌</a>
                                 </span>
                             </span>
-                            <span class="revision-name-label">PageModelHelpers.ResolveRevisionLabel(@revision.Label)</span>
+                            <span class="revision-name-label">@revision.Label</span>
                             <span class="font-italic pl-3">
+                                <span>@revision.APIRevisionType.ToString(), Created: </span>
                                 <span date="@revision.CreatedOn"></span>
-                                <span>by @revision.CreatedBy</span>
+                                <span>By: @revision.CreatedBy</span>
                             </span>
                         </form>
                         <form asp-resource="@revision" asp-requirement="@RevisionOwnerRequirement.Instance"
@@ -141,7 +143,7 @@
                 }
             </ul>
             <ul class="list-group">
-                @foreach (var revision in Model.ReviewRevisions["Manual"])
+                @foreach (var revision in Model.APIRevisions["Manual"])
                 {
                     <li class="list-group-item">
                         <form class="form-inline revision-rename-form float-left" asp-page-handler="Rename" method="post">
@@ -154,10 +156,11 @@
                                     <a href="#" class="text-decoration-none cancel-revision-rename">❌</a>
                                 </span>
                             </span>
-                            <span class="revision-name-label">PageModelHelpers.ResolveRevisionLabel(@revision.Label)</span>
+                            <span class="revision-name-label">@revision.Label</span>
                             <span class="font-italic pl-3">
+                                <span>@revision.APIRevisionType.ToString(), Created: </span>
                                 <span date="@revision.CreatedOn"></span>
-                                <span>by @revision.CreatedBy</span>
+                                <span>By: @revision.CreatedBy</span>
                             </span>
                         </form>
                         <form asp-resource="@revision" asp-requirement="@RevisionOwnerRequirement.Instance"

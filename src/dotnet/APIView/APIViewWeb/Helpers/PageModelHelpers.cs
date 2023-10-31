@@ -243,7 +243,7 @@ namespace APIViewWeb.Helpers
             var activeRevision = await reviewRevisionsManager.GetLatestAPIRevisionsAsync(reviewId, revisions);
             APIRevisionListItemModel diffRevision = null;
             if (!string.IsNullOrEmpty(revisionId)) {
-                if (review.APIRevisions.Contains(revisionId))
+                if (revisions.Where(x => x.Id == revisionId).Any())
                 {
                     activeRevision = await reviewRevisionsManager.GetAPIRevisionAsync(user, revisionId);
                 }
@@ -265,7 +265,7 @@ namespace APIViewWeb.Helpers
 
             if (!string.IsNullOrEmpty(diffRevisionId))
             {
-                if (review.APIRevisions.Contains(diffRevisionId))
+                if (revisions.Where(x => x.Id == diffRevisionId).Any())
                 {
                     diffRevision = await reviewRevisionsManager.GetAPIRevisionAsync(user, diffRevisionId);
                     var diffRevisionRenderableCodeFile = await codeFileRepository.GetCodeFileAsync(diffRevisionId, diffRevision.Files[0].FileId);
@@ -334,7 +334,7 @@ namespace APIViewWeb.Helpers
                 Review = review,
                 Navigation = activeRevisionRenderableCodeFile.CodeFile.Navigation,
                 codeLines = codeLines,
-                ReviewRevisions = revisions.GroupBy(r => r.APIRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList()),
+                APIRevisions = revisions.GroupBy(r => r.APIRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList()),
                 ActiveRevision = activeRevision,
                 DiffRevision = diffRevision,
                 TotalActiveConversiations = comments.Threads.Count(t => !t.IsResolved),
@@ -350,6 +350,7 @@ namespace APIViewWeb.Helpers
         /// <summary>
         /// Get CodeLineSection
         /// </summary>
+        /// <param name="user"></param>
         /// <param name="reviewManager"></param>
         /// <param name="apiRevisionsManager"></param>
         /// <param name="commentManager"></param>
@@ -439,7 +440,7 @@ namespace APIViewWeb.Helpers
         /// <returns></returns>
         public static string ResolveRevisionLabel(APIRevisionListItemModel revision)
         {
-            return revision.PackageName + $" - Created : {revision.CreatedOn.ToString()}";
+            return $"{revision.APIRevisionType.ToString()} - CreatedOn : {revision.CreatedOn.ToString()} - CreatedBy : {revision.CreatedBy}";
         }
 
         /// <summary>

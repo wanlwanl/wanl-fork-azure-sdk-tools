@@ -29,8 +29,8 @@ namespace APIViewWeb.Pages.Assemblies
         }
 
         public ReviewListItemModel Review { get; set; }
-        public APIRevisionListItemModel LatestRevision { get; set; }
-        public Dictionary<string, List<APIRevisionListItemModel>> ReviewRevisions { get; set; }
+        public APIRevisionListItemModel LatestAPIRevision { get; set; }
+        public Dictionary<string, List<APIRevisionListItemModel>> APIRevisions { get; set; }
 
         [FromForm]
         public string Label { get; set; }
@@ -46,9 +46,9 @@ namespace APIViewWeb.Pages.Assemblies
             TempData["Page"] = "revisions";
 
             Review = await _reviewManager.GetReviewAsync(User, id);
-            LatestRevision = await _apiRevisionsManager.GetLatestAPIRevisionsAsync(Review.Id);
+            LatestAPIRevision = await _apiRevisionsManager.GetLatestAPIRevisionsAsync(Review.Id);
             var revisions = await _apiRevisionsManager.GetAPIRevisionsAsync(Review.Id);
-            ReviewRevisions = revisions.GroupBy(r => r.APIRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList());
+            APIRevisions = revisions.GroupBy(r => r.APIRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList());
 
             return Page();
         }

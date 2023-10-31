@@ -11,7 +11,7 @@ namespace APIViewWeb.Models
     {
         internal IEnumerable<string> _language;
         internal IEnumerable<string> _approvedLanguages;
-        internal IEnumerable<APIRevisionType> _reviewRevisionType;
+        internal IEnumerable<APIRevisionType> _apiRevisionType;
         internal IEnumerable<string> _state;
         internal IEnumerable<string> _status;
         internal bool? _hideLineNumbers;
@@ -38,10 +38,10 @@ namespace APIViewWeb.Models
             set => _approvedLanguages = value;
         }
 
-        [Name("FilterType")]
-        public IEnumerable<APIRevisionType> ReviewRevisionType {
-            get => _reviewRevisionType ?? new List<APIRevisionType>();
-            set => _reviewRevisionType = value;
+        [Name("APIRevisionType")]
+        public IEnumerable<APIRevisionType> APIRevisionType {
+            get => _apiRevisionType ?? new List<APIRevisionType>();
+            set => _apiRevisionType = value;
         }
 
         [Name("State")]
