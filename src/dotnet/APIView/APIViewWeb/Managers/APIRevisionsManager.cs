@@ -10,6 +10,7 @@ using APIViewWeb.Models;
 using APIViewWeb.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Octokit;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -503,6 +504,106 @@ namespace APIViewWeb.Managers
                 }
             }
             return result;
+        }
+
+        public async Task<ReviewRevisionModel> CreateAutomaticRevisionAsync(ClaimsPrincipal user, string originalName, string label, Stream fileStream, bool compareAllRevisions)
+        {
+            //Generate code file from new uploaded package
+            using var memoryStream = new MemoryStream();
+            var codeFile = await _codeFileManager.CreateCodeFileAsync(originalName, fileStream, false, memoryStream);
+            return await CreateAutomaticRevisionAsync(user, codeFile, originalName, label, memoryStream, compareAllRevisions);
+        }
+
+        private async Task<ReviewRevisionModel> CreateAutomaticRevisionAsync(ClaimsPrincipal user, CodeFile codeFile, string originalName, string label, MemoryStream memoryStream, bool compareAllRevisions)
+        {
+            /*
+             * 1. Check if API surface matches with any existing automatic API revision
+             * 2. If not matches, Create new automatic revision
+             * 3. Copy approval status from other revision if approval matches.
+             */
+            var renderedCodeFile = new RenderedCodeFile(codeFile);
+
+            //Get current master review for package and language
+            var review = await _reviewsRepository.GetReviewAsync(codeFile.Language, codeFile.PackageName, false);
+            var createNewRevision = true;
+            ReviewRevisionModel reviewRevision = null;
+            if (review != null)
+            {
+                // Delete pending revisions if it is not in approved state and if it doesn't have any comments before adding new revision
+                // This is to keep only one pending revision since last approval or from initial review revision
+                var lastRevision = review..LastOrDefault();
+                var comments = await _commentsRepository.GetCommentsAsync(review.ReviewId);
+                while (lastRevision.Approvers.Count == 0 &&
+                       review.Revisions.Count > 1 &&
+                       !await IsReviewSame(lastRevision, renderedCodeFile) &&
+                       !comments.Any(c => lastRevision.RevisionId == c.RevisionId))
+                {
+                    review.Revisions.Remove(lastRevision);
+                    lastRevision = review.Revisions.LastOrDefault();
+                }
+                // We should compare against only latest revision when calling this API from scheduled CI runs
+                // But any manual pipeline run at release time should compare against all approved revisions to ensure hotfix release doesn't have API change
+                // If review surface doesn't match with any approved revisions then we will create new revision if it doesn't match pending latest revision
+                if (compareAllRevisions)
+                {
+                    foreach (var approvedRevision in review.Revisions.Where(r => r.IsApproved).Reverse())
+                    {
+                        if (await IsReviewSame(approvedRevision, renderedCodeFile))
+                        {
+                            return approvedRevision;
+                        }
+                    }
+                }
+
+                if (await IsReviewSame(lastRevision, renderedCodeFile))
+                {
+                    reviewRevision = lastRevision;
+                    createNewRevision = false;
+                }
+            }
+            else
+            {
+                // Package and language combination doesn't have automatically created review. Create a new review.
+                review = new ReviewModel
+                {
+                    Author = user.GetGitHubLogin(),
+                    CreationDate = DateTime.UtcNow,
+                    RunAnalysis = false,
+                    Name = originalName,
+                    FilterType = ReviewType.Automatic
+                };
+            }
+
+            // Check if user is authorized to modify automatic review
+            await AssertAutomaticReviewModifier(user, review);
+            if (createNewRevision)
+            {
+                // Update or insert review with new revision
+                reviewRevision = new ReviewRevisionModel()
+                {
+                    Author = user.GetGitHubLogin(),
+                    Label = label
+                };
+                var reviewCodeFileModel = await CreateReviewCodeFileModel(reviewRevision.RevisionId, memoryStream, codeFile);
+                reviewCodeFileModel.FileName = originalName;
+                reviewRevision.Files.Add(reviewCodeFileModel);
+                review.Revisions.Add(reviewRevision);
+            }
+
+            // Check if review can be marked as approved if another review with same surface level is in approved status
+            if (review.Revisions.Last().Approvers.Count() == 0)
+            {
+                var matchingApprovedRevision = await FindMatchingApprovedRevision(review);
+                if (matchingApprovedRevision != null)
+                {
+                    foreach (var approver in matchingApprovedRevision.Approvers)
+                    {
+                        review.Revisions.Last().Approvers.Add(approver);
+                    }
+                }
+            }
+            await _reviewsRepository.UpsertReviewAsync(review);
+            return reviewRevision;
         }
     }
 }

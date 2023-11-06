@@ -8,7 +8,7 @@ namespace APIViewWeb.Repositories
     {
         public Task UpsertReviewAsync(ReviewListItemModel reviewModel);
         public Task<ReviewListItemModel> GetReviewAsync(string reviewId);
-        public Task<ReviewListItemModel> GetReviewAsync(string language, string packageName, bool isClosed);
+        public Task<ReviewListItemModel> GetReviewAsync(string language, string packageName, bool isClosed = false);
         public Task<IEnumerable<ReviewModel>> GetReviewsAsync(bool isClosed, string language, string packageName = null, ReviewType? filterType = null, bool fetchAllPages = false);
         public Task<IEnumerable<ReviewModel>> GetReviewsAsync(string serviceName, string packageDisplayName, IEnumerable<ReviewType> filterTypes = null);
         public Task<IEnumerable<ReviewListItemModel>> GetReviewsAssignedToUser(string userName);
