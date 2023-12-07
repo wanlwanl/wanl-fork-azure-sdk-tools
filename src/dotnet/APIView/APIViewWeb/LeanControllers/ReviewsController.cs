@@ -19,16 +19,16 @@ namespace APIViewWeb.LeanControllers
     {
         private readonly ILogger<ReviewsController> _logger;
         private readonly IReviewManager _reviewManager;
-        private readonly IReviewRevisionsManager _reviewRevisionsManager;
+        private readonly IAPIRevisionsManager _apiRevisionsManager;
         private readonly ICommentsManager _commentManager;
         private readonly IBlobCodeFileRepository _codeFileRepository;
         
         public ReviewsController(ILogger<ReviewsController> logger,
-            IReviewRevisionsManager reviewRevisionsManager, IReviewManager reviewManager,
+            IAPIRevisionsManager reviewRevisionsManager, IReviewManager reviewManager,
             ICommentsManager commentManager, IBlobCodeFileRepository codeFileRepository)
         {
             _logger = logger;
-            _reviewRevisionsManager = reviewRevisionsManager;
+            _apiRevisionsManager = reviewRevisionsManager;
             _reviewManager = reviewManager;
             _commentManager = commentManager;
             _codeFileRepository = codeFileRepository;
@@ -58,13 +58,13 @@ namespace APIViewWeb.LeanControllers
          [Route("{reviewId}/content")]
          public async Task<ActionResult<ReviewContentModel>> GetReviewContentAsync(string reviewId, [FromQuery]string revisionId=null)
          {
-            var review = await _reviewManager.GetReviewAsync(reviewId);
-            var revisions = await _reviewRevisionsManager.GetReviewRevisionsAsync(reviewId);
+            var review = await _reviewManager.GetReviewAsync(user:User, id: reviewId);
+            var revisions = await _apiRevisionsManager.GetAPIRevisionsAsync(reviewId);
             var activeRevision = (string.IsNullOrEmpty(revisionId)) ? 
-                await _reviewRevisionsManager.GetLatestReviewRevisionsAsync(reviewId, revisions) : await _reviewRevisionsManager.GetReviewRevisionAsync(revisionId);
+                await _apiRevisionsManager.GetLatestAPIRevisionsAsync(reviewId, revisions) : await _apiRevisionsManager.GetAPIRevisionAsync(user: User, apiRevisionId: revisionId);
             var comments = await _commentManager.GetReviewCommentsAsync(reviewId);
 
-            var renderableCodeFile = await _codeFileRepository.GetCodeFileAsync(activeRevision.Id, activeRevision.Files[0].ReviewFileId);
+            var renderableCodeFile = await _codeFileRepository.GetCodeFileAsync(activeRevision.Id, activeRevision.Files[0].FileId);
             var reviewCodeFile = renderableCodeFile.CodeFile;
             var fileDiagnostics = reviewCodeFile.Diagnostics ?? Array.Empty<CodeDiagnostic>();
             var htmlLines = renderableCodeFile.Render(showDocumentation: false);
@@ -75,8 +75,8 @@ namespace APIViewWeb.LeanControllers
                 Review = review,
                 Navigation = renderableCodeFile.CodeFile.Navigation,
                 codeLines = codeLines,
-                ReviewRevisions = revisions.GroupBy(r => r.ReviewRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList()),
-                ActiveRevision = activeRevision
+                APIRevisionsGrouped = revisions.GroupBy(r => r.APIRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList()),
+                ActiveAPIRevision = activeRevision
             };
 
             return new LeanJsonResult(pageModel, StatusCodes.Status200OK);
