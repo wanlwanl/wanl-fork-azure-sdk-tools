@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using APIViewWeb.Helpers;
 using APIViewWeb.LeanModels;
 using APIViewWeb.Repositories;
 using Microsoft.Azure.Cosmos;
@@ -231,6 +232,133 @@ namespace APIViewWeb
             }
             result.Reviews = reviews;
             return result;
+        }
+
+        public async Task<PagedList<ReviewListItemModel>> GetReviewsAsync(PageParams pageParams, ReviewFilterAndSortParams filterAndSortParams)
+        {
+            var queryStringBuilder = new StringBuilder(@"
+SELECT VALUE {
+    Id: c.id,
+    PackageName: c.PackageName,
+    PackageDisplayName: c.PackageDisplayName,
+    ServiceName: c.ServiceName,
+    Language: c.Language,
+    ReviewRevisions: c.ReviewRevisions,
+    Subscribers: c.Subscribers,
+    ChangeHistory: c.ChangeHistory,
+    State: c.State,
+    Status: c.Status,
+    IsDeleted: c.IsDeleted
+} FROM Reviews c");
+            queryStringBuilder.Append(" WHERE c.IsDeleted = false");
+
+            if (!string.IsNullOrEmpty(filterAndSortParams.Name))
+            {
+                var hasExactMatchQuery = filterAndSortParams.Name.StartsWith("package:") ||
+                    filterAndSortParams.Name.StartsWith("service:");
+
+                if (hasExactMatchQuery)
+                {
+                    if (filterAndSortParams.Name.StartsWith("package:"))
+                    {
+                        var query = '"' + $"{filterAndSortParams.Name.Replace("package:", "")}" + '"';
+                        queryStringBuilder.Append($" AND STRINGEQUALS(c.PackageName, {query}, true)");
+                    }
+                    else if (filterAndSortParams.Name.StartsWith("service:"))
+                    {
+                        var query = '"' + $"{filterAndSortParams.Name.Replace("service:", "")}" + '"';
+                        queryStringBuilder.Append($" AND STRINGEQUALS(c.ServiceName, {query}, true)");
+                    }
+                    else
+                    {
+                        var query = '"' + $"{filterAndSortParams.Name}" + '"';
+                        queryStringBuilder.Append($" AND CONTAINS(c.PackageName, {query}, true)");
+                    }
+                }
+                else
+                {
+                    var query = '"' + $"{filterAndSortParams.Name}" + '"';
+                    queryStringBuilder.Append($" AND (CONTAINS(c.PackageName, {query}, true)");
+                    queryStringBuilder.Append($" OR CONTAINS(c.PackageDisplayName, {query}, true)");
+                    queryStringBuilder.Append($" OR CONTAINS(c.ServiceName, {query}, true)");
+                    queryStringBuilder.Append($")");
+                }
+            }
+
+            if (filterAndSortParams.Languages != null && filterAndSortParams.Languages.Count() > 0)
+            {
+                var languagesAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<string>(filterAndSortParams.Languages);
+                queryStringBuilder.Append($" AND c.Language IN {languagesAsQueryStr}");
+            }
+
+            if (filterAndSortParams.Details != null && filterAndSortParams.Details.Count() > 0)
+            {
+                foreach (var item in filterAndSortParams.Details)
+                {
+                    switch (item)
+                    {
+                        case "Open":
+                            queryStringBuilder.Append($" AND c.State = 'Open'");
+                            break;
+                        case "Closed":
+                            queryStringBuilder.Append($" AND c.State = 'Closed'");
+                            break;
+                        case "Pending":
+                            queryStringBuilder.Append($" AND c.Status = 'Pending'");
+                            break;
+                        case "Approved":
+                            queryStringBuilder.Append($" AND c.Status = 'Approved'");
+                            break;
+                    }
+                }
+            }
+
+            int totalCount = 0;
+            var countQuery = $"SELECT VALUE COUNT(1) FROM({queryStringBuilder})";
+            QueryDefinition countQueryDefinition = new QueryDefinition(countQuery);
+            using FeedIterator<int> countFeedIterator = _reviewsContainer.GetItemQueryIterator<int>(countQueryDefinition);
+            while (countFeedIterator.HasMoreResults)
+            {
+                totalCount = (await countFeedIterator.ReadNextAsync()).SingleOrDefault();
+            }
+
+            switch (filterAndSortParams.SortField)
+            {
+                case "name":
+                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                    break;
+                case "noOfRevisions":
+                    queryStringBuilder.Append($" ORDER BY c.cp_NumberOfReviewRevisions");
+                    break;
+                default:
+                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                    break;
+            }
+
+            if (filterAndSortParams.SortOrder == 1)
+            {
+                queryStringBuilder.Append(" DESC");
+            }
+            else
+            {
+                queryStringBuilder.Append(" ASC");
+            }
+
+            queryStringBuilder.Append(" OFFSET @offset LIMIT @limit");
+            var reviews = new List<ReviewListItemModel>();
+            QueryDefinition queryDefinition = new QueryDefinition(queryStringBuilder.ToString())
+                .WithParameter("@offset", pageParams.NoOfItemsRead)
+                .WithParameter("@limit", pageParams.PageSize)
+                .WithParameter("@sortField", filterAndSortParams.SortField);
+
+            using FeedIterator<ReviewListItemModel> feedIterator = _reviewsContainer.GetItemQueryIterator<ReviewListItemModel>(queryDefinition);
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ReviewListItemModel> response = await feedIterator.ReadNextAsync();
+                reviews.AddRange(response);
+            }
+            var noOfItemsRead = pageParams.NoOfItemsRead + reviews.Count();
+            return new PagedList<ReviewListItemModel>((IEnumerable<ReviewListItemModel>)reviews, noOfItemsRead, totalCount, pageParams.PageSize);
         }
 
         private static string ArrayToQueryString<T>(IEnumerable<T> items)

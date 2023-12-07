@@ -1,7 +1,6 @@
 using APIViewWeb.Helpers;
 using APIViewWeb.LeanModels;
 using APIViewWeb.Extensions;
-using APIViewWeb.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -10,16 +9,16 @@ using APIViewWeb.Managers.Interfaces;
 
 namespace APIViewWeb.LeanControllers
 {
-    public class ReviewRevisionsController : BaseApiController
+    public class APIRevisionsController : BaseApiController
     {
-        private readonly ILogger<ReviewRevisionsController> _logger;
-        private readonly IReviewRevisionsManager _reviewRevisionsManager;
+        private readonly ILogger<APIRevisionsController> _logger;
+        private readonly IAPIRevisionsManager _apiRevisionsManager;
         
-        public ReviewRevisionsController(ILogger<ReviewRevisionsController> logger,
-            IReviewRevisionsManager reviewRevisionsManager)
+        public APIRevisionsController(ILogger<APIRevisionsController> logger,
+            IAPIRevisionsManager apiRevisionsManager)
         {
             _logger = logger;
-            _reviewRevisionsManager = reviewRevisionsManager;
+            _apiRevisionsManager = apiRevisionsManager;
         }
 
         /// <summary>
@@ -29,9 +28,9 @@ namespace APIViewWeb.LeanControllers
         /// <param name="filterAndSortParams"></param>
         /// <returns></returns>
         [HttpPost(Name = "GetReviewsRevisions")]
-        public async Task<ActionResult<PagedList<ReviewListItemModel>>> GetReviewRevisionsAsync([FromQuery] PageParams pageParams, [FromBody] ReviewRevisionsFilterAndSortParams filterAndSortParams)
+        public async Task<ActionResult<PagedList<ReviewListItemModel>>> GetReviewRevisionsAsync([FromQuery] PageParams pageParams, [FromBody] APIRevisionsFilterAndSortParams filterAndSortParams)
         {
-            var result = await _reviewRevisionsManager.GetReviewRevisionsAsync(pageParams, filterAndSortParams);
+            var result = await _apiRevisionsManager.GetAPIRevisionsAsync(pageParams, filterAndSortParams);
             Response.AddPaginationHeader(new PaginationHeader(result.NoOfItemsRead, result.PageSize, result.TotalCount));
             return new LeanJsonResult(result, StatusCodes.Status200OK);
         }

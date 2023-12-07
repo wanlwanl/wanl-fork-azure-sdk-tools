@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using APIViewWeb.Helpers;
 using APIViewWeb.LeanModels;
 
 
@@ -8,6 +9,7 @@ namespace APIViewWeb.Managers
 {
     public interface IReviewManager
     {
+        public Task<PagedList<ReviewListItemModel>> GetReviewsAsync(PageParams pageParams, ReviewFilterAndSortParams filterAndSortParams);
         public Task<IEnumerable<ReviewListItemModel>> GetReviewsAsync(string language, bool? isClosed = false);
         public Task<ReviewListItemModel> GetReviewAsync(string language, string packageName, bool? isClosed = false);
         public Task<IEnumerable<ReviewListItemModel>> GetReviewsAssignedToUser(string userName);
