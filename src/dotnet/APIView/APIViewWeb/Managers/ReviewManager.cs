@@ -109,6 +109,18 @@ namespace APIViewWeb.Managers
         }
 
         /// <summary>
+        /// Retrieve Reviews from the Reviews container in CosmosDb after applying filter to the query.
+        /// Uses lean reviewListModels to reduce the size of the response. Used for ClientSPA
+        /// </summary>
+        /// <param name="pageParams"></param> Contains paginationinfo
+        /// <param name="filterAndSortParams"></param> Contains filter and sort parameters
+        /// <returns></returns>
+        public async Task<PagedList<ReviewListItemModel>> GetReviewsAsync(PageParams pageParams, ReviewFilterAndSortParams filterAndSortParams)
+        {
+            return await _reviewsRepository.GetReviewsAsync(pageParams, filterAndSortParams);
+        }
+
+        /// <summary>
         /// Get Reviews
         /// </summary>
         /// <param name="user"></param>
