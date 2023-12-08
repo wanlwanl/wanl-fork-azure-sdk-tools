@@ -28,7 +28,7 @@ namespace APIViewWeb.LeanControllers
         /// <param name="filterAndSortParams"></param>
         /// <returns></returns>
         [HttpPost(Name = "GetReviewsRevisions")]
-        public async Task<ActionResult<PagedList<ReviewListItemModel>>> GetReviewRevisionsAsync([FromQuery] PageParams pageParams, [FromBody] APIRevisionsFilterAndSortParams filterAndSortParams)
+        public async Task<ActionResult<PagedList<APIRevisionListItemModel>>> GetAPIRevisionsAsync([FromQuery] PageParams pageParams, [FromBody] APIRevisionsFilterAndSortParams filterAndSortParams)
         {
             var result = await _apiRevisionsManager.GetAPIRevisionsAsync(pageParams, filterAndSortParams);
             Response.AddPaginationHeader(new PaginationHeader(result.NoOfItemsRead, result.PageSize, result.TotalCount));

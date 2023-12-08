@@ -115,8 +115,8 @@ export class RevisionsListComponent {
 
   setDetailsIcons(){
     // Set Badge Class for details Icons
-    this.badgeClass.set("Pending", "fa-solid fa-circle-minus text-warning");
-    this.badgeClass.set("Approved", "fas fa-check-circle text-success");
+    this.badgeClass.set("false", "fa-solid fa-circle-minus text-warning");
+    this.badgeClass.set("true", "fas fa-check-circle text-success");
     this.badgeClass.set("Manual", "fa-solid fa-arrow-up-from-bracket");
     this.badgeClass.set("PullRequest", "fa-solid fa-code-pull-request");
     this.badgeClass.set("Automatic", "fa-solid fa-robot");
