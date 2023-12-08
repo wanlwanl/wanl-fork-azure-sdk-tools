@@ -1,5 +1,10 @@
 <p-contextMenu #cm [model]="contextMenuItems"></p-contextMenu>
-<p-table
+<div *ngIf="review == null" class="d-flex justify-content-center align-items-center" style="height: 90vh;">
+    <div class="text-center">
+        <h4>No Review Selected<br>Select a Review on the Left Panel to view its APIRevisions</h4>
+    </div>
+</div>
+<p-table *ngIf="review != null"
     [value]="revisions"
     dataKey="id"
     [scrollable]="true"
@@ -36,11 +41,8 @@
     </ng-template>
     <ng-template pTemplate="header">
         <tr>
-            <th colspan="6" class="text-center">{{ (review != null ) ? "API Revisions for: " + review.packageName : 'No Review Selected, Select a Review on the Left Panel to view its APIRevisions' }}</th>
-        </tr>
-        <tr>
             <th></th>
-            <th style="width:30%">Label</th>
+            <th style="width:30%">APIRevision - Label</th>
             <th style="width:20%">Author</th>
             <th style="width:20%">Details</th>
             <th pSortableColumn="created" style="width:15%">Created<p-sortIcon class="ms-2" field="lastUpdated"></p-sortIcon></th>
@@ -79,18 +81,18 @@
         <tr [pContextMenuRow]="revision">
             <td><p-tableCheckbox [value]="revision"></p-tableCheckbox></td>
             <td>
-                <a href="{{reviewPageWebAppUrl}}{{revision.reviewId}}/{{revision.Id}}">{{ revision.label }}</a>
+                <a href="{{reviewPageWebAppUrl}}{{revision.reviewId}}/{{revision.Id}}">{{ revision.resolvedLabel }}</a>
             </td>
             <td class="author-table-data">
-                <img [alt]="revision.changeHistory[0].user" src="https://github.com/{{ revision.changeHistory[0].user }}.png?size=40" width="32" />
-                <span><a href="{{profilePageWebAppUrl}}{{ revision.changeHistory[0].user }}">{{ revision.changeHistory[0].user }}</a></span>
+                <img [alt]="revision.createdBy" src="https://github.com/{{ revision.createdBy }}.png?size=40" width="32" />
+                <span><a href="{{profilePageWebAppUrl}}{{ revision.createdBy }}">{{ revision.createdBy }}</a></span>
             </td>
             <td>
-                <i pTooltip="{{ revision.status }}" appendTo="target" tooltipPosition="top" [positionTop]=-200 [positionLeft]=-25 class="{{ badgeClass.get(revision.status) }} me-2"></i>
-                <i pTooltip="{{ revision.reviewRevisionType }}" appendTo="target" tooltipPosition="top" [positionTop]=-200 [positionLeft]=-25 class="{{ badgeClass.get(revision.reviewRevisionType) }} me-2"></i>
+                <i pTooltip="{{ revision.isApproved }}" appendTo="target" tooltipPosition="top" [positionTop]=-200 [positionLeft]=-25 class="{{ badgeClass.get(revision.isApproved.toString()) }} me-2"></i>
+                <i pTooltip="{{ revision.apiRevisionType }}" appendTo="target" tooltipPosition="top" [positionTop]=-200 [positionLeft]=-25 class="{{ badgeClass.get(revision.apiRevisionType) }} me-2"></i>
             </td>
-            <td pTooltip="{{ revision.changeHistory[0].changeDateTime | date }}" appendTo="target" tooltipPosition="top" [positionTop]=-190 [positionLeft]=-35>{{ (revision.changeHistory[0].changeDateTime !== null) ? (revision.changeHistory[0].changeDateTime | timeago) : "" }}</td>
-            <td pTooltip="{{ revision.changeHistory[revision.changeHistory.length - 1].changeDateTime | date }}" appendTo="target" tooltipPosition="top" [positionTop]=-190 [positionLeft]=-35>{{ (revision.changeHistory[revision.changeHistory.length - 1].changeDateTime !== null) ? (revision.changeHistory[revision.changeHistory.length - 1].changeDateTime | timeago) : "" }}</td>
+            <td pTooltip="{{ revision.createdOn | date }}" appendTo="target" tooltipPosition="top" [positionTop]=-190 [positionLeft]=-35>{{ (revision.createdOn !== null) ? (revision.createdOn | timeago) : "" }}</td>
+            <td pTooltip="{{ revision.lastUpdatedOn | date }}" appendTo="target" tooltipPosition="top" [positionTop]=-190 [positionLeft]=-35>{{ (revision.lastUpdatedOn !== null) ? (revision.lastUpdatedOn | timeago) : "" }}</td>
         </tr>
     </ng-template>
     <ng-template pTemplate="summary">

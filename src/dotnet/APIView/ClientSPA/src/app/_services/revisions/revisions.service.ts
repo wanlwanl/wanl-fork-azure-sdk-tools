@@ -12,7 +12,7 @@ import { environment } from 'src/environments/environment';
   providedIn: 'root'
 })
 export class RevisionsService {
-  baseUrl : string = environment.apiUrl + "reviewrevisions";
+  baseUrl : string = environment.apiUrl + "APIRevisions";
   paginatedResult: PaginatedResult<Revision[]> = new PaginatedResult<Revision[]>
   
   constructor(private http: HttpClient) { }

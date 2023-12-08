@@ -8,8 +8,12 @@ export interface Revision {
   files: File[]
   label: any
   changeHistory: ChangeHistory[]
-  reviewRevisionType: string
-  status: string
+  apiRevisionType: string
+  resolvedLabel: string
+  isApproved: boolean
+  createdBy: string
+  createdOn: string
+  lastUpdatedOn: string
   isDeleted: boolean
 }
   
