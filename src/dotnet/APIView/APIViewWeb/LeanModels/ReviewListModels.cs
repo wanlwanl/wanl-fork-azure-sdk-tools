@@ -115,6 +115,7 @@ namespace APIViewWeb.LeanModels
         public string Language { get; set; }
         public List<APICodeFileModel> Files { get; set; } = new List<APICodeFileModel>();
         public string Label { get; set; }
+        public string ResolvedLabel => PageModelHelpers.ResolveRevisionLabel(this, addAPIRevisionType: false, addCreatedBy: false, addCreatedOn: false);
         public List<APIRevisionChangeHistoryModel> ChangeHistory { get; set; } = new List<APIRevisionChangeHistoryModel>();
         public APIRevisionType APIRevisionType { get; set; }
         public int? PullRequestNo { get; set; }
@@ -126,6 +127,7 @@ namespace APIViewWeb.LeanModels
         public DateTime LastUpdatedOn { get; set; }
         public bool IsDeleted { get; set; }
     }
+
 
     public class SamplesRevisionModel
     {

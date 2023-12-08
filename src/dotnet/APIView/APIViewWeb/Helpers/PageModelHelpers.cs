@@ -465,32 +465,32 @@ namespace APIViewWeb.Helpers
         /// Ensure unique label for Revisions
         /// </summary>
         /// <param name="apiRevision"></param>
-        /// <param name="addType"></param>
+        /// <param name="addAPIRevisionType"></param>
         /// <returns></returns>
-        public static string ResolveRevisionLabel(APIRevisionListItemModel apiRevision, bool addType = true)
+        public static string ResolveRevisionLabel(APIRevisionListItemModel apiRevision, 
+            bool addAPIRevisionType = true, bool addCreatedBy = true, bool addCreatedOn = true)
         {
-            var label = $"{apiRevision.CreatedOn.ToString()} | {apiRevision.CreatedBy}";
+            var label = String.Empty;
+            
+            if (addCreatedBy)
+                label = $"{apiRevision.CreatedBy}";
+
+            if (addCreatedOn)
+                label = $"{apiRevision.CreatedOn.ToString()} | {label}";
 
             if (apiRevision.Files.Any() && !String.IsNullOrEmpty(apiRevision.Files[0].PackageVersion))
-            {
                 label = $"{apiRevision.Files[0].PackageVersion} | {label}";
-            }
 
             if (!String.IsNullOrWhiteSpace(apiRevision.Label))
-            { 
-                label = $"{label} | {apiRevision.Label}";
-            }
+                label = $"{apiRevision.Label} | {label}";
 
             if (apiRevision.APIRevisionType == APIRevisionType.PullRequest && apiRevision.PullRequestNo != null)
-            {
                 label = $"PR {apiRevision.PullRequestNo} | {label}";
-            }
 
-            if (addType)
-            {
+            if (addAPIRevisionType)
                 label = $"{apiRevision.APIRevisionType.ToString()} | {label}";
-            }
-            return label;
+
+            return label.Trim(' ', '|');
         }
 
         /// <summary>
