@@ -2,16 +2,17 @@
 <p-contextMenu #cm [model]="contextMenuItems"></p-contextMenu>
 <p-table
     #reviewsTable
+    [rows]="noOfRows"
     [value]="reviews"
     dataKey="id"
     [scrollable]="true"
-    scrollHeight="calc(100vh - 160px)"
+    scrollHeight="flex"
     responsiveLayout="stack"
     [lazy]="true"
     [lazyLoadOnInit]="false"
     [virtualScroll]="true"
     [virtualScrollDelay]="0"
-    [virtualScrollItemSize]="49"
+    [virtualScrollItemSize]="rowHeight"
     [(contextMenuSelection)]="selectedReview"
     [contextMenu]="cm"
     [customSort]="true"
