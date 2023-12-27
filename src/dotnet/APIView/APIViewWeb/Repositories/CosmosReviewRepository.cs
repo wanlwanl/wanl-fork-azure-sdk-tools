@@ -240,14 +240,8 @@ namespace APIViewWeb
 SELECT VALUE {
     Id: c.id,
     PackageName: c.PackageName,
-    PackageDisplayName: c.PackageDisplayName,
-    ServiceName: c.ServiceName,
     Language: c.Language,
-    ReviewRevisions: c.ReviewRevisions,
-    Subscribers: c.Subscribers,
-    ChangeHistory: c.ChangeHistory,
-    State: c.State,
-    Status: c.Status,
+    LastUpdatedOn: c.LastUpdatedOn,
     IsDeleted: c.IsDeleted
 } FROM Reviews c");
             queryStringBuilder.Append(" WHERE c.IsDeleted = false");
@@ -324,14 +318,14 @@ SELECT VALUE {
 
             switch (filterAndSortParams.SortField)
             {
-                case "name":
-                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                case "lastUpdatedOn":
+                    queryStringBuilder.Append($" ORDER BY c.LastUpdatedOn");
                     break;
-                case "noOfRevisions":
-                    queryStringBuilder.Append($" ORDER BY c.cp_NumberOfReviewRevisions");
+                case "packageName":
+                    queryStringBuilder.Append($" ORDER BY c.PackageName");
                     break;
                 default:
-                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                    queryStringBuilder.Append($" ORDER BY c.LastUpdatedOn");
                     break;
             }
 

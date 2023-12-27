@@ -9,14 +9,8 @@ export enum DiffLineKind {
 export interface Review {
   id: string
   packageName: string
-  packageDisplayName: any
-  serviceName: any
   language: string
-  reviewRevisions: string[]
-  subscribers: any[]
-  changeHistory: ChangeHistory[]
-  state: string
-  status: string
+  lastUpdatedOn: string,
   isDeleted: boolean
 }
 
