@@ -2,9 +2,8 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { Review } from 'src/app/_models/review';
 import { ReviewsService } from 'src/app/_services/reviews/reviews.service';
 import { Pagination } from 'src/app/_models/pagination';
-import { Table, TableFilterEvent, TableLazyLoadEvent, TableRowSelectEvent } from 'primeng/table';
+import { Table, TableFilterEvent, TableLazyLoadEvent, TablePageEvent, TableRowSelectEvent } from 'primeng/table';
 import { MenuItem, SortEvent } from 'primeng/api';
-import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-reviews-list',
@@ -20,11 +19,13 @@ export class ReviewsListComponent implements OnInit {
   pagination: Pagination | undefined;
   insertIndex : number = 0;
   resetReviews = false;
+  rowHeight: number = 43;
+  noOfRows: number = Math.floor((window.innerHeight * 0.75) / this.rowHeight); // Dynamically Computing the number of rows to show at once
 
-  pageSize = 20;
+  pageSize = 20; // No of items to load from server at a time
   first: number = 0;
   last: number  = 0;
-  sortField : string = "packageName";
+  sortField : string = "lastUpdatedOn";
   sortOrder : number = 1;
   filters: any = null;
 
@@ -50,7 +51,7 @@ export class ReviewsListComponent implements OnInit {
   constructor(private reviewsService: ReviewsService) { }
 
   ngOnInit(): void {
-    this.loadReviews(0, this.pageSize * 2, true); // Load row 1 - 40 for starts
+    this.loadReviews(0, this.pageSize * 3, true); // Load row 1 - 40 for starts
     this.createFilters();
     this.createContextMenuItems();
   }
@@ -59,7 +60,7 @@ export class ReviewsListComponent implements OnInit {
    * Load reviews from API
    *  * @param append wheather to add to or replace existing list
    */
-  loadReviews(noOfItemsRead : number, pageSize: number, resetReviews = false, filters: any = null, sortField: string ="packageName",  sortOrder: number = 1) {
+  loadReviews(noOfItemsRead : number, pageSize: number, resetReviews = false, filters: any = null, sortField: string ="lastUpdatedOn",  sortOrder: number = 1) {
     // Reset Filter if necessary
     if (this.filters && this.filters.languages.value == null){
       this.selectedLanguages = [];
@@ -78,13 +79,17 @@ export class ReviewsListComponent implements OnInit {
         if (response.result && response.pagination) {
           if (resetReviews)
           {
-            this.reviews = Array.from({ length: response.pagination!.totalCount });
+            this.reviews = Array.from({ length: response.pagination!.totalCount + 5 }); // Add 10 extra rows to avoid flickering
             this.insertIndex = 0;
           }
-          this.reviews.splice(this.insertIndex, this.insertIndex + response.result.length, ...response.result);
-          this.insertIndex = this.insertIndex + response.result.length;
-          this.pagination = response.pagination;
-          this.totalNumberOfReviews = this.pagination.totalCount;
+
+          if (response.result.length > 0)
+          {
+            this.reviews.splice(this.insertIndex, this.insertIndex + response.result.length, ...response.result);
+            this.insertIndex = this.insertIndex + response.result.length;
+            this.pagination = response.pagination;
+            this.totalNumberOfReviews = this.pagination.totalCount;
+          }
         }
       }
     });
@@ -92,8 +97,7 @@ export class ReviewsListComponent implements OnInit {
 
   createContextMenuItems() {
     this.contextMenuItems = [
-      { label: 'View', icon: 'pi pi-fw pi-search', command: () => this.viewReview(this.selectedReview) },
-      { label: 'Delete', icon: 'pi pi-fw pi-times', command: () => this.deleteReview(this.selectedReview) }
+      { label: 'View', icon: 'pi pi-folder-open', command: () => this.viewReview(this.selectedReview) },
     ];
   }
 
@@ -133,7 +137,7 @@ export class ReviewsListComponent implements OnInit {
   /**
    * Clear all filters in Table
    */
-   clear(table: Table) {
+  clear(table: Table) {
     table.clear();
     this.loadReviews(0, this.pageSize, true, this.filters, this.sortField, this.sortOrder);
   }
@@ -144,14 +148,14 @@ export class ReviewsListComponent implements OnInit {
    */
   onLazyLoad(event: TableLazyLoadEvent) {
     console.log("On Lazy Event Emitted %o", event);
-    this.first = event.first!;
-    this.last = event.last!;
-    this.sortField = event.sortField as string ?? "packageName";
+    this.first = Math.min(event.first!, Math.max(0,this.totalNumberOfReviews - event.rows!));
+    this.last = Math.min(event.first! + event.rows!, this.totalNumberOfReviews);
+    this.sortField = event.sortField as string ?? "lastUpdatedOn";
     this.sortOrder = event.sortOrder as number ?? 1;
     this.filters = event.filters;
-    if (event.last! > (this.insertIndex - this.pageSize))
+    if (this.last > (this.insertIndex - this.pageSize))
     {
-      if (this.pagination)
+      if (this.pagination && this.pagination?.noOfItemsRead! < this.pagination?.totalCount!)
       {
         this.loadReviews(this.pagination!.noOfItemsRead, this.pageSize, this.resetReviews, this.filters, this.sortField, this.sortOrder);
       }
