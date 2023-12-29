@@ -5,16 +5,17 @@
     </div>
 </div>
 <p-table *ngIf="review != null"
+    [rows]="noOfRows"
     [value]="revisions"
     dataKey="id"
     [scrollable]="true"
-    scrollHeight="calc(100vh - 160px)"
+    scrollHeight="flex"
     responsiveLayout="stack"
     [lazy]="true"
     [lazyLoadOnInit]="false"
     [virtualScroll]="true"
     [virtualScrollDelay]="0"
-    [virtualScrollItemSize]="49"
+    [virtualScrollItemSize]="rowHeight"
     [selection]="selectedRevisions"
     (selectionChange)="onSelectionChange($event)"
     [(contextMenuSelection)]="selectedRevision"
@@ -41,10 +42,10 @@
     </ng-template>
     <ng-template pTemplate="header">
         <tr>
-            <th></th>
-            <th style="width:30%">APIRevision - Label</th>
-            <th style="width:20%">Author</th>
-            <th style="width:20%">Details</th>
+            <th style="width:1%"></th>
+            <th style="width:25%">APIRevision - Label</th>
+            <th style="width:19%">Author</th>
+            <th style="width:15%">Details</th>
             <th pSortableColumn="created" style="width:15%">Created<p-sortIcon class="ms-2" field="lastUpdated"></p-sortIcon></th>
             <th pSortableColumn="lastUpdated" style="width:15%">Updated<p-sortIcon class="ms-2" field="lastUpdated"></p-sortIcon></th>
             
@@ -97,7 +98,7 @@
     </ng-template>
     <ng-template pTemplate="summary">
         <div class="flex align-items-center justify-content-center">
-            {{first }} - {{last}} of {{totalNumberOfRevisions}}
+            {{totalNumberOfRevisions}} APIRevisions in {{review.packageName}}
         </div>
     </ng-template>
 </p-table>

@@ -248,63 +248,14 @@ SELECT VALUE {
 
             if (!string.IsNullOrEmpty(filterAndSortParams.Name))
             {
-                var hasExactMatchQuery = filterAndSortParams.Name.StartsWith("package:") ||
-                    filterAndSortParams.Name.StartsWith("service:");
-
-                if (hasExactMatchQuery)
-                {
-                    if (filterAndSortParams.Name.StartsWith("package:"))
-                    {
-                        var query = '"' + $"{filterAndSortParams.Name.Replace("package:", "")}" + '"';
-                        queryStringBuilder.Append($" AND STRINGEQUALS(c.PackageName, {query}, true)");
-                    }
-                    else if (filterAndSortParams.Name.StartsWith("service:"))
-                    {
-                        var query = '"' + $"{filterAndSortParams.Name.Replace("service:", "")}" + '"';
-                        queryStringBuilder.Append($" AND STRINGEQUALS(c.ServiceName, {query}, true)");
-                    }
-                    else
-                    {
-                        var query = '"' + $"{filterAndSortParams.Name}" + '"';
-                        queryStringBuilder.Append($" AND CONTAINS(c.PackageName, {query}, true)");
-                    }
-                }
-                else
-                {
-                    var query = '"' + $"{filterAndSortParams.Name}" + '"';
-                    queryStringBuilder.Append($" AND (CONTAINS(c.PackageName, {query}, true)");
-                    queryStringBuilder.Append($" OR CONTAINS(c.PackageDisplayName, {query}, true)");
-                    queryStringBuilder.Append($" OR CONTAINS(c.ServiceName, {query}, true)");
-                    queryStringBuilder.Append($")");
-                }
+                var query = '"' + $"{filterAndSortParams.Name}" + '"';
+                queryStringBuilder.Append($" AND CONTAINS(c.PackageName, {query}, true)");
             }
 
             if (filterAndSortParams.Languages != null && filterAndSortParams.Languages.Count() > 0)
             {
                 var languagesAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<string>(filterAndSortParams.Languages);
                 queryStringBuilder.Append($" AND c.Language IN {languagesAsQueryStr}");
-            }
-
-            if (filterAndSortParams.Details != null && filterAndSortParams.Details.Count() > 0)
-            {
-                foreach (var item in filterAndSortParams.Details)
-                {
-                    switch (item)
-                    {
-                        case "Open":
-                            queryStringBuilder.Append($" AND c.State = 'Open'");
-                            break;
-                        case "Closed":
-                            queryStringBuilder.Append($" AND c.State = 'Closed'");
-                            break;
-                        case "Pending":
-                            queryStringBuilder.Append($" AND c.Status = 'Pending'");
-                            break;
-                        case "Approved":
-                            queryStringBuilder.Append($" AND c.Status = 'Approved'");
-                            break;
-                    }
-                }
             }
 
             int totalCount = 0;
