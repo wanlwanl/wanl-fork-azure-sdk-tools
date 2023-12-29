@@ -1,4 +1,4 @@
-import { Component, Input, SimpleChanges } from '@angular/core';
+import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { MenuItem, SortEvent } from 'primeng/api';
 import { TableFilterEvent, TableLazyLoadEvent } from 'primeng/table';
 import { Pagination } from 'src/app/_models/pagination';
@@ -12,7 +12,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './revisions-list.component.html',
   styleUrls: ['./revisions-list.component.scss']
 })
-export class RevisionsListComponent {
+export class RevisionsListComponent implements OnInit, OnChanges {
   @Input() review : Review | null = null;
   reviewPageWebAppUrl : string = environment.webAppUrl + "Assemblies/review/";
   profilePageWebAppUrl : string = environment.webAppUrl + "Assemblies/profile/";
