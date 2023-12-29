@@ -20,10 +20,9 @@ export class RevisionsListComponent {
   totalNumberOfRevisions = 0;
   pagination: Pagination | undefined;
   insertIndex : number = 0;
-
-  pageSize = 20;
-  first: number = 0;
-  last: number  = 0;
+  rowHeight: number = 48;
+  noOfRows: number = Math.floor((window.innerHeight * 0.75) / this.rowHeight); // Dynamically Computing the number of rows to show at once
+  pageSize = 20; // No of items to load from server at a time
 
   // Filters
   details: any[] = [];
@@ -40,7 +39,6 @@ export class RevisionsListComponent {
   constructor(private revisionsService: RevisionsService) { }
 
   ngOnInit(): void {
-    this.loadRevisions(0, this.pageSize * 2, true); // Load row 1 - 40 for starts
     this.createFilters();
     this.createContextMenuItems();
     this.setDetailsIcons();
@@ -56,7 +54,7 @@ export class RevisionsListComponent {
    * Load revision from API
    *  * @param append wheather to add to or replace existing list
    */
-  loadRevisions(noOfItemsRead : number, pageSize: number, resetReviews = false, filters: any = null, sortField: string ="lastUpdated",  sortOrder: number = 1) {
+  loadRevisions(noOfItemsRead : number, pageSize: number, resetReviews = false, filters: any = null, sortField: string ="lastUpdatedOn",  sortOrder: number = 1) {
     console.log("Review Id %o", this.review?.id);
     let label : string = "";
     let reviewId: string = this.review?.id ?? "";
@@ -72,13 +70,18 @@ export class RevisionsListComponent {
         if (response.result && response.pagination) {
           if (resetReviews)
           {
-            this.revisions = Array.from({ length: response.pagination!.totalCount });
+            const arraySize = Math.ceil(response.pagination!.totalCount + Math.min(20, (0.05 * response.pagination!.totalCount))) // Add 5% extra rows to avoid flikering
+            this.revisions = Array.from({ length: arraySize });
             this.insertIndex = 0;
           }
-          this.revisions.splice(this.insertIndex, this.insertIndex + response.result.length, ...response.result);
-          this.insertIndex = this.insertIndex + response.result.length;
-          this.pagination = response.pagination;
-          this.totalNumberOfRevisions = this.pagination.totalCount;
+
+          if (response.result.length > 0)
+          {
+            this.revisions.splice(this.insertIndex, this.insertIndex + response.result.length, ...response.result);
+            this.insertIndex = this.insertIndex + response.result.length;
+            this.pagination = response.pagination;
+            this.totalNumberOfRevisions = this.pagination.totalCount;
+          }
         }
       }
     });
@@ -136,11 +139,10 @@ export class RevisionsListComponent {
    */
   onLazyLoad(event: TableLazyLoadEvent) {
       console.log("On Lazy Event Emitted %o", event);
-      this.first = event.first!;
-      this.last = event.last!;
-      if (event.last! > (this.insertIndex - this.pageSize))
+      const last = Math.min(event.last!, this.totalNumberOfRevisions);
+      if (last! > (this.insertIndex - this.pageSize))
       {
-        if (this.pagination)
+        if (this.pagination && this.pagination?.noOfItemsRead! < this.pagination?.totalCount!)
         {
           const sortField : string = event.sortField as string ?? "lastUpdated";
           const sortOrder : number = event.sortOrder as number ?? 1;
