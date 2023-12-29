@@ -21,10 +21,7 @@ export class ReviewsListComponent implements OnInit {
   resetReviews = false;
   rowHeight: number = 43;
   noOfRows: number = Math.floor((window.innerHeight * 0.75) / this.rowHeight); // Dynamically Computing the number of rows to show at once
-
   pageSize = 20; // No of items to load from server at a time
-  first: number = 0;
-  last: number  = 0;
   sortField : string = "lastUpdatedOn";
   sortOrder : number = 1;
   filters: any = null;
@@ -51,7 +48,7 @@ export class ReviewsListComponent implements OnInit {
   constructor(private reviewsService: ReviewsService) { }
 
   ngOnInit(): void {
-    this.loadReviews(0, this.pageSize * 3, true); // Load row 1 - 40 for starts
+    this.loadReviews(0, this.pageSize * 2, true); // Initial load of 2 pages
     this.createFilters();
     this.createContextMenuItems();
   }
@@ -79,7 +76,8 @@ export class ReviewsListComponent implements OnInit {
         if (response.result && response.pagination) {
           if (resetReviews)
           {
-            this.reviews = Array.from({ length: response.pagination!.totalCount + 5 }); // Add 10 extra rows to avoid flickering
+            const arraySize = Math.ceil(response.pagination!.totalCount + Math.min(20, (0.05 * response.pagination!.totalCount))) // Add 5% extra rows to avoid flikering
+            this.reviews = Array.from({ length: arraySize  });
             this.insertIndex = 0;
           }
 
@@ -148,12 +146,11 @@ export class ReviewsListComponent implements OnInit {
    */
   onLazyLoad(event: TableLazyLoadEvent) {
     console.log("On Lazy Event Emitted %o", event);
-    this.first = Math.min(event.first!, Math.max(0,this.totalNumberOfReviews - event.rows!));
-    this.last = Math.min(event.first! + event.rows!, this.totalNumberOfReviews);
+    const last = Math.min(event.last!, this.totalNumberOfReviews);
     this.sortField = event.sortField as string ?? "lastUpdatedOn";
     this.sortOrder = event.sortOrder as number ?? 1;
     this.filters = event.filters;
-    if (this.last > (this.insertIndex - this.pageSize))
+    if (last > (this.insertIndex - this.pageSize))
     {
       if (this.pagination && this.pagination?.noOfItemsRead! < this.pagination?.totalCount!)
       {

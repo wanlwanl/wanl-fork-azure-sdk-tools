@@ -5,11 +5,10 @@ export interface Revision {
   reviewId: string
   packageName: string
   language: string
-  files: File[]
-  label: any
-  changeHistory: ChangeHistory[]
   apiRevisionType: string
+  label: string
   resolvedLabel: string
+  packageVersion: string
   isApproved: boolean
   createdBy: string
   createdOn: string

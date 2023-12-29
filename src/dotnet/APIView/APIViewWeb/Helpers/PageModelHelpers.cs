@@ -473,9 +473,12 @@ namespace APIViewWeb.Helpers
         /// </summary>
         /// <param name="apiRevision"></param>
         /// <param name="addAPIRevisionType"></param>
+        /// <param name="addCreatedBy"></param>
+        /// <param name="addCreatedOn"></param>
+        /// <param name="addPackageVersion"></param>
         /// <returns></returns>
         public static string ResolveRevisionLabel(APIRevisionListItemModel apiRevision, 
-            bool addAPIRevisionType = true, bool addCreatedBy = true, bool addCreatedOn = true)
+            bool addAPIRevisionType = true, bool addCreatedBy = true, bool addCreatedOn = true, bool addPackageVersion = true)
         {
             var label = String.Empty;
             
@@ -485,7 +488,7 @@ namespace APIViewWeb.Helpers
             if (addCreatedOn)
                 label = $"{apiRevision.CreatedOn.ToString()} | {label}";
 
-            if (apiRevision.Files.Any() && !String.IsNullOrEmpty(apiRevision.Files[0].PackageVersion))
+            if (addPackageVersion && apiRevision.Files.Any() && !String.IsNullOrEmpty(apiRevision.Files[0].PackageVersion))
                 label = $"{apiRevision.Files[0].PackageVersion} | {label}";
 
             if (!String.IsNullOrWhiteSpace(apiRevision.Label))
