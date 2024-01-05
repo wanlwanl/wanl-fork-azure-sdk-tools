@@ -2,7 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { Review } from 'src/app/_models/review';
 import { ReviewsService } from 'src/app/_services/reviews/reviews.service';
 import { Pagination } from 'src/app/_models/pagination';
-import { Table, TableFilterEvent, TableLazyLoadEvent, TablePageEvent, TableRowSelectEvent } from 'primeng/table';
+import { Table, TableFilterEvent, TableLazyLoadEvent, TableRowSelectEvent } from 'primeng/table';
 import { MenuItem, SortEvent } from 'primeng/api';
 
 @Component({
@@ -117,13 +117,9 @@ export class ReviewsListComponent implements OnInit {
     ];
   }
 
-  viewReview(product: Review) {
-      
-  }
-
-  deleteReview(product: Review) {
-      
-  }
+  viewReview(review: Review) {
+    this.reviewsService.openReviewPage(review.id)
+  }                   
 
   /**
    * Return true if table has filters applied.

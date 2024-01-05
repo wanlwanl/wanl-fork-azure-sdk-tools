@@ -52,47 +52,15 @@ namespace APIViewWeb
                 queryStringBuilder.Append($" AND c.ReviewId = '{filterAndSortParams.ReviewId}'");
             }   
 
-            if (!string.IsNullOrEmpty(filterAndSortParams.Name))
+            if (!string.IsNullOrEmpty(filterAndSortParams.Label))
             {
-                var hasExactMatchQuery = filterAndSortParams.Name.StartsWith("package:") ||
-                    filterAndSortParams.Name.StartsWith("pr:");
-
-                if (hasExactMatchQuery)
-                {
-                    if (filterAndSortParams.Name.StartsWith("package:"))
-                    {
-                        var query = '"' + $"{filterAndSortParams.Name.Replace("package:", "")}" + '"';
-                        queryStringBuilder.Append($" AND STRINGEQUALS(c.PackageName, {query}, true)");
-                    }
-                    else if (filterAndSortParams.Name.StartsWith("pr:"))
-                    {
-                        var query = '"' + $"{filterAndSortParams.Name.Replace("pr:", "")}" + '"';
-                        queryStringBuilder.Append($" AND ENDSWITH(c.Label, {query}, true)");
-                    }
-                    else
-                    {
-                        var query = '"' + $"{filterAndSortParams.Name}" + '"';
-                        queryStringBuilder.Append($" AND CONTAINS(c.PackageName, {query}, true)");
-                    }
-                }
-                else
-                {
-                    var query = '"' + $"{filterAndSortParams.Name}" + '"';
-                    queryStringBuilder.Append($" AND (CONTAINS(c.PackageName, {query}, true)");
-                    queryStringBuilder.Append($" OR CONTAINS(c.Label, {query}, true)");
-                    queryStringBuilder.Append($")");
-                }
+                var query = '"' + $"{filterAndSortParams.Label }" + '"';
+                queryStringBuilder.Append($" AND CONTAINS(c.Label, {query}, true)");
             }
 
             if (!string.IsNullOrEmpty(filterAndSortParams.Author))
             {
-                queryStringBuilder.Append($" AND STRINGEQUALS(c.ChangeHistory[0].User, '{filterAndSortParams.Author}')");
-            }
-
-            if (filterAndSortParams.Languages != null && filterAndSortParams.Languages.Count() > 0)
-            {
-                var languagesAsQueryStr = CosmosQueryHelpers.ArrayToQueryString<string>(filterAndSortParams.Languages);
-                queryStringBuilder.Append($" AND c.Language IN {languagesAsQueryStr}");
+                queryStringBuilder.Append($" AND CONTAINS(c.CreatedBy, '{filterAndSortParams.Author}')");
             }
 
             if (filterAndSortParams.Details != null && filterAndSortParams.Details.Count() > 0)
@@ -102,19 +70,19 @@ namespace APIViewWeb
                     switch (item)
                     {
                         case "Approved":
-                            queryStringBuilder.Append($" AND c.Status = Approved");
+                            queryStringBuilder.Append($" AND c.IsApproved = true");
                             break;
                         case "Pending":
-                            queryStringBuilder.Append($" AND c.Status = Pending");
+                            queryStringBuilder.Append($" AND c.IsApproved = false");
                             break;
                         case "Manual":
-                            queryStringBuilder.Append($" AND c.ReviewRevisionType = Manual");
+                            queryStringBuilder.Append($" AND c.APIRevisionType = 'Manual'");
                             break;
                         case "Automatic":
-                            queryStringBuilder.Append($" AND c.ReviewRevisionType = Automatic");
+                            queryStringBuilder.Append($" AND c.APIRevisionType = 'Automatic'");
                             break;
                         case "PullRequest":
-                            queryStringBuilder.Append($" AND c.ReviewRevisionType = PullRequest");
+                            queryStringBuilder.Append($" AND c.APIRevisionType = 'PullRequest'");
                             break;
                     }
                 }
@@ -131,11 +99,14 @@ namespace APIViewWeb
 
             switch (filterAndSortParams.SortField)
             {
-                case "name":
-                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                case "created":
+                    queryStringBuilder.Append($" ORDER BY c.CreatedOn");
+                    break;
+                case "updated":
+                    queryStringBuilder.Append($" ORDER BY c.LastUpdatedOn");
                     break;
                 default:
-                    queryStringBuilder.Append($" ORDER BY c.PackageName");
+                    queryStringBuilder.Append($" ORDER BY c.LastUpdatedOn");
                     break;
             }
 

@@ -65,4 +65,9 @@ export class ReviewsService {
     params = params.append('revisionId', revisionId);
     return this.http.get<ReviewContent>(this.baseUrl + `/${reviewId}/content`, { params: params });
   }
+
+  openReviewPage(reviewId: string)
+  {
+    window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}`, '_blank');
+  }
 }
