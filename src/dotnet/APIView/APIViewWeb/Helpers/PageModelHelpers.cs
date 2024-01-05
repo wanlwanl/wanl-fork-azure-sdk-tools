@@ -491,7 +491,7 @@ namespace APIViewWeb.Helpers
             if (addCreatedOn)
                 label = $"{apiRevision.CreatedOn.ToString()} | {label}";
 
-            if (addPackageVersion && apiRevision.Files.Any() && !String.IsNullOrEmpty(apiRevision.Files[0].PackageVersion))
+            if (addPackageVersion && apiRevision.Files.Any() && !String.IsNullOrEmpty(apiRevision.Files[0].PackageVersion) && (String.IsNullOrEmpty(apiRevision.Label) || !apiRevision.Label.Contains(apiRevision.Files[0].PackageVersion)))
                 label = $"{apiRevision.Files[0].PackageVersion} | {label}";
 
             if (!String.IsNullOrWhiteSpace(apiRevision.Label))

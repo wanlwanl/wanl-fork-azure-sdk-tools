@@ -34,10 +34,6 @@
         }
     }
 
-    .p-datatable-footer{
-        text-align: center;
-    }
-
     p-sortIcon {
         .p-icon {
             width: 0.7rem;
@@ -53,5 +49,15 @@
 
     .p-sidebar-right {
         width: 40dvw;
+    }
+
+    .p-datatable .p-datatable-footer {
+        position: sticky;
+        bottom: -10px;
+        text-align: center;
+    }
+
+    .p-scroller-inline {
+        min-height: calc(100vh * 0.75);
     }
 }

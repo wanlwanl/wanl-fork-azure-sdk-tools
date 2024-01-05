@@ -1,10 +1,5 @@
 :host ::ng-deep {
-    .p-datatable .p-datatable-footer {
-        position: sticky;
-        bottom: -10px;
-    }
-
-    .p-scroller-inline {
-        min-height: calc(100vh * 0.75);
+    .p-sidebar-right {
+        width: 20dvw;
     }
 }

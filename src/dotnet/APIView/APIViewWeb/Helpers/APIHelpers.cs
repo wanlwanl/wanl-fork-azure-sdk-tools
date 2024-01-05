@@ -30,6 +30,7 @@ namespace APIViewWeb.Helpers
 
     public class APIRevisionsFilterAndSortParams : ReviewFilterAndSortParams
     {
+        public string Label { get; set; }
         public string Author { get; set; }
         public string ReviewId { get; set; }
         public IEnumerable<string> Details { get; set; }

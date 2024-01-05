@@ -20,19 +20,23 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   totalNumberOfRevisions = 0;
   pagination: Pagination | undefined;
   insertIndex : number = 0;
-  rowHeight: number = 48;
+  rowHeight: number = 88;
   noOfRows: number = Math.floor((window.innerHeight * 0.75) / this.rowHeight); // Dynamically Computing the number of rows to show at once
   pageSize = 20; // No of items to load from server at a time
 
   // Filters
   details: any[] = [];
   selectedDetails: any[] = [];
+  showDeletedAPIRevisions : boolean = false;
+
+  sidebarVisible : boolean = false;
 
   // Context Menu
   contextMenuItems! : MenuItem[];
   selectedRevision!: Revision;
   selectedRevisions!: Revision[];
-  showSelectionAction : boolean = false;
+  showSelectionActions : boolean = false;
+  showDiffButton : boolean = false;
 
   badgeClass : Map<string, string> = new Map<string, string>();
 
@@ -47,6 +51,8 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['review'].previousValue != changes['review'].currentValue){
       this.loadRevisions(0, this.pageSize * 2, true);
+      this.showSelectionActions = false;
+      this.showDiffButton = false;
     }
   }
 
@@ -57,15 +63,17 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   loadRevisions(noOfItemsRead : number, pageSize: number, resetReviews = false, filters: any = null, sortField: string ="lastUpdatedOn",  sortOrder: number = 1) {
     console.log("Review Id %o", this.review?.id);
     let label : string = "";
+    let author : string = "";
     let reviewId: string = this.review?.id ?? "";
     let details : string [] = [];
     if (filters)
     {
       label = filters.label.value ?? label;
+      author = filters.author.value ?? author;
       details = (filters.details.value != null) ? filters.details.value.map((item: any) => item.data): details;
     }
 
-    this.revisionsService.getRevisions(noOfItemsRead, pageSize, label, reviewId, details, sortField, sortOrder).subscribe({
+    this.revisionsService.getRevisions(noOfItemsRead, pageSize, reviewId, label, author, details, sortField, sortOrder).subscribe({
       next: response => {
         if (response.result && response.pagination) {
           if (resetReviews)
@@ -110,7 +118,7 @@ export class RevisionsListComponent implements OnInit, OnChanges {
         items: [
           { label: "Automatic", data: "Automatic" },
           { label: "Manual", data: "Manual" },
-          { label: "Pull Request", data: "Pullrequest" }
+          { label: "Pull Request", data: "PullRequest" }
         ]
       }
     ];
@@ -124,9 +132,16 @@ export class RevisionsListComponent implements OnInit, OnChanges {
     this.badgeClass.set("PullRequest", "fa-solid fa-code-pull-request");
     this.badgeClass.set("Automatic", "fa-solid fa-robot");
   }
+
+  viewDiffOfSelectedAPIRevisions() {
+    if (this.selectedRevisions.length == 2)
+    {
+      this.revisionsService.openDiffOfAPIRevisions(this.review!.id, this.selectedRevisions[0].id, this.selectedRevisions[1].id)
+    }
+  }
   
   viewRevision(revision: Revision) {
-      
+      this.revisionsService.openAPIRevisionPage(this.review!.id, revision.id);
   }
 
   deleteRevision(revision: Revision) {
@@ -167,7 +182,9 @@ export class RevisionsListComponent implements OnInit, OnChanges {
    */
   onSelectionChange(value = []) {
     console.log("On Selection Event Emitted %o", value);
-    this.showSelectionAction = (value.length > 0) ? true : false;
+    this.selectedRevisions = value;
+    this.showSelectionActions = (value.length > 0) ? true : false;
+    this.showDiffButton = (value.length == 2) ? true : false;
   }
 
   /**
