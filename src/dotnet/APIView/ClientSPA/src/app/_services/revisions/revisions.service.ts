@@ -18,15 +18,16 @@ export class RevisionsService {
   constructor(private http: HttpClient) { }
 
   getRevisions(noOfItemsRead: number, pageSize: number,
-    name: string, reviewId : string, details: string [],
-    sortField: string, sortOrder: number
+    reviewId : string, label: string, author: string, 
+    details: string [], sortField: string, sortOrder: number
     ): Observable<PaginatedResult<Revision[]>> {
     let params = new HttpParams();
     params = params.append('noOfItemsRead', noOfItemsRead);
     params = params.append('pageSize', pageSize);
 
     const data = {
-      name: name,
+      label: label,
+      author: author,
       reviewId: reviewId,
       details: details,
       sortField: sortField,
@@ -59,5 +60,15 @@ export class RevisionsService {
           }
         )
       );
+  }
+
+  openDiffOfAPIRevisions(reviewId: string, activeAPIRevisionId: string, diffAPIRevisionsId: string)
+  {
+    window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}?revisionId=${activeAPIRevisionId}&diffOnly=False&doc=False&diffRevisionId=${diffAPIRevisionsId}`, '_blank');
+  }
+
+  openAPIRevisionPage(reviewId: string, activeAPIRevisionId: string)
+  {
+    window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}?revisionId=${activeAPIRevisionId}`, '_blank');
   }
 }
