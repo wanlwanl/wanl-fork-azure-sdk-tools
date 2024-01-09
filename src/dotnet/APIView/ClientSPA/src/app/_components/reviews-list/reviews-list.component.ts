@@ -125,7 +125,7 @@ export class ReviewsListComponent implements OnInit {
    * Return true if table has filters applied.
    */
   tableHasFilters() : boolean {
-    return (this.filters && (this.filters.packageName.value != null || this.filters.languages.value != null));
+    return (this.sortField != "lastUpdatedOn" || this.sortOrder != 1 || (this.filters && (this.filters.packageName.value != null || this.filters.languages.value != null)));
   }
 
   /**

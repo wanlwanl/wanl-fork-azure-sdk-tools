@@ -30,10 +30,17 @@ namespace APIViewWeb.Helpers
 
     public class APIRevisionsFilterAndSortParams : ReviewFilterAndSortParams
     {
+        public bool IsDeleted { get; set; }
         public string Label { get; set; }
         public string Author { get; set; }
         public string ReviewId { get; set; }
         public IEnumerable<string> Details { get; set; }
+    }
+
+    public class APIRevisionSoftDeleteParam
+    {
+        public string reviewId { get; set; }
+        public IEnumerable<string> apiRevisionIds { get; set;}
     }
 
     public class PagedList<T> : List<T>
