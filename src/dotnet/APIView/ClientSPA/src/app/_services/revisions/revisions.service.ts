@@ -17,15 +17,16 @@ export class RevisionsService {
   
   constructor(private http: HttpClient) { }
 
-  getRevisions(noOfItemsRead: number, pageSize: number,
+  getAPIRevisions(noOfItemsRead: number, pageSize: number,
     reviewId : string, label: string, author: string, 
-    details: string [], sortField: string, sortOrder: number
+    details: string [], sortField: string, sortOrder: number, isDeleted: boolean = false
     ): Observable<PaginatedResult<Revision[]>> {
     let params = new HttpParams();
     params = params.append('noOfItemsRead', noOfItemsRead);
     params = params.append('pageSize', pageSize);
 
     const data = {
+      isDeleted: isDeleted,
       label: label,
       author: author,
       reviewId: reviewId,
@@ -62,13 +63,28 @@ export class RevisionsService {
       );
   }
 
-  openDiffOfAPIRevisions(reviewId: string, activeAPIRevisionId: string, diffAPIRevisionsId: string)
-  {
+  deleteAPIRevisions(reviewId: string, revisionIds: string[]): Observable<any> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+    });
+
+    const data = {
+      reviewId: reviewId,
+      apiRevisionIds: revisionIds
+    };
+   
+    return this.http.put<any>(this.baseUrl, data,
+    { 
+      headers: headers, 
+      withCredentials: true, 
+    });
+  }
+
+  openDiffOfAPIRevisions(reviewId: string, activeAPIRevisionId: string, diffAPIRevisionsId: string) {
     window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}?revisionId=${activeAPIRevisionId}&diffOnly=False&doc=False&diffRevisionId=${diffAPIRevisionsId}`, '_blank');
   }
 
-  openAPIRevisionPage(reviewId: string, activeAPIRevisionId: string)
-  {
+  openAPIRevisionPage(reviewId: string, activeAPIRevisionId: string) {
     window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}?revisionId=${activeAPIRevisionId}`, '_blank');
   }
 }
