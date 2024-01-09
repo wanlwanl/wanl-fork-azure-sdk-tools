@@ -45,7 +45,7 @@ namespace APIViewWeb
         public async Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, APIRevisionsFilterAndSortParams filterAndSortParams)
         {
             var queryStringBuilder = new StringBuilder(@"SELECT * FROM Revisions c");
-            queryStringBuilder.Append(" WHERE c.IsDeleted = false");
+            queryStringBuilder.Append($" WHERE c.IsDeleted = {filterAndSortParams.IsDeleted.ToString().ToLower()}");
 
             if (!string.IsNullOrEmpty(filterAndSortParams.ReviewId))
             {
@@ -65,27 +65,47 @@ namespace APIViewWeb
 
             if (filterAndSortParams.Details != null && filterAndSortParams.Details.Count() > 0)
             {
-                foreach (var item in filterAndSortParams.Details)
+                queryStringBuilder.Append(" AND (");
+
+                var approvalFilters = filterAndSortParams.Details.Where(x => x == "Approved" || x == "Pending").ToList();
+                var apiRevisionTypeFilters = filterAndSortParams.Details.Where(x => x == "Manual" || x == "Automatic" || x == "PullRequest").ToList();
+
+                if (approvalFilters.Count() == 2)
+                {
+                    queryStringBuilder.Append($"c.IsApproved = true OR c.IsApproved = false");
+                }
+                else if (approvalFilters.Contains("Approved"))
+                {
+                    queryStringBuilder.Append($"c.IsApproved = true");
+                }
+                else if (approvalFilters.Contains("Pending"))
+                {
+                    queryStringBuilder.Append($"c.IsApproved = false");
+                }
+
+                if (approvalFilters.Count > 0 && apiRevisionTypeFilters.Count() > 0)
+                    queryStringBuilder.Append(" AND ");
+
+                foreach (var item in apiRevisionTypeFilters)
                 {
                     switch (item)
                     {
-                        case "Approved":
-                            queryStringBuilder.Append($" AND c.IsApproved = true");
-                            break;
-                        case "Pending":
-                            queryStringBuilder.Append($" AND c.IsApproved = false");
-                            break;
                         case "Manual":
-                            queryStringBuilder.Append($" AND c.APIRevisionType = 'Manual'");
+                            queryStringBuilder.Append($"c.APIRevisionType = 'Manual'");
                             break;
                         case "Automatic":
-                            queryStringBuilder.Append($" AND c.APIRevisionType = 'Automatic'");
+                            queryStringBuilder.Append($"c.APIRevisionType = 'Automatic'");
                             break;
                         case "PullRequest":
-                            queryStringBuilder.Append($" AND c.APIRevisionType = 'PullRequest'");
+                            queryStringBuilder.Append($"c.APIRevisionType = 'PullRequest'");
                             break;
                     }
+                    if (item != apiRevisionTypeFilters.Last())
+                    {
+                        queryStringBuilder.Append(" OR ");
+                    }
                 }
+                queryStringBuilder.Append(")");
             }
 
             int totalCount = 0;

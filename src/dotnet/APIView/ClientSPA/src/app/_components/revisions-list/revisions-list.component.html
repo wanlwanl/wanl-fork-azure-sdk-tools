@@ -5,6 +5,7 @@
     </div>
 </div>
 <p-table *ngIf="review != null"
+    #apiRevisionsTable
     [rows]="noOfRows"
     [value]="revisions"
     dataKey="id"
@@ -32,10 +33,10 @@
                 <p-chip label=""></p-chip>
             </div>
             <div>
-                <button *ngIf="showSelectionActions" type="button" class="btn btn-sm btn-outline-danger me-1"><i class="bi bi-x-octagon-fill me-1"></i>Delete</button>
+                <button *ngIf="!showDeletedAPIRevisions && showSelectionActions" (click)="deleteRevisions(selectedRevisions)" type="button" class="btn btn-sm btn-outline-danger me-1"><i class="bi bi-x-octagon-fill me-1"></i>Delete</button>
                 <button *ngIf="showSelectionActions" type="button" class="btn btn-sm btn-outline-primary me-1" (click)="selectedRevisions = []"><i class="bi bi-x-circle me-1"></i>Selection</button>
-                <button *ngIf="showDiffButton" type="button" class="btn btn-sm btn-outline-primary me-1" (click)="viewDiffOfSelectedAPIRevisions()"><i class="bi bi-file-diff me-1"></i>Diff</button>
-                <button type="button" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-x-circle me-1"></i>Filters</button>
+                <button *ngIf="!showDeletedAPIRevisions && showDiffButton" type="button" class="btn btn-sm btn-outline-primary me-1" (click)="viewDiffOfSelectedAPIRevisions()"><i class="bi bi-file-diff me-1"></i>Diff</button>
+                <button *ngIf="tableHasFilters()" (click)="clear(apiRevisionsTable)" type="button" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-x-circle me-1"></i>Filters</button>
                 <button type="button" class="btn btn-sm btn-outline-primary" (click)="sidebarVisible = true"><i class="bi bi-sliders me-1"></i></button>
             </div>
         </div>
@@ -82,29 +83,30 @@
         <tr [pContextMenuRow]="revision">
             <td><p-tableCheckbox [value]="revision"></p-tableCheckbox></td>
             <td>
-                <a href="{{reviewPageWebAppUrl}}{{revision.reviewId}}/{{revision.Id}}" target="_blank">{{ revision.resolvedLabel }}</a>
+                <a *ngIf="!showDeletedAPIRevisions; else disabledLink" href="{{reviewPageWebAppUrl}}{{revision.reviewId}}/{{revision.id}}" target="_blank">{{ revision.resolvedLabel }}</a>
+                <ng-template #disabledLink>{{ revision.resolvedLabel }}</ng-template>
             </td>
             <td class="author-table-data">
                 <img [alt]="revision.createdBy" src="https://github.com/{{ revision.createdBy }}.png?size=40" width="32" />
-                <span><a href="{{profilePageWebAppUrl}}{{ revision.createdBy }}">{{ revision.createdBy }}</a></span>
+                <span><a href="{{profilePageWebAppUrl}}{{ revision.createdBy }}" target="_blank">{{ revision.createdBy }}</a></span>
             </td>
             <td>
-                <i pTooltip="{{ revision.isApproved | approval }}" appendTo="target" tooltipPosition="top" [positionTop]=-200 [positionLeft]=-500 class="{{ badgeClass.get(revision.isApproved.toString()) }} me-2"></i>
-                <i pTooltip="{{ revision.apiRevisionType }}" appendTo="target" tooltipPosition="top" [positionTop]=-200 [positionLeft]=-500 class="{{ badgeClass.get(revision.apiRevisionType) }} me-2"></i>
-            </td>
-            <td pTooltip="{{ revision.createdOn | date }}" appendTo="target" tooltipPosition="top" [positionTop]=-190 [positionLeft]=-530>{{ (revision.createdOn !== null) ? (revision.createdOn | timeago) : "" }}</td>
-            <td pTooltip="{{ revision | lastUpdatedOn | date }}" appendTo="target" tooltipPosition="top" [positionTop]=-190 [positionLeft]=-530>{{ (revision.lastUpdatedOn !== null) ? (revision | lastUpdatedOn| timeago) : "" }}</td>
+                <i class="{{ badgeClass.get(revision.isApproved.toString()) }} me-2"></i>
+                <i class="{{ badgeClass.get(revision.apiRevisionType) }} me-2"></i>
+            </td> 
+            <td>{{ (revision.createdOn !== null) ? (revision.createdOn | timeago) : "" }}</td>
+            <td>{{ (revision.lastUpdatedOn !== null) ? (revision | lastUpdatedOn| timeago) : "" }}</td>
         </tr>
     </ng-template>
     <ng-template pTemplate="summary">
         <div class="flex align-items-center justify-content-center">
-            {{totalNumberOfRevisions}} APIRevisions in {{review.packageName}}
+            {{totalNumberOfRevisions}} {{apiRevisionsListDetail}} {{review.packageName}}
         </div>
     </ng-template>
 </p-table>
 <p-sidebar [(visible)]="sidebarVisible" position="right">
     <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="showDeletedAPIRevisions">
-        <label class="form-check-label" for="showDeletedAPIRevisions">Show Deleted APIRevisions</label>
+        <input class="form-check-input" (change)="toggleShowDeletedAPIRevisions()" type="checkbox" role="switch" id="showDeletedAPIRevisions">
+        <label class="form-check-label" for="showDeletedAPIRevisions">View Deleted APIRevisions</label>
       </div>
 </p-sidebar>
