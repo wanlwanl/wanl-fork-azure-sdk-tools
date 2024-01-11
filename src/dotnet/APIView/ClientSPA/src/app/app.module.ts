@@ -44,6 +44,7 @@ import { LineDetailsComponent } from './_components/line-details/line-details.co
 import { DiagnosticsLineComponent } from './_components/diagnostics-line/diagnostics-line.component';
 import { ApprovalPipe } from './_pipes/approval.pipe';
 import { LastUpdatedOnPipe } from './_pipes/last-updated-on.pipe';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -85,6 +86,7 @@ import { LastUpdatedOnPipe } from './_pipes/last-updated-on.pipe';
     MenuModule,
     MultiSelectModule,
     PaginatorModule,
+    ReactiveFormsModule,
     SidebarModule,
     SplitterModule,
     SplitButtonModule,

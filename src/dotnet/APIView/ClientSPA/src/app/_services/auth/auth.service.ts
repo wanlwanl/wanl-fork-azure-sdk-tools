@@ -1,7 +1,7 @@
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { AppVersion } from 'src/app/_models/auth_service_models';
+import {  Observable, ReplaySubject, map } from 'rxjs';
+import { AppVersion, UserProfile } from 'src/app/_models/auth_service_models';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -9,7 +9,6 @@ import { environment } from 'src/environments/environment';
 })
 export class AuthService {
   baseUrl : string =  environment.apiUrl + "auth";
-
   constructor(private http: HttpClient) { }
 
   isLoggedIn() : Observable<boolean> {
@@ -21,5 +20,9 @@ export class AuthService {
 
   appVersion() : Observable<AppVersion> {
     return this.http.get<AppVersion>(this.baseUrl + "/appversion", { withCredentials: true });
+  }
+
+  getUserProfile() : Observable<UserProfile> {
+    return this.http.get<UserProfile>(this.baseUrl + "/profile", { withCredentials: true });
   }
 }

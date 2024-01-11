@@ -170,6 +170,10 @@ p-contextmenusub {
     transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
+.p-dropdown > .p-inputtext {
+    border: 0px;
+}
+
 .p-dropdown-panel {
     background: var(--base-fg-color);
     color: var(--base-text-color);
@@ -283,7 +287,7 @@ p-contextmenusub {
     background: var(--base-bg-color);
 }
 
-.p-multiselect-items-wrapper {
+.p-multiselect-items-wrapper, .p-dropdown-items-wrapper {
     ul {
         padding-left: 0rem;
     }
@@ -368,4 +372,33 @@ p-contextmenusub {
     background: var(--base-fg-color);
     border: 0px;
     padding: 0.4rem 0.4rem;
+}
+
+.p-fileupload .p-fileupload-buttonbar {
+    background: var(--base-fg-color);
+    border: 1px solid var(--border-color);
+    color: var(--base-text-color);
+    padding: 0.75rem 0.75rem;
+}
+
+.p-fileupload .p-fileupload-content {
+    background: var(--base-fg-color);
+    border: 1px solid var(--border-color);
+    color: var(--base-text-color);
+    padding: 0.5rem 0.25rem;
+}
+
+.p-button {
+    color: var(--primary-btn-color);
+    background: var(--link-color);
+    border: 1px solid var(--link-color);
+    padding: 0.3rem 0.5rem;
+}
+
+.p-button:focus {
+    box-shadow: var(--shadow-color-primary);
+}
+
+.p-progressbar {
+    background: var(--base-fg-color);
 }
