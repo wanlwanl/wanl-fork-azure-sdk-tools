@@ -1,9 +1,11 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { Review } from 'src/app/_models/review';
+import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Review, SelectItemModel } from 'src/app/_models/review';
 import { ReviewsService } from 'src/app/_services/reviews/reviews.service';
 import { Pagination } from 'src/app/_models/pagination';
 import { Table, TableFilterEvent, TableLazyLoadEvent, TableRowSelectEvent } from 'primeng/table';
 import { MenuItem, SortEvent } from 'primeng/api';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FileSelectEvent, FileUpload } from 'primeng/fileupload';
 
 @Component({
   selector: 'app-reviews-list',
@@ -13,6 +15,7 @@ import { MenuItem, SortEvent } from 'primeng/api';
 
 export class ReviewsListComponent implements OnInit {
   @Output() reviewEmitter : EventEmitter<Review> = new EventEmitter<Review>();
+  @ViewChild("reviewCreationFileUpload") reviewCreationFileUpload!: FileUpload;
 
   reviews : Review[] = [];
   totalNumberOfReviews = 0;
@@ -29,8 +32,8 @@ export class ReviewsListComponent implements OnInit {
   sidebarVisible : boolean = false;
 
   // Filter Options
-  languages: any[] = [];
-  selectedLanguages: any[] = [];
+  languages: SelectItemModel[] = [];
+  selectedLanguages: SelectItemModel[] = [];
 
   // Context Menu
   contextMenuItems! : MenuItem[];
@@ -40,12 +43,20 @@ export class ReviewsListComponent implements OnInit {
 
   // Create Review Selections
   crLanguages: any[] = [];
-  selectedCRLanguages: any[] = [];
+
+  createReviewForm = new FormGroup({
+    selectedCRLanguage: new FormControl<SelectItemModel | null>(null, Validators.required),
+    selectedFile: new FormControl<File | null>(null, Validators.required),
+    label: new FormControl<string | null>(null, Validators.required) 
+  });
 
   badgeClass : Map<string, string> = new Map<string, string>();
 
+  // Review Upload Instructions
+  createReviewInstruction : string[] | undefined;
+  acceptedFilesForReviewUpload : string | undefined;
 
-  constructor(private reviewsService: ReviewsService) { }
+  constructor(private reviewsService: ReviewsService, private fb: FormBuilder) { }
 
   ngOnInit(): void {
     this.loadReviews(0, this.pageSize * 2, true); // Initial load of 2 pages
@@ -59,14 +70,13 @@ export class ReviewsListComponent implements OnInit {
    */
   loadReviews(noOfItemsRead : number, pageSize: number, resetReviews = false, filters: any = null, sortField: string ="lastUpdatedOn",  sortOrder: number = 1) {
     // Reset Filter if necessary
-    if (this.filters && this.filters.languages.value == null){
+    if (this.filters && this.filters.languages.value == null) {
       this.selectedLanguages = [];
     }
 
     let packageName : string = "";
     let languages : string [] = [];
-    if (filters)
-    {
+    if (filters) {
       packageName = filters.packageName.value ?? packageName;
       languages = (filters.languages.value != null)? filters.languages.value.map((item: any) => item.data) : languages;
     }
@@ -74,15 +84,13 @@ export class ReviewsListComponent implements OnInit {
     this.reviewsService.getReviews(noOfItemsRead, pageSize, packageName, languages, sortField, sortOrder).subscribe({
       next: response => {
         if (response.result && response.pagination) {
-          if (resetReviews)
-          {
+          if (resetReviews) {
             const arraySize = Math.ceil(response.pagination!.totalCount + Math.min(20, (0.05 * response.pagination!.totalCount))) // Add 5% extra rows to avoid flikering
             this.reviews = Array.from({ length: arraySize  });
             this.insertIndex = 0;
           }
 
-          if (response.result.length > 0)
-          {
+          if (response.result.length > 0) {
             this.reviews.splice(this.insertIndex, this.insertIndex + response.result.length, ...response.result);
             this.insertIndex = this.insertIndex + response.result.length;
             this.pagination = response.pagination;
@@ -118,7 +126,7 @@ export class ReviewsListComponent implements OnInit {
   }
 
   viewReview(review: Review) {
-    this.reviewsService.openReviewPage(review.id)
+    this.reviewsService.openReviewPage(review.id);
   }                   
 
   /**
@@ -146,10 +154,8 @@ export class ReviewsListComponent implements OnInit {
     this.sortField = event.sortField as string ?? "lastUpdatedOn";
     this.sortOrder = event.sortOrder as number ?? 1;
     this.filters = event.filters;
-    if (last > (this.insertIndex - this.pageSize))
-    {
-      if (this.pagination && this.pagination?.noOfItemsRead! < this.pagination?.totalCount!)
-      {
+    if (last > (this.insertIndex - this.pageSize)) {
+      if (this.pagination && this.pagination?.noOfItemsRead! < this.pagination?.totalCount!) {
         this.loadReviews(this.pagination!.noOfItemsRead, this.pageSize, this.resetReviews, this.filters, this.sortField, this.sortOrder);
       }
     }
@@ -184,5 +190,117 @@ export class ReviewsListComponent implements OnInit {
     this.sortField = event.field as string ?? "packageName";
     this.sortOrder = event.order as number ?? 1;
     this.loadReviews(0, this.pageSize, true, this.filters, this.sortField, this.sortOrder);
+  }
+
+  /**
+   * Callback to invoke on file selction for review creation
+   * @param event the Filter event
+   */
+  onFileSelect(event: FileSelectEvent) {
+    const selectedFile = event.currentFiles[0];
+    this.createReviewForm.get('selectedFile')?.setValue(selectedFile);
+  }
+  // Fire API request to create the review
+  createReview() {
+    if (this.createReviewForm.valid) {
+      const selectedFile = this.createReviewForm.get('selectedFile')?.value;
+      const label = this.createReviewForm.get('label')?.value;
+      const language = this.createReviewForm.get('selectedCRLanguage')?.value?.data;
+      this.reviewsService.createReview(selectedFile, label, language).subscribe({
+        next: response => {
+          if (response.result) {
+            this.reviewsService.openReviewPage(response.result.id);
+          }
+        }
+      });
+    }
+  }
+
+  updateReviewCreationInstruuction() {
+    switch(this.createReviewForm.get('selectedCRLanguage')?.value?.data){
+      case "C":
+        this.createReviewInstruction = [
+          `Install clang 10 or later.`, 
+          `Run <code>clang [inputs like az_*.h] -Xclang -ast-dump=json -I ..\\..\\..\\core\\core\\inc -I "c:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Preview\\VC\\Tools\\MSVC\\14.26.28801\\include\\" > az_core.ast</code>`,
+          `Archive the file <code>Compress-Archive az_core.ast -DestinationPath az_core.zip</code>`,
+          `Upload the resulting archive.`
+        ];
+        this.acceptedFilesForReviewUpload = ".zip";
+        break;
+      case "C#":
+        this.createReviewInstruction = [
+          `Run <code>dotnet pack</code>`, 
+          `Upload the resulting .nupkg file.`
+        ];
+        this.acceptedFilesForReviewUpload = ".nupkg";
+        break;
+      case "C++":
+        this.createReviewInstruction = [
+          `Generate a token file using the <a href="https://github.com/Azure/azure-sdk-tools/tree/main/tools/apiview/parsers/cpp-api-parser#readme">C++ parser</a>`,
+          `Upload the token file generated.`
+        ];
+        this.acceptedFilesForReviewUpload = ".json";
+        break;
+      case "Java":
+        this.createReviewInstruction = [
+          `Run a <code>mvn package</code> build on your project, which will generate a number of build artifacts in the <code>/target</code> directory. In there, find the file ending <code>sources.jar</code>, and select it.`,
+        ];
+        this.acceptedFilesForReviewUpload = ".sources.jar";
+        break;
+      case "Python":
+        this.createReviewInstruction = [
+          `Generate wheel for the package. <code>python setup.py bdist_wheel -d [dest_folder]</code>`,
+          `Upload generated whl file`
+        ];
+        this.acceptedFilesForReviewUpload = ".whl";
+        break;
+      case "JavaScript":
+        this.createReviewInstruction = [
+          `Use <code>api-extractor</code> to generate a <a href="https://api-extractor.com/pages/setup/generating_docs/">docModel file</a>`,
+          `Upload generated api.json file`
+        ];
+        this.acceptedFilesForReviewUpload = ".json";
+        break;
+      case "Go":
+        this.createReviewInstruction = [
+          `Archive source module directory in which go.mod is present. <code>Compress-Archive ./sdk/azcore -DestinationPath azcore.zip</code>`,
+          `Rename the file <code>Rename-Item azcore.zip -NewName  azcore.gosource</code>`,
+          `Upload the resulting archive.`
+        ];
+        this.acceptedFilesForReviewUpload = ".gosource";
+        break;
+      case "Swift":
+        this.createReviewInstruction = [
+          `Generate JSON file for the source by running Swift APIView parser in XCode. More information is available here on <a href="https://github.com/Azure/azure-sdk-tools/blob/main/src/swift/README.md">Swift API parser</a>`,
+          `Upload generated JSON`
+        ];
+        this.acceptedFilesForReviewUpload = ".json";
+        break;
+      case "Swagger":
+        this.createReviewInstruction = [
+          `Rename swagger json to replace file extension to .swagger  <code>Rename-Item PetSwagger.json -NewName PetSwagger.swagger</code>`,
+          `Upload renamed swagger file`
+        ];
+        this.acceptedFilesForReviewUpload = ".swagger";
+        break;
+      case "TypeSpec":
+        this.createReviewInstruction = [
+          `Rename swagger json to replace file extension to .swagger  <code>Rename-Item PetSwagger.json -NewName PetSwagger.swagger</code>`,
+          `Upload renamed swagger file`
+        ];
+        this.acceptedFilesForReviewUpload = ".json";
+        break;
+      case "Json":
+        this.createReviewInstruction = [
+          `Upload JSON API review token file.`
+        ];
+        this.acceptedFilesForReviewUpload = ".json";
+        break;
+      default:
+        this.createReviewInstruction = []
+    }
+    this.reviewCreationFileUpload.clear();
+    this.createReviewForm.get('label')?.reset();
+    this.createReviewForm.get('selectedFile')?.setValue(null);
   }
 }

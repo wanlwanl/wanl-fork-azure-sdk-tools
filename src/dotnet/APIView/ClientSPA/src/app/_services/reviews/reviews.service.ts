@@ -60,14 +60,17 @@ export class ReviewsService {
       );
   }
 
-  getReviewContent(reviewId: string, revisionId: string = "") : Observable<ReviewContent>{
+  getReviewContent(reviewId: string, revisionId: string = "") : Observable<ReviewContent> {
     let params = new HttpParams();
     params = params.append('revisionId', revisionId);
     return this.http.get<ReviewContent>(this.baseUrl + `/${reviewId}/content`, { params: params });
   }
 
-  openReviewPage(reviewId: string)
-  {
+  openReviewPage(reviewId: string) {
     window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}`, '_blank');
+  }
+
+  createReview(review: Review) : Observable<Review>{
+    //return this.http.post<Review>(this.baseUrl, review);
   }
 }
