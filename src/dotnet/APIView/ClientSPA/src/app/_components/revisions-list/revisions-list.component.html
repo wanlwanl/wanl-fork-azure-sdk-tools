@@ -4,7 +4,14 @@
         <h4>No Review Selected<br>Select a Review on the Left Panel to view its APIRevisions</h4>
     </div>
 </div>
-<p-table *ngIf="review != null"
+<div *ngIf="review != null && revisions.length == 0" class="d-flex justify-content-center align-items-center" style="height: 90vh;">
+    <div class="text-center">
+        <h4>Review {{review.packageName}} has no APIRevisions.</h4>
+        <button type="button" (click)="toggleShowDeletedAPIRevisions()" class="btn btn-link">View Deleted APIRevisions</button>
+        
+    </div>
+</div>
+<p-table *ngIf="review != null && revisions.length > 0"
     #apiRevisionsTable
     [rows]="noOfRows"
     [value]="revisions"
@@ -106,7 +113,7 @@
 </p-table>
 <p-sidebar [(visible)]="sidebarVisible" position="right">
     <div class="form-check form-switch">
-        <input class="form-check-input" (change)="toggleShowDeletedAPIRevisions()" type="checkbox" role="switch" id="showDeletedAPIRevisions">
+        <input class="form-check-input" (change)="toggleShowDeletedAPIRevisions()" type="checkbox" role="switch" id="showDeletedAPIRevisions" [checked]="showDeletedAPIRevisions">
         <label class="form-check-label" for="showDeletedAPIRevisions">View Deleted APIRevisions</label>
       </div>
 </p-sidebar>

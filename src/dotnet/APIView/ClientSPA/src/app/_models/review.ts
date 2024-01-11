@@ -68,5 +68,9 @@ export interface ReviewLine {
   headingsOfSectionsWithDiff: any[]
   isSubHeadingWithDiffInSection: boolean
 }
-  
+
+export interface SelectItemModel {
+  label: string,
+  data: string
+}
   

@@ -1,4 +1,5 @@
 import { Component, HostBinding, OnInit } from '@angular/core';
+import { AuthService } from './_services/auth/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -9,11 +10,16 @@ export class AppComponent  implements OnInit{
   title : string = 'APIView';
   @HostBinding('class') appTheme : string = 'light-theme';
 
+  constructor(private authService: AuthService) { }
+
   ngOnInit(): void {
     this.setAppTheme();
   }
 
   setAppTheme() {
-    this.appTheme = 'dark-solarized-theme'
+    this.authService.getUserProfile().subscribe(
+      (userProfile) => {
+        this.appTheme = userProfile.preferences.theme
+      });
   }
 }

@@ -39,8 +39,7 @@ namespace APIViewWeb.LeanControllers
         /// <summary>
         /// Endpoint used by Client SPA for Deleting reviews.
         /// </summary>
-        /// <param name="reviewId"></param>
-        /// <param name="apiRevisionIds"></param>
+        /// <param name="deleteParams"></param>
         /// <returns></returns>
         [HttpPut(Name = "DeleteAPIRevisions")]
         public async Task DeleteAPIRevisionsAsync([FromBody] APIRevisionSoftDeleteParam deleteParams)
