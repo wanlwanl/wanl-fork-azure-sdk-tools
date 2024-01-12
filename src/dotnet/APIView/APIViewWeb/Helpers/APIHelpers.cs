@@ -4,6 +4,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 
 namespace APIViewWeb.Helpers
 {
@@ -41,6 +43,14 @@ namespace APIViewWeb.Helpers
     {
         public string reviewId { get; set; }
         public IEnumerable<string> apiRevisionIds { get; set;}
+    }
+
+    public class ReviewCreationParam                                                                    
+    {
+        public IFormFile File { get; set; }
+        public string Language { get; set; }
+        public string Label { get; set; }
+        public string FilePath { get; set; }
     }
 
     public class PagedList<T> : List<T>
