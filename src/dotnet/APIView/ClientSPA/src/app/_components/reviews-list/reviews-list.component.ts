@@ -4,7 +4,7 @@ import { ReviewsService } from 'src/app/_services/reviews/reviews.service';
 import { Pagination } from 'src/app/_models/pagination';
 import { Table, TableFilterEvent, TableLazyLoadEvent, TableRowSelectEvent } from 'primeng/table';
 import { MenuItem, SortEvent } from 'primeng/api';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Form, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { FileSelectEvent, FileUpload } from 'primeng/fileupload';
 
 @Component({
@@ -44,9 +44,11 @@ export class ReviewsListComponent implements OnInit {
   // Create Review Selections
   crLanguages: any[] = [];
 
+  uploadFile : File | null = null;
   createReviewForm = new FormGroup({
     selectedCRLanguage: new FormControl<SelectItemModel | null>(null, Validators.required),
     selectedFile: new FormControl<File | null>(null, Validators.required),
+    filePath: new FormControl<string | null>(null, Validators.required),
     label: new FormControl<string | null>(null, Validators.required) 
   });
 
@@ -62,6 +64,9 @@ export class ReviewsListComponent implements OnInit {
     this.loadReviews(0, this.pageSize * 2, true); // Initial load of 2 pages
     this.createFilters();
     this.createContextMenuItems();
+
+    this.createReviewForm.get('selectedFile')?.disable();
+    this.createReviewForm.get('filePath')?.disable();
   }
 
   /**
@@ -197,26 +202,40 @@ export class ReviewsListComponent implements OnInit {
    * @param event the Filter event
    */
   onFileSelect(event: FileSelectEvent) {
-    const selectedFile = event.currentFiles[0];
-    this.createReviewForm.get('selectedFile')?.setValue(selectedFile);
+    console.log("File Select Event Emitted %o", event);
+    this.uploadFile = event.currentFiles[0];
+    this.createReviewForm.get('selectedFile')?.setValue(this.uploadFile);
   }
+
   // Fire API request to create the review
   createReview() {
     if (this.createReviewForm.valid) {
-      const selectedFile = this.createReviewForm.get('selectedFile')?.value;
-      const label = this.createReviewForm.get('label')?.value;
-      const language = this.createReviewForm.get('selectedCRLanguage')?.value?.data;
-      this.reviewsService.createReview(selectedFile, label, language).subscribe({
+      console.log(this.createReviewForm.value!)
+
+      const formData: FormData = new FormData();
+      formData.append("label", this.createReviewForm.get('label')?.value!);
+      formData.append("language", this.createReviewForm.get('selectedCRLanguage')?.value?.data!);
+
+      if (this.createReviewForm.get('filePath')?.value) {
+        formData.append("filePath", this.createReviewForm.get('filePath')?.value!);
+      }
+
+      if (this.createReviewForm.get('selectedFile')?.value) {
+        const file = this.createReviewForm.get('selectedFile')?.value as File;
+        formData.append("file", file, file.name);
+      }
+
+      this.reviewsService.createReview(formData).subscribe({
         next: response => {
-          if (response.result) {
-            this.reviewsService.openReviewPage(response.result.id);
+          if (response) {
+            this.reviewsService.openReviewPage(response.id);
           }
         }
       });
     }
   }
 
-  updateReviewCreationInstruuction() {
+  onCRLanguageSelectChange() {
     switch(this.createReviewForm.get('selectedCRLanguage')?.value?.data){
       case "C":
         this.createReviewInstruction = [
@@ -226,6 +245,8 @@ export class ReviewsListComponent implements OnInit {
           `Upload the resulting archive.`
         ];
         this.acceptedFilesForReviewUpload = ".zip";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "C#":
         this.createReviewInstruction = [
@@ -233,6 +254,8 @@ export class ReviewsListComponent implements OnInit {
           `Upload the resulting .nupkg file.`
         ];
         this.acceptedFilesForReviewUpload = ".nupkg";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "C++":
         this.createReviewInstruction = [
@@ -240,12 +263,16 @@ export class ReviewsListComponent implements OnInit {
           `Upload the token file generated.`
         ];
         this.acceptedFilesForReviewUpload = ".json";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "Java":
         this.createReviewInstruction = [
           `Run a <code>mvn package</code> build on your project, which will generate a number of build artifacts in the <code>/target</code> directory. In there, find the file ending <code>sources.jar</code>, and select it.`,
         ];
         this.acceptedFilesForReviewUpload = ".sources.jar";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "Python":
         this.createReviewInstruction = [
@@ -253,6 +280,8 @@ export class ReviewsListComponent implements OnInit {
           `Upload generated whl file`
         ];
         this.acceptedFilesForReviewUpload = ".whl";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "JavaScript":
         this.createReviewInstruction = [
@@ -260,6 +289,8 @@ export class ReviewsListComponent implements OnInit {
           `Upload generated api.json file`
         ];
         this.acceptedFilesForReviewUpload = ".json";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "Go":
         this.createReviewInstruction = [
@@ -268,6 +299,8 @@ export class ReviewsListComponent implements OnInit {
           `Upload the resulting archive.`
         ];
         this.acceptedFilesForReviewUpload = ".gosource";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "Swift":
         this.createReviewInstruction = [
@@ -275,6 +308,8 @@ export class ReviewsListComponent implements OnInit {
           `Upload generated JSON`
         ];
         this.acceptedFilesForReviewUpload = ".json";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "Swagger":
         this.createReviewInstruction = [
@@ -282,6 +317,8 @@ export class ReviewsListComponent implements OnInit {
           `Upload renamed swagger file`
         ];
         this.acceptedFilesForReviewUpload = ".swagger";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       case "TypeSpec":
         this.createReviewInstruction = [
@@ -289,17 +326,25 @@ export class ReviewsListComponent implements OnInit {
           `Upload renamed swagger file`
         ];
         this.acceptedFilesForReviewUpload = ".json";
+        this.createReviewForm.get('selectedFile')?.disable();
+        this.createReviewForm.get('filePath')?.enable();
         break;
       case "Json":
         this.createReviewInstruction = [
           `Upload JSON API review token file.`
         ];
         this.acceptedFilesForReviewUpload = ".json";
+        this.createReviewForm.get('selectedFile')?.enable();
+        this.createReviewForm.get('filePath')?.disable();
         break;
       default:
         this.createReviewInstruction = []
     }
-    this.reviewCreationFileUpload.clear();
+
+    if (this.reviewCreationFileUpload) {    
+      this.reviewCreationFileUpload.clear();
+    }
+
     this.createReviewForm.get('label')?.reset();
     this.createReviewForm.get('selectedFile')?.setValue(null);
   }

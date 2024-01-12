@@ -22,26 +22,26 @@ export class ReviewsService {
     let params = new HttpParams();
     params = params.append('noOfItemsRead', noOfItemsRead);
     params = params.append('pageSize', pageSize);
-    
-    const details: string [] = []
-    const data = {
-      name: name,
-      languages: languages,
-      details: details,
-      sortField: sortField,
-      sortOrder: sortOrder
-    };
+    if (name) {
+      params = params.append('name', name);
+    }
+    if (languages && languages.length > 0) {
+      params = params.append('languages', JSON.stringify(languages));
+    }
+      
+    params = params.append('sortField', sortField);
+    params = params.append('sortOrder', sortOrder);
 
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
     })
    
 
-    console.log("getReviews: " + JSON.stringify(data));
+    console.log("getReviews: " + JSON.stringify(params));
     
-    return this.http.post<Review[]>(this.baseUrl, data,
+    return this.http.get<Review[]>(this.baseUrl,
       { 
-        headers:headers,
+        headers: headers,
         params: params,
         observe: 'response', 
         withCredentials: true 
@@ -70,7 +70,22 @@ export class ReviewsService {
     window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}`, '_blank');
   }
 
-  createReview(review: Review) : Observable<Review>{
-    //return this.http.post<Review>(this.baseUrl, review);
+  createReview(formData: any) : Observable<Review> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'undefined',
+    })
+
+    return this.http.post<Review>(this.baseUrl, formData,
+      { 
+        observe: 'response', 
+        withCredentials: true 
+      }).pipe(
+        map((response : any) => {
+          if (response.body) {
+            return response.body;
+          }
+        }
+      )
+    );
   }
 }

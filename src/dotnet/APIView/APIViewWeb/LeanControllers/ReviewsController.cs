@@ -12,6 +12,7 @@ using System.Linq;
 using System;
 using APIView;
 using Microsoft.AspNetCore.Authorization;
+using APIViewWeb.Pages.Assemblies;
 
 namespace APIViewWeb.LeanControllers
 {
@@ -40,12 +41,25 @@ namespace APIViewWeb.LeanControllers
         /// <param name="pageParams"></param>
         /// <param name="filterAndSortParams"></param>
         /// <returns></returns>
-        [HttpPost(Name = "GetReviews")]
-        public async Task<ActionResult<PagedList<ReviewListItemModel>>> GetReviewsAsync([FromQuery] PageParams pageParams, [FromBody] ReviewFilterAndSortParams filterAndSortParams)
+        [HttpGet(Name = "GetReviews")]
+        public async Task<ActionResult<PagedList<ReviewListItemModel>>> GetReviewsAsync([FromQuery] PageParams pageParams, [FromQuery] ReviewFilterAndSortParams filterAndSortParams)
         {
             var result = await _reviewManager.GetReviewsAsync(pageParams, filterAndSortParams);
             Response.AddPaginationHeader(new PaginationHeader(result.NoOfItemsRead, result.PageSize, result.TotalCount));
             return new LeanJsonResult(result, StatusCodes.Status200OK);
+        }
+
+        /// <summary>
+        /// Endpoint used by Client SPA for creating reviews.
+        /// </summary>
+        /// <param name="reviewCreationParam"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "CreateReview")]
+        public async Task<ActionResult> CreateReviewAsync([FromForm] ReviewCreationParam reviewCreationParam)
+        {
+            var review = await _reviewManager.GetReviewAsync(user: User, id: "dummyId");
+            return new LeanJsonResult(review, StatusCodes.Status201Created);
+            //return new LeanJsonResult(review, StatusCodes.Status201Created);
         }
 
         ///<summary>
@@ -55,31 +69,31 @@ namespace APIViewWeb.LeanControllers
         ///<param name="revisionId"></param>
         ///<returns></returns>
         [HttpGet]
-         [Route("{reviewId}/content")]
-         public async Task<ActionResult<ReviewContentModel>> GetReviewContentAsync(string reviewId, [FromQuery]string revisionId=null)
-         {
-            var review = await _reviewManager.GetReviewAsync(user:User, id: reviewId);
-            var revisions = await _apiRevisionsManager.GetAPIRevisionsAsync(reviewId);
-            var activeRevision = (string.IsNullOrEmpty(revisionId)) ? 
-                await _apiRevisionsManager.GetLatestAPIRevisionsAsync(reviewId, revisions) : await _apiRevisionsManager.GetAPIRevisionAsync(user: User, apiRevisionId: revisionId);
-            var comments = await _commentManager.GetReviewCommentsAsync(reviewId);
+        [Route("{reviewId}/content")]
+        public async Task<ActionResult<ReviewContentModel>> GetReviewContentAsync(string reviewId, [FromQuery]string revisionId=null)
+        {
+           var review = await _reviewManager.GetReviewAsync(user:User, id: reviewId);
+           var revisions = await _apiRevisionsManager.GetAPIRevisionsAsync(reviewId);
+           var activeRevision = (string.IsNullOrEmpty(revisionId)) ? 
+               await _apiRevisionsManager.GetLatestAPIRevisionsAsync(reviewId, revisions) : await _apiRevisionsManager.GetAPIRevisionAsync(user: User, apiRevisionId: revisionId);
+           var comments = await _commentManager.GetReviewCommentsAsync(reviewId);
 
-            var renderableCodeFile = await _codeFileRepository.GetCodeFileAsync(activeRevision.Id, activeRevision.Files[0].FileId);
-            var reviewCodeFile = renderableCodeFile.CodeFile;
-            var fileDiagnostics = reviewCodeFile.Diagnostics ?? Array.Empty<CodeDiagnostic>();
-            var htmlLines = renderableCodeFile.Render(showDocumentation: false);
-            var codeLines = PageModelHelpers.CreateLines(diagnostics: fileDiagnostics, lines: htmlLines, comments: comments);
+           var renderableCodeFile = await _codeFileRepository.GetCodeFileAsync(activeRevision.Id, activeRevision.Files[0].FileId);
+           var reviewCodeFile = renderableCodeFile.CodeFile;
+           var fileDiagnostics = reviewCodeFile.Diagnostics ?? Array.Empty<CodeDiagnostic>();
+           var htmlLines = renderableCodeFile.Render(showDocumentation: false);
+           var codeLines = PageModelHelpers.CreateLines(diagnostics: fileDiagnostics, lines: htmlLines, comments: comments);
 
-            var pageModel = new ReviewContentModel
-            {
-                Review = review,
-                Navigation = renderableCodeFile.CodeFile.Navigation,
-                codeLines = codeLines,
-                APIRevisionsGrouped = revisions.GroupBy(r => r.APIRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList()),
-                ActiveAPIRevision = activeRevision
-            };
+           var pageModel = new ReviewContentModel
+           {
+               Review = review,
+               Navigation = renderableCodeFile.CodeFile.Navigation,
+               codeLines = codeLines,
+               APIRevisionsGrouped = revisions.GroupBy(r => r.APIRevisionType).ToDictionary(r => r.Key.ToString(), r => r.ToList()),
+               ActiveAPIRevision = activeRevision
+           };
 
-            return new LeanJsonResult(pageModel, StatusCodes.Status200OK);
-         }
+           return new LeanJsonResult(pageModel, StatusCodes.Status200OK);
+        }
     }
 }

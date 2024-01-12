@@ -80,7 +80,7 @@
         Select a Language Below to view instructions for creating a Review.
     </p>
     <form [formGroup]="createReviewForm" (ngSubmit)="createReview()">
-        <p-dropdown formControlName="selectedCRLanguage" [options]="crLanguages" optionLabel="label" placeholder="Language" (onChange)="updateReviewCreationInstruuction()">
+        <p-dropdown formControlName="selectedCRLanguage" [options]="crLanguages" optionLabel="label" placeholder="Language" (onChange)="onCRLanguageSelectChange()">
             <ng-template pTemplate="selectedItem">
                 <div class="flex align-items-center gap-2" *ngIf="createReviewForm.get('selectedCRLanguage')!.value">
                   <img src="assets/images/{{ createReviewForm.get('selectedCRLanguage')!.value!.label | languageNames }}-original.svg" style="width: 25px"/>
@@ -129,15 +129,20 @@
         </div>
         <div class="mt-2">
             <p-fileUpload
-                #reviewCreationFileUpload
-                *ngIf="createReviewForm.get('selectedCRLanguage')!.value != undefined" 
-                chooseLabel="Select {{ acceptedFilesForReviewUpload }} File to Upload" 
+                #reviewCreationFileUpload name="selectedFile"
+                *ngIf="createReviewForm.get('selectedCRLanguage')!.value != undefined && createReviewForm.get('selectedCRLanguage')!.value!.label != 'TypeSpec'"
+                chooseLabel="Select {{ acceptedFilesForReviewUpload }} File to Upload" [customUpload]="true"
                 [customUpload]="true" [showUploadButton]="false" [showCancelButton]="false" [previewWidth]="0" 
                 accept="{{acceptedFilesForReviewUpload}}" class="mt-2" (onSelect)="onFileSelect($event)">
                 <ng-template pTemplate="content">
                     <div *ngIf="createReviewForm.get('selectedFile')!.value == null" class="mx-2">or drag and drop files here</div>
                 </ng-template>
             </p-fileUpload>
+        </div>
+        <div *ngIf="createReviewForm.get('selectedCRLanguage')!.value != undefined && createReviewForm.get('selectedCRLanguage')!.value!.label == 'TypeSpec'"
+            class="card flex justify-content-center mt-2">
+            <input type="text" pInputText formControlName="filePath"
+            placeholder="Package root e.g https://github.com/Azure/azure-rest-api-specs/specification/cognitiveservices/AnomalyDetector/"/>
         </div>
         <div *ngIf="createReviewForm.get('selectedCRLanguage')!.value != undefined" class="card flex justify-content-center mt-2">
             <input type="text" pInputText formControlName="label"  placeholder="Enter a label for the APIRevision"/>
@@ -146,5 +151,7 @@
             <button *ngIf="createReviewForm.get('selectedCRLanguage')!.value != undefined" [disabled]="!createReviewForm.valid"
                 type="submit" class="btn btn-primary btn-md"><i class="fas fa-cloud-upload-alt"></i> Create</button>
         </div>
+        {{ createReviewForm.value | json }}
+        {{ this.uploadFile }}
     </form>
 </p-sidebar>
