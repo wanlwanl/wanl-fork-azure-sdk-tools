@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using APIViewWeb.Helpers;
 using APIViewWeb.LeanModels;
+using Microsoft.AspNetCore.Http;
 
 
 namespace APIViewWeb.Managers
@@ -17,6 +18,7 @@ namespace APIViewWeb.Managers
             IEnumerable<string> search, IEnumerable<string> languages, bool? isClosed, bool? isApproved, int offset, int limit, string orderBy);
         public Task<ReviewListItemModel> GetReviewAsync(ClaimsPrincipal user, string id);
         public Task<LegacyReviewModel> GetLegacyReviewAsync(ClaimsPrincipal user, string id);
+        public Task<ReviewListItemModel> GetOrCreateReview(IFormFile file, string filePath, string language, bool runAnalysis = false);
         public Task<ReviewListItemModel> CreateReviewAsync(string packageName, string language, bool isClosed = true);
         public Task SoftDeleteReviewAsync(ClaimsPrincipal user, string id);
         public Task ToggleReviewIsClosedAsync(ClaimsPrincipal user, string id);

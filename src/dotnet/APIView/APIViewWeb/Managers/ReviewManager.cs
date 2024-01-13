@@ -22,6 +22,8 @@ using APIViewWeb.Helpers;
 using APIViewWeb.Managers.Interfaces;
 using Microsoft.ApplicationInsights.DataContracts;
 using System.IO;
+using ApiView;
+using Microsoft.AspNetCore.Http;
 
 namespace APIViewWeb.Managers
 {
@@ -36,6 +38,7 @@ namespace APIViewWeb.Managers
         private readonly ICosmosCommentsRepository _commentsRepository;
         private readonly IHubContext<SignalRHub> _signalRHubContext;
         private readonly IEnumerable<LanguageService> _languageServices;
+        private readonly ICodeFileManager _codeFileManager;
 
         static TelemetryClient _telemetryClient = new(TelemetryConfiguration.CreateDefault());
 
@@ -43,7 +46,8 @@ namespace APIViewWeb.Managers
             IAuthorizationService authorizationService, ICosmosReviewRepository reviewsRepository,
             IAPIRevisionsManager apiRevisionsManager, ICommentsManager commentManager,
             IBlobCodeFileRepository codeFileRepository, ICosmosCommentsRepository commentsRepository, 
-            IHubContext<SignalRHub> signalRHubContext, IEnumerable<LanguageService> languageServices)
+            IHubContext<SignalRHub> signalRHubContext, IEnumerable<LanguageService> languageServices,
+            ICodeFileManager codeFileManager)
 
         {
             _authorizationService = authorizationService;
@@ -54,6 +58,7 @@ namespace APIViewWeb.Managers
             _commentsRepository = commentsRepository;
             _signalRHubContext = signalRHubContext;
             _languageServices = languageServices;
+            _codeFileManager = codeFileManager;
         }
 
         /// <summary>
@@ -163,6 +168,45 @@ namespace APIViewWeb.Managers
             }
 
             var review = await _reviewsRepository.GetLegacyReviewAsync(id);
+            return review;
+        }
+
+        /// <summary>
+        /// Get Review if it exist otherwise create it
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="filePath"></param>
+        /// <param name="language"></param>
+        /// <param name="runAnalysis"></param>
+        /// <returns></returns>
+        public async Task<ReviewListItemModel> GetOrCreateReview(IFormFile file, string filePath, string language, bool runAnalysis = false)
+        {
+            CodeFile codeFile = null;
+            ReviewListItemModel review = null;
+
+            using var memoryStream = new MemoryStream();
+            if (file != null)
+            {
+                using (var openReadStream = file.OpenReadStream())
+                {
+                    codeFile = await _codeFileManager.CreateCodeFileAsync(
+                        originalName: file?.FileName, fileStream: openReadStream, runAnalysis: runAnalysis, memoryStream: memoryStream, language: language);
+                }
+            }
+            else if (!string.IsNullOrEmpty(filePath))
+            {
+                codeFile = await _codeFileManager.CreateCodeFileAsync(
+                    originalName: filePath, runAnalysis: runAnalysis, memoryStream: memoryStream, language: language);
+            }
+
+            if (codeFile != null)
+            {
+                review = await GetReviewAsync(packageName: codeFile.PackageName, language: codeFile.Language);
+                if (review == null)
+                {
+                    review = await CreateReviewAsync(packageName: codeFile.PackageName, language: codeFile.Language, isClosed: false);
+                }
+            }
             return review;
         }
 

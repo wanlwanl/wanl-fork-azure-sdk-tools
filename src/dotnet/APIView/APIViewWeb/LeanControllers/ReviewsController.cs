@@ -55,11 +55,17 @@ namespace APIViewWeb.LeanControllers
         /// <param name="reviewCreationParam"></param>
         /// <returns></returns>
         [HttpPost(Name = "CreateReview")]
-        public async Task<ActionResult> CreateReviewAsync([FromForm] ReviewCreationParam reviewCreationParam)
+        public async Task<ActionResult<APIRevisionListItemModel>> CreateReviewAsync([FromForm] ReviewCreationParam reviewCreationParam)
         {
-            var review = await _reviewManager.GetReviewAsync(user: User, id: "dummyId");
-            return new LeanJsonResult(review, StatusCodes.Status201Created);
-            //return new LeanJsonResult(review, StatusCodes.Status201Created);
+            var review = await _reviewManager.GetOrCreateReview(file: reviewCreationParam.File, filePath: reviewCreationParam.FilePath, language: reviewCreationParam.Language);
+
+            if (review != null)
+            {
+                APIRevisionListItemModel apiRevision = await _apiRevisionsManager.CreateAPIRevisionAsync(user: User, review: review, file: reviewCreationParam.File, 
+                    filePath: reviewCreationParam.FilePath, language: reviewCreationParam.Language, label: reviewCreationParam.Label);
+                return new LeanJsonResult(apiRevision, StatusCodes.Status201Created);
+            }
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
 
         ///<summary>

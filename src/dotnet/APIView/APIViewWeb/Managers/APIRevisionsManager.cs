@@ -11,8 +11,10 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.SignalR;
+using Octokit;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -239,6 +241,37 @@ namespace APIViewWeb.Managers
             
             await _signalRHubContext.Clients.All.SendAsync("ReceiveApproval", id, apiRevisionId, userId, apiRevision.IsApproved);
             return updateReview;
+        }
+
+
+        /// <summary>
+        /// Create APIRevision from File or FilePAth
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="review"></param>
+        /// <param name="file"></param>
+        /// <param name="filePath"></param>
+        /// <param name="language"></param>
+        /// <param name="label"></param>
+        /// <returns></returns>
+        public async Task<APIRevisionListItemModel> CreateAPIRevisionAsync(ClaimsPrincipal user, ReviewListItemModel review, IFormFile file, string filePath, string language, string label)
+        {
+            APIRevisionListItemModel apiRevision = null;
+
+            if (file != null)
+            {
+                using (var openReadStream = file.OpenReadStream())
+                {
+                    apiRevision = await AddAPIRevisionAsync(user: user, review: review, apiRevisionType: APIRevisionType.Manual,
+                        name: file.FileName, label: label, fileStream: openReadStream, language: language);
+                }
+            }
+            else if (!string.IsNullOrEmpty(filePath))
+            {
+                apiRevision = await AddAPIRevisionAsync(user: user, review: review, apiRevisionType: APIRevisionType.Manual,
+                           name: file.FileName, label: label, fileStream: null, language: language);
+            }
+            return apiRevision;
         }
 
         /// <summary>
@@ -512,6 +545,30 @@ namespace APIViewWeb.Managers
             ManagerHelpers.AssertAPIRevisionDeletion(apiRevision);
             await ManagerHelpers.AssertAPIRevisionOwner(user, apiRevision, _authorizationService);
             await SoftDeleteAPIRevisionAsync(user, apiRevision);
+        }
+
+        /// <summary>
+        /// Delete APIRevisions
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="reviewId"></param>
+        /// <param name="apiRevisionId"></param>
+        /// <returns></returns>
+        public async Task RestoreAPIRevisionAsync(ClaimsPrincipal user, string reviewId, string apiRevisionId)
+        {
+            var apiRevision = await _apiRevisionsRepository.GetAPIRevisionAsync(apiRevisionId: apiRevisionId);
+            ManagerHelpers.AssertAPIRevisionDeletion(apiRevision);
+            await ManagerHelpers.AssertAPIRevisionOwner(user, apiRevision, _authorizationService);
+            if (apiRevision.IsDeleted)
+            {
+                var changeUpdate = ChangeHistoryHelpers.UpdateBinaryChangeAction(
+                     changeHistory: apiRevision.ChangeHistory, action: APIRevisionChangeAction.UnDeleted, user: user.GetGitHubLogin(), notes: "");
+
+                apiRevision.ChangeHistory = changeUpdate.ChangeHistory;
+                apiRevision.IsDeleted = changeUpdate.ChangeStatus;
+
+                await _apiRevisionsRepository.UpsertAPIRevisionAsync(apiRevision);
+            }
         }
 
         /// <summary>
