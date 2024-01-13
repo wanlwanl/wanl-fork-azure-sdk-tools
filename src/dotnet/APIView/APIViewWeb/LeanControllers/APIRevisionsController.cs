@@ -37,16 +37,32 @@ namespace APIViewWeb.LeanControllers
         }
 
         /// <summary>
-        /// Endpoint used by Client SPA for Deleting reviews.
+        /// Endpoint used by Client SPA for Deleting APIRevisions.
         /// </summary>
         /// <param name="deleteParams"></param>
         /// <returns></returns>
+        [Route("delete")]
         [HttpPut(Name = "DeleteAPIRevisions")]
         public async Task DeleteAPIRevisionsAsync([FromBody] APIRevisionSoftDeleteParam deleteParams)
         {
             foreach (var apiRevisionId in deleteParams.apiRevisionIds)
             {
                 await _apiRevisionsManager.SoftDeleteAPIRevisionAsync(user: User, reviewId: deleteParams.reviewId, revisionId: apiRevisionId);
+            }
+        }
+
+        /// <summary>
+        /// Endpoint used by Client SPA for Restoring Deleted APIRevisions.
+        /// </summary>
+        /// <param name="deleteParams"></param>
+        /// <returns></returns>
+        [Route("restore")]
+        [HttpPut(Name = "RestoreAPIRevisions")]
+        public async Task RestoreAPIRevisionsAsync([FromBody] APIRevisionSoftDeleteParam deleteParams)
+        {
+            foreach (var apiRevisionId in deleteParams.apiRevisionIds)
+            {
+                await _apiRevisionsManager.RestoreAPIRevisionAsync(user: User, reviewId: deleteParams.reviewId, revisionId: apiRevisionId);
             }
         }
     }
