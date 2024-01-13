@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { PaginatedResult } from 'src/app/_models/pagination';
 import { Review, ReviewContent } from 'src/app/_models/review';
+import { Revision } from 'src/app/_models/revision';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -70,7 +71,7 @@ export class ReviewsService {
     window.open(environment.webAppUrl + `Assemblies/Review/${reviewId}`, '_blank');
   }
 
-  createReview(formData: any) : Observable<Review> {
+  createReview(formData: any) : Observable<Revision> {
     const headers = new HttpHeaders({
       'Content-Type': 'undefined',
     })
