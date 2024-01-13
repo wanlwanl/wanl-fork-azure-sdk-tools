@@ -73,10 +73,29 @@ export class RevisionsService {
       apiRevisionIds: revisionIds
     };
    
-    return this.http.put<any>(this.baseUrl, data,
+    return this.http.put<any>(this.baseUrl + '/delete', data,
     { 
       headers: headers, 
-      withCredentials: true, 
+      withCredentials: true,
+      observe: 'response'
+    });
+  }
+
+  restoreAPIRevisions(reviewId: string, revisionIds: string[]): Observable<any> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+    });
+
+    const data = {
+      reviewId: reviewId,
+      apiRevisionIds: revisionIds
+    };
+   
+    return this.http.put<any>(this.baseUrl + '/restore', data,
+    { 
+      headers: headers, 
+      withCredentials: true,
+      observe: 'response'
     });
   }
 
