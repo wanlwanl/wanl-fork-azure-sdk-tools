@@ -74,7 +74,7 @@
     </ng-template>
 </p-table>
 <button type="button" (click)="sidebarVisible = true" class="btn btn-primary" id="create-review-button"><small>CREATE</small><br><i class="fas fa-plus"></i><br><small>REVIEW</small></button>
-<p-sidebar [(visible)]="sidebarVisible" position="right">
+<p-sidebar [(visible)]="sidebarVisible" (onHide)="onHideSideBar()" position="right">
     <h3>Create Review</h3>
     <p>
         Select a Language Below to view instructions for creating a Review.
@@ -97,10 +97,10 @@
         <div *ngIf="createReviewInstruction && createReviewInstruction!.length > 0" class="card mt-2">
             <div class="card-body">
               <h5 class="card-title">What to Upload</h5>
-              <ol *ngIf="createReviewForm.get('selectedCRLanguage')!.value!.label != 'TypeSpec'">
+              <ol *ngIf=" createReviewForm.get('selectedCRLanguage')!.value && createReviewForm.get('selectedCRLanguage')!.value!.label != 'TypeSpec'">
                 <li *ngFor="let item of createReviewInstruction" [innerHTML]="item"></li>
               </ol>
-              <div *ngIf="createReviewForm.get('selectedCRLanguage')!.value!.label == 'TypeSpec'">
+              <div *ngIf="createReviewForm.get('selectedCRLanguage')!.value && createReviewForm.get('selectedCRLanguage')!.value!.label == 'TypeSpec'">
                     TypeSpec review can be generated manually using one of the following options.
                     <ol>
                         <li>
@@ -149,9 +149,9 @@
         </div>
         <div class="d-grid gap-2 mt-2">
             <button *ngIf="createReviewForm.get('selectedCRLanguage')!.value != undefined" [disabled]="!createReviewForm.valid"
-                type="submit" class="btn btn-primary btn-md"><i class="fas fa-cloud-upload-alt"></i> Create</button>
+                type="submit" class="btn btn-primary btn-md"><i class="fas fa-cloud-upload-alt"></i> {{ crButtonText }}
+                <span *ngIf="creatingReview" class="spinner-grow spinner-grow-sm" aria-hidden="true"></span>
+            </button>
         </div>
-        {{ createReviewForm.value | json }}
-        {{ this.uploadFile }}
     </form>
 </p-sidebar>

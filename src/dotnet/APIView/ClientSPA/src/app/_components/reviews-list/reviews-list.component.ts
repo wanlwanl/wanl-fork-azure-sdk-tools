@@ -6,6 +6,8 @@ import { Table, TableFilterEvent, TableLazyLoadEvent, TableRowSelectEvent } from
 import { MenuItem, SortEvent } from 'primeng/api';
 import { Form, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { FileSelectEvent, FileUpload } from 'primeng/fileupload';
+import { Revision } from 'src/app/_models/revision';
+import { RevisionsService } from 'src/app/_services/revisions/revisions.service';
 
 @Component({
   selector: 'app-reviews-list',
@@ -43,14 +45,9 @@ export class ReviewsListComponent implements OnInit {
 
   // Create Review Selections
   crLanguages: any[] = [];
-
-  uploadFile : File | null = null;
-  createReviewForm = new FormGroup({
-    selectedCRLanguage: new FormControl<SelectItemModel | null>(null, Validators.required),
-    selectedFile: new FormControl<File | null>(null, Validators.required),
-    filePath: new FormControl<string | null>(null, Validators.required),
-    label: new FormControl<string | null>(null, Validators.required) 
-  });
+  createReviewForm! : FormGroup;
+  creatingReview : boolean = false;
+  crButtonText : string = "Create Review";
 
   badgeClass : Map<string, string> = new Map<string, string>();
 
@@ -58,15 +55,13 @@ export class ReviewsListComponent implements OnInit {
   createReviewInstruction : string[] | undefined;
   acceptedFilesForReviewUpload : string | undefined;
 
-  constructor(private reviewsService: ReviewsService, private fb: FormBuilder) { }
+  constructor(private reviewsService: ReviewsService,  private apiRevisionsService: RevisionsService, private fb: FormBuilder) { }
 
   ngOnInit(): void {
     this.loadReviews(0, this.pageSize * 2, true); // Initial load of 2 pages
     this.createFilters();
     this.createContextMenuItems();
-
-    this.createReviewForm.get('selectedFile')?.disable();
-    this.createReviewForm.get('filePath')?.disable();
+    this.createReviewFormGroup();
   }
 
   /**
@@ -87,7 +82,7 @@ export class ReviewsListComponent implements OnInit {
     }
 
     this.reviewsService.getReviews(noOfItemsRead, pageSize, packageName, languages, sortField, sortOrder).subscribe({
-      next: response => {
+      next: (response : any) => {
         if (response.result && response.pagination) {
           if (resetReviews) {
             const arraySize = Math.ceil(response.pagination!.totalCount + Math.min(20, (0.05 * response.pagination!.totalCount))) // Add 5% extra rows to avoid flikering
@@ -99,7 +94,7 @@ export class ReviewsListComponent implements OnInit {
             this.reviews.splice(this.insertIndex, this.insertIndex + response.result.length, ...response.result);
             this.insertIndex = this.insertIndex + response.result.length;
             this.pagination = response.pagination;
-            this.totalNumberOfReviews = this.pagination.totalCount;
+            this.totalNumberOfReviews = this.pagination?.totalCount!;
           }
         }
       }
@@ -128,6 +123,17 @@ export class ReviewsListComponent implements OnInit {
         { label: "TypeSpec", data: "TypeSpec" },
         { label: "Xml", data: "Xml" }
     ];
+  }
+
+  createReviewFormGroup() {
+    this.createReviewForm = new FormGroup({
+      selectedCRLanguage: new FormControl<SelectItemModel | null>(null, Validators.required),
+      selectedFile: new FormControl<File | null>(null, Validators.required),
+      filePath: new FormControl<string | null>(null, Validators.required),
+      label: new FormControl<string | null>(null, Validators.required) 
+    });
+    this.createReviewForm.get('selectedFile')?.disable();
+    this.createReviewForm.get('filePath')?.disable();
   }
 
   viewReview(review: Review) {
@@ -203,8 +209,14 @@ export class ReviewsListComponent implements OnInit {
    */
   onFileSelect(event: FileSelectEvent) {
     console.log("File Select Event Emitted %o", event);
-    this.uploadFile = event.currentFiles[0];
-    this.createReviewForm.get('selectedFile')?.setValue(this.uploadFile);
+    const uploadFile = event.currentFiles[0];
+    this.createReviewForm.get('selectedFile')?.setValue(uploadFile);
+  }
+
+  // Show or hide the sidebar for creating a review
+  onHideSideBar() {
+    this.createReviewForm.reset();
+    this.createReviewInstruction = [];
   }
 
   // Fire API request to create the review
@@ -225,10 +237,16 @@ export class ReviewsListComponent implements OnInit {
         formData.append("file", file, file.name);
       }
 
+      this.creatingReview = true;
+      this.crButtonText = "Creating Review ";
+
       this.reviewsService.createReview(formData).subscribe({
-        next: response => {
+        next: (response: any) => {
           if (response) {
-            this.reviewsService.openReviewPage(response.id);
+            this.sidebarVisible = false;
+            this.creatingReview = false;
+            this.crButtonText = "Create Review";
+            this.apiRevisionsService.openAPIRevisionPage(response.reviewId, response.id);
           }
         }
       });
@@ -346,6 +364,7 @@ export class ReviewsListComponent implements OnInit {
     }
 
     this.createReviewForm.get('label')?.reset();
-    this.createReviewForm.get('selectedFile')?.setValue(null);
+    this.createReviewForm.get('selectedFile')?.reset();
+    this.createReviewForm.get('filePath')?.reset()
   }
 }

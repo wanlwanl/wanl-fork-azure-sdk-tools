@@ -79,7 +79,7 @@ export class RevisionsListComponent implements OnInit, OnChanges {
     }
 
     this.revisionsService.getAPIRevisions(noOfItemsRead, pageSize, reviewId, label, author, details, sortField, sortOrder, this.showDeletedAPIRevisions).subscribe({
-      next: response => {
+      next: (response: any) => {
         if (response.result && response.pagination) {
           if (resetReviews)
           {
@@ -95,7 +95,7 @@ export class RevisionsListComponent implements OnInit, OnChanges {
             this.revisions.splice(this.insertIndex, this.insertIndex + response.result.length, ...response.result);
             this.insertIndex = this.insertIndex + response.result.length;
             this.pagination = response.pagination;
-            this.totalNumberOfRevisions = this.pagination.totalCount;
+            this.totalNumberOfRevisions = this.pagination?.totalCount!;
           }
         }
       }
@@ -165,9 +165,25 @@ export class RevisionsListComponent implements OnInit, OnChanges {
 
   deleteRevisions(revisions: Revision []) {
     this.revisionsService.deleteAPIRevisions(this.review!.id, revisions.map(r => r.id)).subscribe({
-      next: response => {
+      next: (response: any) => {
         if (response) {
           this.loadRevisions(0, this.pageSize * 2, true);
+          this.selectedRevisions = [];
+          this.showSelectionActions = false;
+          this.showDiffButton = false;
+        }
+      }
+    });
+  }
+
+  restoreRevisions(revisions: Revision []) {
+    this.revisionsService.restoreAPIRevisions(this.review!.id, revisions.map(r => r.id)).subscribe({
+      next: (response: any) => {
+        if (response) {
+          this.loadRevisions(0, this.pageSize * 2, true);
+          this.selectedRevisions = [];
+          this.showSelectionActions = false;
+          this.showDiffButton = false;
         }
       }
     });
@@ -175,9 +191,11 @@ export class RevisionsListComponent implements OnInit, OnChanges {
 
   deleteRevision(revision: Revision) {
     this.revisionsService.deleteAPIRevisions(revision.reviewId, [revision.id]).subscribe({
-      next: response => {
+      next: (response: any) => {
         if (response) {
           this.loadRevisions(0, this.pageSize * 2, true);
+          this.showSelectionActions = false;
+          this.showDiffButton = false;
         }
       }
     });
