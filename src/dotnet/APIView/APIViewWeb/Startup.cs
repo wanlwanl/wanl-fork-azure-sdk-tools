@@ -227,9 +227,7 @@ namespace APIViewWeb
                 options.AddPolicy("AllowCredentials", builder =>
                 {
                     string [] origins = new string[] { 
-                        "https://localhost:4200",
-                        "https://apiviewuxtest.com",
-                        "https://spa.apiviewuxtest.com"
+                        "https://localhost:4200"
                     };
                     builder.WithOrigins(origins)
                         .AllowAnyHeader()
