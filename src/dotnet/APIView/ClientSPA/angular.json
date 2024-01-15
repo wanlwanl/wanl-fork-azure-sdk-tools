@@ -27,7 +27,7 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets",
+              "src/spa/assets",
               {
                 "glob": "**/*",
                 "input": "node_modules/monaco-editor",
