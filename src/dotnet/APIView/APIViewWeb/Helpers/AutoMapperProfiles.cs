@@ -21,7 +21,8 @@ namespace APIViewWeb.Helpers
                 .ForMember(dest => dest.HideReviewPageOptions, opt => opt.MapFrom((src, dest) => src._hideReviewPageOptions != null ? src._hideReviewPageOptions : dest._hideReviewPageOptions))
                 .ForMember(dest => dest.HideIndexPageOptions, opt => opt.MapFrom((src, dest) => src._hideIndexPageOptions != null ? src._hideIndexPageOptions : dest._hideIndexPageOptions))
                 .ForMember(dest => dest.ShowComments, opt => opt.MapFrom((src, dest) => src._showComments != null ? src._showComments : dest._showComments))
-                .ForMember(dest => dest.ShowSystemComments, opt => opt.MapFrom((src, dest) => src._showSystemComments != null ? src._showSystemComments : dest._showSystemComments));
+                .ForMember(dest => dest.ShowSystemComments, opt => opt.MapFrom((src, dest) => src._showSystemComments != null ? src._showSystemComments : dest._showSystemComments))
+                .ForMember(dest => dest.UseBetaIndexPage, opt => opt.MapFrom((src, dest) => src._useBetaIndexPage != null ? src._useBetaIndexPage : dest._useBetaIndexPage));
         }
     }
 }
