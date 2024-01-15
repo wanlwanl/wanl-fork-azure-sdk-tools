@@ -22,6 +22,7 @@ namespace APIViewWeb.Models
         internal bool? _hideRevisionsPageOptions;
         internal bool? _showComments;
         internal bool? _showSystemComments;
+        internal bool? _useBetaIndexPage;
         internal string _theme;
 
         public string UserName { get; set; }
@@ -121,6 +122,13 @@ namespace APIViewWeb.Models
         {
             get => _showSystemComments ?? true;
             set => _showSystemComments = value;
+        }
+
+        [Name("UseBetaIndexPage")]
+        public bool? UseBetaIndexPage
+        {
+            get => _useBetaIndexPage ?? false;
+            set => _useBetaIndexPage = value;
         }
     }
 }
