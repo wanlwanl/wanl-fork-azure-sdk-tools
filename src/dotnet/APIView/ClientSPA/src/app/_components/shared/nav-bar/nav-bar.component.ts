@@ -12,6 +12,8 @@ export class NavBarComponent implements OnInit {
   userProfile : UserProfile | undefined;
   profilePageWebAppUrl : string | undefined
   logoutPageWebAppUrl : string  = environment.webAppUrl + "Account/Logout"
+  assetsPath : string = environment.assetsPath;
+
   constructor(private authService: AuthService) { }
 
   ngOnInit(): void {

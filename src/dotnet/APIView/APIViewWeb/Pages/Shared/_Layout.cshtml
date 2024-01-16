@@ -33,7 +33,7 @@
     {
         fixedPageHeightClass = " fixed-page-height";
     }
-    var spaUrl = "spa." + Context.Request.Host.ToString();
+    var spaUrl = "https://spa." + Context.Request.Host.ToString();
 }
 <body class="@theme@fixedPageHeightClass">
     <header>
@@ -41,7 +41,7 @@
             <div class="container-fluid">
                 @if(userPreference.UseBetaIndexPage == true)
                 {
-                    <a href="/@spaUrl" class="navbar-brand"><img id="apiview-logo" alt="apiview-logo" src="~/icons/apiview.png" />apiview.dev</a>
+                    <a href="@spaUrl" class="navbar-brand"><img id="apiview-logo" alt="apiview-logo" src="~/icons/apiview.png" />apiview.dev</a>
                 }
                 else
                 {
