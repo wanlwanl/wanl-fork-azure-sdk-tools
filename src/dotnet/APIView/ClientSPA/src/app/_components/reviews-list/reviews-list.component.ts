@@ -4,10 +4,10 @@ import { ReviewsService } from 'src/app/_services/reviews/reviews.service';
 import { Pagination } from 'src/app/_models/pagination';
 import { Table, TableFilterEvent, TableLazyLoadEvent, TableRowSelectEvent } from 'primeng/table';
 import { MenuItem, SortEvent } from 'primeng/api';
-import { Form, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { FileSelectEvent, FileUpload } from 'primeng/fileupload';
-import { Revision } from 'src/app/_models/revision';
 import { RevisionsService } from 'src/app/_services/revisions/revisions.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-reviews-list',
@@ -19,6 +19,7 @@ export class ReviewsListComponent implements OnInit {
   @Output() reviewEmitter : EventEmitter<Review> = new EventEmitter<Review>();
   @ViewChild("reviewCreationFileUpload") reviewCreationFileUpload!: FileUpload;
 
+  assetsPath : string = environment.assetsPath;
   reviews : Review[] = [];
   totalNumberOfReviews = 0;
   pagination: Pagination | undefined;

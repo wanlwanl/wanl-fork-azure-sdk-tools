@@ -46,7 +46,7 @@
                         <p-multiSelect [ngModel]="value" [appendTo]="reviewsTable" [options]="languages" [filter]="false" [(ngModel)]="selectedLanguages" (onChange)="filter($event.value)" optionLabel="label">
                             <ng-template let-option pTemplate="item">
                                 <div class="inline-block vertical-align-middle">
-                                    <img [alt]="" src="assets/images/{{ option.label | languageNames }}-original.svg" width="24" class="vertical-align-middle" />
+                                    <img [alt]="" src="{{assetsPath}}/images/{{ option.label | languageNames }}-original.svg" width="24" class="vertical-align-middle" />
                                     <span class="mx-2 mt-1">{{ option.label }}</span>
                                 </div>
                             </ng-template>
@@ -62,7 +62,7 @@
     <ng-template pTemplate="body" let-review>
         <tr [pContextMenuRow]="review" [pSelectableRow]="review">
             <td>
-                <img class="ms-3" src="assets/images/{{ review.language | languageNames }}-original.svg" alt="{{review.language}}" width="25">
+                <img class="ms-3" src="{{assetsPath}}/images/{{ review.language | languageNames }}-original.svg" alt="{{review.language}}" width="25">
             </td>
             <td style="word-wrap: break-word; max-width: 10ch">{{ review.packageName }}</td>
         </tr>
@@ -83,13 +83,13 @@
         <p-dropdown formControlName="selectedCRLanguage" [options]="crLanguages" optionLabel="label" placeholder="Language" (onChange)="onCRLanguageSelectChange()">
             <ng-template pTemplate="selectedItem">
                 <div class="flex align-items-center gap-2" *ngIf="createReviewForm.get('selectedCRLanguage')!.value">
-                  <img src="assets/images/{{ createReviewForm.get('selectedCRLanguage')!.value!.label | languageNames }}-original.svg" style="width: 25px"/>
+                  <img src="{{assetsPath}}/images/{{ createReviewForm.get('selectedCRLanguage')!.value!.label | languageNames }}-original.svg" style="width: 25px"/>
                   <span class="mx-2 mt-1">{{ createReviewForm.get('selectedCRLanguage')!.value!.label }}</span>
                 </div>
             </ng-template>
             <ng-template let-crLanguage pTemplate="item">
                 <div class="flex align-items-center gap-2">
-                    <img src="assets/images/{{ crLanguage.label | languageNames }}-original.svg" style="width: 25px"/>
+                    <img src="{{assetsPath}}/images/{{ crLanguage.label | languageNames }}-original.svg" style="width: 25px"/>
                     <span class="mx-2 mt-1">{{ crLanguage.label }}</span>
                 </div>
             </ng-template>
