@@ -161,7 +161,6 @@ export class ReviewsListComponent implements OnInit {
    * @param event the lazyload event
    */
   onLazyLoad(event: TableLazyLoadEvent) {
-    console.log("On Lazy Event Emitted %o", event);
     const last = Math.min(event.last!, this.totalNumberOfReviews);
     this.sortField = event.sortField as string ?? "lastUpdatedOn";
     this.sortOrder = event.sortOrder as number ?? 1;
@@ -179,7 +178,6 @@ export class ReviewsListComponent implements OnInit {
    * @param event the Filter event
    */
   onFilter(event: TableFilterEvent) {
-    console.log("On Filter Event Emitted %o", event);
     this.filters = event.filters;
     this.loadReviews(0, this.pageSize, true, this.filters, this.sortField, this.sortOrder);
   }
@@ -189,7 +187,6 @@ export class ReviewsListComponent implements OnInit {
    * @param event the Filter event
    */
   onRowSelect(event: TableRowSelectEvent) {
-    console.log("On Row Select Event Emitted %o", event);
     this.reviewEmitter.emit(event.data);
   }
 
@@ -198,7 +195,6 @@ export class ReviewsListComponent implements OnInit {
    * @param event the Filter event
    */
   onSort(event: SortEvent) {
-    console.log("Sort Event Emitted %o", event);
     this.sortField = event.field as string ?? "packageName";
     this.sortOrder = event.order as number ?? 1;
     this.loadReviews(0, this.pageSize, true, this.filters, this.sortField, this.sortOrder);
@@ -209,7 +205,6 @@ export class ReviewsListComponent implements OnInit {
    * @param event the Filter event
    */
   onFileSelect(event: FileSelectEvent) {
-    console.log("File Select Event Emitted %o", event);
     const uploadFile = event.currentFiles[0];
     this.createReviewForm.get('selectedFile')?.setValue(uploadFile);
   }
@@ -223,7 +218,6 @@ export class ReviewsListComponent implements OnInit {
   // Fire API request to create the review
   createReview() {
     if (this.createReviewForm.valid) {
-      console.log(this.createReviewForm.value!)
 
       const formData: FormData = new FormData();
       formData.append("label", this.createReviewForm.get('label')?.value!);

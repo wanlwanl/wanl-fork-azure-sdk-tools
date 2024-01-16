@@ -53,7 +53,6 @@ export class ReviewInfoComponent implements OnInit {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log(this.selectedRevisionsType);
     if (changes["reviewRevisions"].currentValue && changes["reviewRevisions"].currentValue.size > 0 ) {
       this.revisionsDropDown = this.getReviewRevisionsDropDown(this.selectedRevisionsType);
       this.diffRevisionsDropDown = this.getReviewRevisionsDropDown(this.selectedDiffRevisionsType);
