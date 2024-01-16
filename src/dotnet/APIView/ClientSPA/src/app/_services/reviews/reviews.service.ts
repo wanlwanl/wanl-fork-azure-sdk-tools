@@ -27,7 +27,9 @@ export class ReviewsService {
       params = params.append('name', name);
     }
     if (languages && languages.length > 0) {
-      params = params.append('languages', JSON.stringify(languages));
+      languages.forEach(language => {
+        params = params.append('languages', language);
+      });
     }
       
     params = params.append('sortField', sortField);
