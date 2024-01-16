@@ -20,7 +20,7 @@ export class FooterComponent  implements OnInit {
 
   getAppVersion() {
     this.authService.appVersion().subscribe({
-      next: response => {
+      next: (response : any) => {
         this.appVersion = response.hash;
       }
     });

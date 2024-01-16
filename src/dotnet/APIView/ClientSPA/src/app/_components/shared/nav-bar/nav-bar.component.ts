@@ -18,7 +18,7 @@ export class NavBarComponent implements OnInit {
 
   ngOnInit(): void {
     this.authService.getUserProfile().subscribe(
-      (userProfile) => {
+      (userProfile : any) => {
         this.profilePageWebAppUrl = environment.webAppUrl + "Assemblies/profile/" + userProfile.userName;
       });
   }

@@ -9,5 +9,4 @@ import { CodeLine } from 'src/app/_models/review';
 export class LineDetailsComponent {
   @Input() codeLine: CodeLine | undefined = undefined;
   @Input() lineNumberWidth: string | undefined = undefined;
-
 }

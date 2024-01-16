@@ -66,7 +66,6 @@ export class RevisionsListComponent implements OnInit, OnChanges {
    *  * @param append wheather to add to or replace existing list
    */
   loadRevisions(noOfItemsRead : number, pageSize: number, resetReviews = false, filters: any = null, sortField: string ="lastUpdatedOn",  sortOrder: number = 1) {
-    console.log("Review Id %o", this.review?.id);
     let label : string = "";
     let author : string = "";
     let reviewId: string = this.review?.id ?? "";
@@ -238,7 +237,6 @@ export class RevisionsListComponent implements OnInit, OnChanges {
    * @param event the lazyload event
    */
   onLazyLoad(event: TableLazyLoadEvent) {
-      console.log("On Lazy Event Emitted %o", event);
       const last = Math.min(event.last!, this.totalNumberOfRevisions);
       this.sortField = event.sortField as string ?? "lastUpdatedOn";
       this.sortOrder = event.sortOrder as number ?? 1;
@@ -258,7 +256,6 @@ export class RevisionsListComponent implements OnInit, OnChanges {
    * @param event the Filter event
    */
   onFilter(event: TableFilterEvent) {
-    console.log("On Filter Event Emitted %o", event);
     this.loadRevisions(0, this.pageSize, true, event.filters);
   }
 
@@ -267,7 +264,6 @@ export class RevisionsListComponent implements OnInit, OnChanges {
    * @param event the Filter event
    */
   onSelectionChange(value = []) {
-    console.log("On Selection Event Emitted %o", value);
     this.selectedRevisions = value;
     this.showSelectionActions = (value.length > 0) ? true : false;
     this.showDiffButton = (value.length == 2) ? true : false;
@@ -278,7 +274,6 @@ export class RevisionsListComponent implements OnInit, OnChanges {
    * @param event the Filter event
    */
   onSort(event: SortEvent) {
-      console.log("Sort Event Emitted %o", event);
       this.loadRevisions(0, this.pageSize, true, null, event.field, event.order);
     }
 }
