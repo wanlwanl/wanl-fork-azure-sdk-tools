@@ -1,5 +1,5 @@
-import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
-import { Review, SelectItemModel } from 'src/app/_models/review';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { FirstReleaseApproval, Review, SelectItemModel } from 'src/app/_models/review';
 import { ReviewsService } from 'src/app/_services/reviews/reviews.service';
 import { Pagination } from 'src/app/_models/pagination';
 import { Table, TableFilterEvent, TableLazyLoadEvent, TableRowSelectEvent } from 'primeng/table';
@@ -15,7 +15,7 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./reviews-list.component.scss']
 })
 
-export class ReviewsListComponent implements OnInit {
+export class ReviewsListComponent implements OnInit, OnChanges {
   @Output() reviewEmitter : EventEmitter<Review> = new EventEmitter<Review>();
   @ViewChild("reviewCreationFileUpload") reviewCreationFileUpload!: FileUpload;
 
@@ -37,12 +37,16 @@ export class ReviewsListComponent implements OnInit {
   // Filter Options
   languages: SelectItemModel[] = [];
   selectedLanguages: SelectItemModel[] = [];
+  @Input() firstReleaseApproval : FirstReleaseApproval = FirstReleaseApproval.All;
 
   // Context Menu
   contextMenuItems! : MenuItem[];
   selectedReview!: Review;
   selectedReviews!: Review[];
   showSelectionAction : boolean = false;
+
+  // Messages
+  reviewListDetail: string = "";
 
   // Create Review Selections
   crLanguages: any[] = [];
@@ -65,6 +69,14 @@ export class ReviewsListComponent implements OnInit {
     this.createReviewFormGroup();
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['firstReleaseApproval'].previousValue != changes['firstReleaseApproval'].currentValue){
+      this.loadReviews(0, this.pageSize * 2, true);
+      const firstReleaseApprovalValue = FirstReleaseApproval[changes['firstReleaseApproval'].currentValue];
+      this.reviewListDetail = (firstReleaseApprovalValue != "All") ? firstReleaseApprovalValue: "";
+    }
+  }
+
   /**
    * Load reviews from API
    *  * @param append wheather to add to or replace existing list
@@ -82,7 +94,9 @@ export class ReviewsListComponent implements OnInit {
       languages = (filters.languages.value != null)? filters.languages.value.map((item: any) => item.data) : languages;
     }
 
-    this.reviewsService.getReviews(noOfItemsRead, pageSize, packageName, languages, sortField, sortOrder).subscribe({
+    this.reviewsService.getReviews(
+      noOfItemsRead, pageSize, packageName, languages, 
+      FirstReleaseApproval[this.firstReleaseApproval], sortField, sortOrder).subscribe({
       next: (response : any) => {
         if (response.result && response.pagination) {
           if (resetReviews) {

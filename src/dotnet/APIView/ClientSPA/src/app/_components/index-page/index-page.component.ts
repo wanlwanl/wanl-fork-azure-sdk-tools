@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Review } from 'src/app/_models/review';
+import { FirstReleaseApproval, Review } from 'src/app/_models/review';
 
 @Component({
   selector: 'app-index-page',
@@ -8,6 +8,7 @@ import { Review } from 'src/app/_models/review';
 })
 export class IndexPageComponent {
   review : Review | null = null;
+  firstReleaseApproval : FirstReleaseApproval = FirstReleaseApproval.All;
 
   /**
    * Pass ReviewId to revision component to load revisions
@@ -15,6 +16,14 @@ export class IndexPageComponent {
    */
   getRevisions(review: Review) {
     this.review = review;
+  }
+
+  /**
+   * Updated the First Release Approval Value
+   *  * @param firstReleaseApproval
+   */
+  updateFirstReleaseApprovalValue(firstReleaseApproval: FirstReleaseApproval) {
+    this.firstReleaseApproval = firstReleaseApproval;
   }
 
 }

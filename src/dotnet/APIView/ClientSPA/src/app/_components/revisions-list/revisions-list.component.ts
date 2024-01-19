@@ -1,8 +1,8 @@
-import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { MenuItem, SortEvent } from 'primeng/api';
 import { Table, TableFilterEvent, TableLazyLoadEvent } from 'primeng/table';
 import { Pagination } from 'src/app/_models/pagination';
-import { Review } from 'src/app/_models/review';
+import { FirstReleaseApproval, Review } from 'src/app/_models/review';
 import { Revision } from 'src/app/_models/revision';
 import { RevisionsService } from 'src/app/_services/revisions/revisions.service';
 import { environment } from 'src/environments/environment';
@@ -27,11 +27,13 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   sortOrder : number = 1;
   filters: any = null;
 
+  sidebarVisible : boolean = false;
+
   // Filters
   details: any[] = [];
   selectedDetails: any[] = [];
   showDeletedAPIRevisions : boolean = false;
-  sidebarVisible : boolean = false;
+  @Output() firstReleaseApprovalEmitter : EventEmitter<FirstReleaseApproval> = new EventEmitter<FirstReleaseApproval>();
 
   // Context Menu
   contextMenuItems! : MenuItem[];
@@ -41,7 +43,7 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   showDiffButton : boolean = false;
 
   // Messages
-  apiRevisionsListDetail: string = "APIRevisions in"
+  apiRevisionsListDetail: string = "APIRevisions from"
 
   badgeClass : Map<string, string> = new Map<string, string>();
 
@@ -51,6 +53,7 @@ export class RevisionsListComponent implements OnInit, OnChanges {
     this.createFilters();
     this.createContextMenuItems();
     this.setDetailsIcons();
+    this.loadRevisions(0, this.pageSize * 2, true);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -224,11 +227,20 @@ export class RevisionsListComponent implements OnInit, OnChanges {
     this.createContextMenuItems();
     if (!this.showDeletedAPIRevisions)
     {
-      this.apiRevisionsListDetail = "APIRevisions";
+      this.apiRevisionsListDetail = "APIRevisions from";
     }
     else
     {
-      this.apiRevisionsListDetail = "Deleted APIRevisions in";
+      this.apiRevisionsListDetail = "Deleted APIRevisions from";
+    }
+  }
+
+  updateFirstReleaseApproval(value : string) {
+    const firstReleaseApproval =  FirstReleaseApproval[value as keyof typeof FirstReleaseApproval];
+    this.firstReleaseApprovalEmitter.emit(firstReleaseApproval);
+    if (value != "All") {
+      this.review = null;
+      this.revisions = [];
     }
   }
 

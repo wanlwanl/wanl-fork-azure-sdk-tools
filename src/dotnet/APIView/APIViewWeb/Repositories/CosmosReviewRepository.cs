@@ -242,9 +242,14 @@ SELECT VALUE {
                 queryStringBuilder.Append($" AND c.Language IN {languagesAsQueryStr}");
             }
 
+            if (filterAndSortParams.IsApproved != null)
+            {
+                queryStringBuilder.Append(" AND c.IsApproved = @isApproved");
+            }
+
             int totalCount = 0;
             var countQuery = $"SELECT VALUE COUNT(1) FROM({queryStringBuilder})";
-            QueryDefinition countQueryDefinition = new QueryDefinition(countQuery);
+            QueryDefinition countQueryDefinition = new QueryDefinition(countQuery).WithParameter("@isApproved", filterAndSortParams.IsApproved);
             using FeedIterator<int> countFeedIterator = _reviewsContainer.GetItemQueryIterator<int>(countQueryDefinition);
             while (countFeedIterator.HasMoreResults)
             {
@@ -278,7 +283,8 @@ SELECT VALUE {
             QueryDefinition queryDefinition = new QueryDefinition(queryStringBuilder.ToString())
                 .WithParameter("@offset", pageParams.NoOfItemsRead)
                 .WithParameter("@limit", pageParams.PageSize)
-                .WithParameter("@sortField", filterAndSortParams.SortField);
+                .WithParameter("@sortField", filterAndSortParams.SortField)
+                .WithParameter("@isApproved", filterAndSortParams.IsApproved);
 
             using FeedIterator<ReviewListItemModel> feedIterator = _reviewsContainer.GetItemQueryIterator<ReviewListItemModel>(queryDefinition);
             while (feedIterator.HasMoreResults)

@@ -6,6 +6,12 @@ export enum DiffLineKind {
     Unchanged
 }
 
+export enum FirstReleaseApproval {
+  Approved,
+  Pending,
+  All
+}
+
 export interface Review {
   id: string
   packageName: string
