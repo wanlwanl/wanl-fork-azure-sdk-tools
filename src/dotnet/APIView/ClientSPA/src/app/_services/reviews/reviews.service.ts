@@ -17,8 +17,8 @@ export class ReviewsService {
   constructor(private http: HttpClient) { }
 
   getReviews(noOfItemsRead: number, pageSize: number,
-    name: string, languages: string [],
-    sortField: string, sortOrder: number
+    name: string, languages: string [], approval: string,
+    sortField: string, sortOrder: number,
     ): Observable<PaginatedResult<Review[]>> {
     let params = new HttpParams();
     params = params.append('noOfItemsRead', noOfItemsRead);
@@ -30,6 +30,10 @@ export class ReviewsService {
       languages.forEach(language => {
         params = params.append('languages', language);
       });
+    }
+
+    if (approval == "Approved" || approval == "Pending") {
+      params = (approval == "Approved") ? params.append('isApproved', true) : params.append('isApproved', false);
     }
       
     params = params.append('sortField', sortField);

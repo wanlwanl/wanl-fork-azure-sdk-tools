@@ -1,17 +1,16 @@
 <p-contextMenu #cm [model]="contextMenuItems"></p-contextMenu>
-<div *ngIf="review == null" class="d-flex justify-content-center align-items-center" style="height: 90vh;">
+<div *ngIf="review == null && revisions.length == 0" class="d-flex justify-content-center align-items-center" style="height: 90vh;">
     <div class="text-center">
-        <h4>No Review Selected<br>Select a Review on the Left Panel to view its APIRevisions</h4>
+        <h4>Select a Review on the Left Panel to view its APIRevisions</h4>
     </div>
 </div>
 <div *ngIf="review != null && revisions.length == 0" class="d-flex justify-content-center align-items-center" style="height: 90vh;">
     <div class="text-center">
         <h4>Review {{review.packageName}} has no APIRevisions.</h4>
         <button type="button" (click)="toggleShowDeletedAPIRevisions()" class="btn btn-link">View Deleted APIRevisions</button>
-        
     </div>
 </div>
-<p-table *ngIf="review != null && revisions.length > 0"
+<p-table *ngIf="revisions.length > 0"
     #apiRevisionsTable
     [rows]="noOfRows"
     [value]="revisions"
@@ -107,14 +106,44 @@
         </tr>
     </ng-template>
     <ng-template pTemplate="summary">
-        <div class="flex align-items-center justify-content-center">
+        <div *ngIf="review != null" class="flex align-items-center justify-content-center">
             {{totalNumberOfRevisions}} {{apiRevisionsListDetail}} {{review.packageName}}
+        </div>
+        <div  *ngIf="review == null" class="flex align-items-center justify-content-center">
+            {{totalNumberOfRevisions}} {{apiRevisionsListDetail}} all Reviews
         </div>
     </ng-template>
 </p-table>
 <p-sidebar [(visible)]="sidebarVisible" position="right">
-    <div class="form-check form-switch">
-        <input class="form-check-input" (change)="toggleShowDeletedAPIRevisions()" type="checkbox" role="switch" id="showDeletedAPIRevisions" [checked]="showDeletedAPIRevisions">
-        <label class="form-check-label" for="showDeletedAPIRevisions">View Deleted APIRevisions</label>
-      </div>
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item">
+            <div class="form-check form-switch">
+                <input class="form-check-input" (change)="toggleShowDeletedAPIRevisions()" type="checkbox" role="switch" id="showDeletedAPIRevisions" [checked]="showDeletedAPIRevisions">
+                <label class="form-check-label" for="showDeletedAPIRevisions">View Deleted APIRevisions</label>
+            </div>
+        </li>
+        <li class="list-group-item">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="showRevisionsUserIsAssignedtoReview">
+                <label class="form-check-label" for="showRevisionsUserIsAssignedtoReview">View APIRevisions Assigned to You</label>
+            </div>
+        </li>
+        <li class="list-group-item">
+            <div class="me-auto">
+                <div class="fw-medium">First Release Aprroval</div>
+                <div class="d-grid gap-2 mt-2">
+                    <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" (click)="updateFirstReleaseApproval('Pending')">
+                        <label class="btn btn-outline-primary btn-sm" for="btnradio1">Pending</label>
+                        
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" (click)="updateFirstReleaseApproval('All')" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="btnradio2">All</label>
+                        
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" (click)="updateFirstReleaseApproval('Approved')">
+                        <label class="btn btn-outline-primary btn-sm" for="btnradio3">Approved</label>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ul>
 </p-sidebar>

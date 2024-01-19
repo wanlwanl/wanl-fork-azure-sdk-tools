@@ -28,6 +28,7 @@ namespace APIViewWeb.Helpers
         public IEnumerable<string> Languages { get; set; }
         public string SortField { get; set; } = "LastUpdatedOn";
         public int SortOrder { get; set; } = 1;
+        public bool? IsApproved { get; set; }
     }
 
     public class APIRevisionsFilterAndSortParams : ReviewFilterAndSortParams
