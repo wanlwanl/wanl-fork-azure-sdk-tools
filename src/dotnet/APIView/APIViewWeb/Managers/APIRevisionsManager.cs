@@ -286,7 +286,7 @@ namespace APIViewWeb.Managers
         /// <param name="language"></param>
         /// <param name="awaitComputeDiff"></param>
         /// <returns></returns>
-        public async Task AddAPIRevisionAsync(
+        public async Task<APIRevisionListItemModel> AddAPIRevisionAsync(
             ClaimsPrincipal user,
             string reviewId,
             APIRevisionType apiRevisionType,
@@ -297,7 +297,7 @@ namespace APIViewWeb.Managers
             bool awaitComputeDiff = false)
         {
             var review = await _reviewsRepository.GetReviewAsync(reviewId);
-            await AddAPIRevisionAsync(user, review, apiRevisionType, name, label, fileStream, language, awaitComputeDiff);
+            return await AddAPIRevisionAsync(user, review, apiRevisionType, name, label, fileStream, language, awaitComputeDiff);
         }
 
         /// <summary>
