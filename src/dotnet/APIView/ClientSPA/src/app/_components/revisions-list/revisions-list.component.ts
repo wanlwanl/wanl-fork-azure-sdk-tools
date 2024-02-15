@@ -17,8 +17,8 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   @Input() clearTableFiltersFlag : boolean | null = null;
   @ViewChild('firstReleaseApprovalAllCheck') firstReleaseApprovalAllCheck!: ElementRef<HTMLInputElement>;
 
-  reviewPageWebAppUrl : string = environment.webAppUrl + "Assemblies/review/";
-  profilePageWebAppUrl : string = environment.webAppUrl + "Assemblies/profile/";
+  reviewPageWebAppUrl : string = environment.webAppUrl + "Assemblies/Review/";
+  profilePageWebAppUrl : string = environment.webAppUrl + "Assemblies/Profile/";
   revisions : Revision[] = [];
   totalNumberOfRevisions = 0;
   pagination: Pagination | undefined;
