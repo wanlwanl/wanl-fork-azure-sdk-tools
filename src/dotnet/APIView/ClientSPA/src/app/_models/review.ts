@@ -17,7 +17,8 @@ export interface Review {
   packageName: string
   language: string
   lastUpdatedOn: string,
-  isDeleted: boolean
+  isDeleted: boolean,
+  isApproved: boolean
 }
 
 export interface ChangeHistory {
@@ -25,54 +26,6 @@ export interface ChangeHistory {
   user: string
   changeDateTime: string
   notes: any
-}
-
-export interface ReviewContent {
-  review: Review
-  navigation: NavigationItem[]
-  codeLines: ReviewLine[]
-  reviewRevisions: Map<string, Revision[]>
-  activeRevision: Revision
-}
-  
-export interface NavigationItem {
-  text: string
-  navigationId: string
-  childItems: NavigationItem[]
-  tags: Map<string, string>
-  isHiddenApi: boolean
-}
-
-export interface CodeLine {
-  displayString: string
-  elementId?: string
-  lineClass: string
-  lineNumber: number
-  sectionKey: any
-  indent: number
-  isDocumentation: boolean
-  nodeRef: any
-  isHiddenApi: boolean
-}
-export interface CodeDiagnostics {
-  diagnosticId : string
-  text : string
-  helpLinkUri : string
-  level : string
-}
-
-export interface ReviewLine {
-  codeLine: CodeLine
-  diagnostics: CodeDiagnostics[]
-  commentThread: any
-  kind: DiffLineKind
-  lineNumber: number
-  documentedByLines: any[]
-  isDiffView: boolean
-  diffSectionId: any
-  otherLineSectionKey: any
-  headingsOfSectionsWithDiff: any[]
-  isSubHeadingWithDiffInSection: boolean
 }
 
 export interface SelectItemModel {

@@ -64,7 +64,7 @@
             <td>
                 <img class="ms-3" src="{{assetsPath}}/images/{{ review.language | languageNames }}-original.svg" alt="{{review.language}}" width="25">
             </td>
-            <td style="word-wrap: break-word; max-width: 10ch">{{ review.packageName }}</td>
+            <td style="word-wrap: break-word; max-width: 10ch">{{ review.packageName }} <i *ngIf="review.isApproved" class="fas fa-check-circle text-success"></i></td>
         </tr>
     </ng-template>
     <ng-template pTemplate="summary">
