@@ -226,7 +226,8 @@ SELECT VALUE {
     PackageName: c.PackageName,
     Language: c.Language,
     LastUpdatedOn: c.LastUpdatedOn,
-    IsDeleted: c.IsDeleted
+    IsDeleted: c.IsDeleted,
+    IsApproved: c.IsApproved
 } FROM Reviews c");
             queryStringBuilder.Append(" WHERE c.IsDeleted = false");
 

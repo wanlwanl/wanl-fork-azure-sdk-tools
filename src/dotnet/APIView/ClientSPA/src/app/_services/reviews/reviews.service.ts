@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 
 import { Observable, map } from 'rxjs';
 import { PaginatedResult } from 'src/app/_models/pagination';
-import { Review, ReviewContent } from 'src/app/_models/review';
+import { Review } from 'src/app/_models/review';
 import { Revision } from 'src/app/_models/revision';
 import { environment } from 'src/environments/environment';
 
@@ -42,10 +42,7 @@ export class ReviewsService {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
     })
-   
-
-    console.log("getReviews: " + JSON.stringify(params));
-    
+      
     return this.http.get<Review[]>(this.baseUrl,
       { 
         headers: headers,
@@ -65,12 +62,6 @@ export class ReviewsService {
           }
         )
       );
-  }
-
-  getReviewContent(reviewId: string, revisionId: string = "") : Observable<ReviewContent> {
-    let params = new HttpParams();
-    params = params.append('revisionId', revisionId);
-    return this.http.get<ReviewContent>(this.baseUrl + `/${reviewId}/content`, { params: params });
   }
 
   openReviewPage(reviewId: string) {

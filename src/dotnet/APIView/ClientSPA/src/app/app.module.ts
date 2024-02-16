@@ -31,17 +31,11 @@ import { AvatarModule } from 'primeng/avatar';
 import { ContextMenuModule } from 'primeng/contextmenu';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TooltipModule } from 'primeng/tooltip';
-import { ReviewPageComponent } from './_components/review-page/review-page.component';
 import { SplitterModule } from 'primeng/splitter';
 import { SplitButtonModule } from 'primeng/splitbutton';
-import { CodePanelComponent } from './_components/code-panel/code-panel.component';
 import { VirtualScrollerModule } from 'primeng/virtualscroller';
-import { ReviewInfoComponent } from './_components/review-info/review-info.component';
 import { RevisionsListComponent } from './_components/revisions-list/revisions-list.component';
-import { ReviewNavComponent } from './_components/review-nav/review-nav.component';
 import { SanitizeHtmlPipe } from './_pipes/sanitize-html.pipe';
-import { LineDetailsComponent } from './_components/line-details/line-details.component';
-import { DiagnosticsLineComponent } from './_components/diagnostics-line/diagnostics-line.component';
 import { ApprovalPipe } from './_pipes/approval.pipe';
 import { LastUpdatedOnPipe } from './_pipes/last-updated-on.pipe';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -54,14 +48,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     NavBarComponent,
     ReviewsListComponent,
     FooterComponent,
-    ReviewPageComponent,
-    CodePanelComponent,
-    ReviewInfoComponent,
     RevisionsListComponent,
-    ReviewNavComponent,
     SanitizeHtmlPipe,
-    LineDetailsComponent,
-    DiagnosticsLineComponent,
     ApprovalPipe,
     LastUpdatedOnPipe
   ],

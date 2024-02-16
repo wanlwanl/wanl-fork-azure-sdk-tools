@@ -149,7 +149,7 @@ p-contextmenusub {
 }
 
 .p-datatable .p-datatable-tbody > tr:focus {
-    outline: 0.15rem solid var(--outer-glow);
+    outline: 0.15rem solid var(--link-color);
     outline-offset: 0.15rem;
 }
 
@@ -206,6 +206,10 @@ p-contextmenusub {
     background: var(--base-fg-color);
     border-top-right-radius: 4px;
     border-top-left-radius: 4px;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item:not(.p-highlight):not(.p-disabled).p-focus {
+    background: var(--base-fg-color);
 }
 
 .p-inputtext:enabled:hover {
@@ -300,6 +304,10 @@ p-contextmenusub {
 .p-multiselect:not(.p-disabled).p-focus {
     box-shadow: var(--shadow-color-primary);
     border-color: var(--primary-btn-color);
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item:not(.p-highlight):not(.p-disabled).p-focus {
+    background: var(--base-fg-color);;
 }
 
 .p-datatable .p-sortable-column.p-highlight, .p-datatable .p-sortable-column.p-highlight:hover {
