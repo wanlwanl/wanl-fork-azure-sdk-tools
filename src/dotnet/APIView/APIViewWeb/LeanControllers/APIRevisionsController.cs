@@ -31,7 +31,7 @@ namespace APIViewWeb.LeanControllers
         [HttpPost(Name = "GetAPIRevisions")]
         public async Task<ActionResult<PagedList<APIRevisionListItemModel>>> GetAPIRevisionsAsync([FromQuery] PageParams pageParams, [FromBody] APIRevisionsFilterAndSortParams filterAndSortParams)
         {
-            var result = await _apiRevisionsManager.GetAPIRevisionsAsync(pageParams, filterAndSortParams);
+            var result = await _apiRevisionsManager.GetAPIRevisionsAsync(User, pageParams, filterAndSortParams);
             Response.AddPaginationHeader(new PaginationHeader(result.NoOfItemsRead, result.PageSize, result.TotalCount));
             return new LeanJsonResult(result, StatusCodes.Status200OK);
         }

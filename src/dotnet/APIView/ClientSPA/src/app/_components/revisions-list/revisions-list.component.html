@@ -124,8 +124,8 @@
         </li>
         <li class="list-group-item">
             <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="showRevisionsUserIsAssignedtoReview">
-                <label class="form-check-label" for="showRevisionsUserIsAssignedtoReview">View APIRevisions Assigned to You</label>
+                <input class="form-check-input" (change)="toggleShowAPIRevisionsAssignedToMe()" type="checkbox" role="switch" id="showRevisionsUserIsAssignedtoReview" [checked]="showAPIRevisionsAssignedToMe">
+                <label class="form-check-label" for="showRevisionsUserIsAssignedtoReview">View APIRevisions Assigned to Me</label>
             </div>
         </li>
         <li class="list-group-item">
@@ -136,7 +136,7 @@
                         <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" (click)="updateFirstReleaseApproval('Pending')">
                         <label class="btn btn-outline-primary btn-sm" for="btnradio1">Pending</label>
                         
-                        <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" (click)="updateFirstReleaseApproval('All')" checked>
+                        <input type="radio" #firstReleaseApprovalAllCheck class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" (click)="updateFirstReleaseApproval('All')" checked>
                         <label class="btn btn-outline-primary btn-sm" for="btnradio2">All</label>
                         
                         <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" (click)="updateFirstReleaseApproval('Approved')">

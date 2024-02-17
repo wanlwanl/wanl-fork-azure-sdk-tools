@@ -34,6 +34,7 @@ namespace APIViewWeb.Helpers
     public class APIRevisionsFilterAndSortParams : ReviewFilterAndSortParams
     {
         public bool IsDeleted { get; set; }
+        public bool AssignedToMe { get; set; }
         public string Label { get; set; }
         public string Author { get; set; }
         public string ReviewId { get; set; }

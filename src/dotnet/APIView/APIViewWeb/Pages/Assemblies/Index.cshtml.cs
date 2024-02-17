@@ -55,13 +55,19 @@ namespace APIViewWeb.Pages.Assemblies
         [BindProperty(Name = "notificationMessage", SupportsGet = true)]
         public string NotificationMessage { get; set; }
 
-        public async Task OnGetAsync(
+        public async Task<IActionResult> OnGetAsync(
             IEnumerable<string> search, IEnumerable<string> languages, IEnumerable<string> state,
             IEnumerable<string> status, int pageNo=1, int pageSize=_defaultPageSize, string sortField=_defaultSortField)
         {
+            var userPreference = await _preferenceCache.GetUserPreferences(User);
+            var spaUrl = "https://spa." + Request.Host.ToString();
+            if (userPreference.UseBetaIndexPage == true)
+            {
+                return Redirect(spaUrl);
+            }
+
             if (!search.Any() && !languages.Any() && !state.Any() && !status.Any())
             {
-                UserPreferenceModel userPreference = await _preferenceCache.GetUserPreferences(User);
                 languages = userPreference.Language;
                 state = userPreference.State;
                 status = userPreference.Status;
@@ -71,6 +77,7 @@ namespace APIViewWeb.Pages.Assemblies
             {
                 await RunGetRequest(search, languages, state, status, pageNo, pageSize, sortField);
             }
+            return Page();
         }
 
         public async Task<PartialViewResult> OnGetReviewsPartialAsync(
