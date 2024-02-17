@@ -17,6 +17,7 @@ import { environment } from 'src/environments/environment';
 
 export class ReviewsListComponent implements OnInit, OnChanges {
   @Output() reviewEmitter : EventEmitter<Review> = new EventEmitter<Review>();
+  @Output() clearTableFiltersEmitter : EventEmitter<boolean> = new EventEmitter<boolean>();
   @ViewChild("reviewCreationFileUpload") reviewCreationFileUpload!: FileUpload;
 
   assetsPath : string = environment.assetsPath;
@@ -159,7 +160,9 @@ export class ReviewsListComponent implements OnInit, OnChanges {
    * Return true if table has filters applied.
    */
   tableHasFilters() : boolean {
-    return (this.sortField != "lastUpdatedOn" || this.sortOrder != 1 || (this.filters && (this.filters.packageName.value != null || this.filters.languages.value != null)));
+    return (this.sortField != "lastUpdatedOn" || this.sortOrder != 1 || 
+    (this.filters && (this.filters.packageName.value != null || this.filters.languages.value != null)) ||
+    this.firstReleaseApproval != FirstReleaseApproval.All);
   }
 
   /**
@@ -168,6 +171,7 @@ export class ReviewsListComponent implements OnInit, OnChanges {
   clear(table: Table) {
     table.clear();
     this.loadReviews(0, this.pageSize, true, this.filters, this.sortField, this.sortOrder);
+    this.clearTableFiltersEmitter.emit(true);
   }
 
   /**

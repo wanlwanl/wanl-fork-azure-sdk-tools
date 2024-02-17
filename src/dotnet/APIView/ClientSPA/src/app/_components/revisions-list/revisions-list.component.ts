@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { MenuItem, SortEvent } from 'primeng/api';
 import { Table, TableFilterEvent, TableLazyLoadEvent } from 'primeng/table';
 import { Pagination } from 'src/app/_models/pagination';
@@ -14,6 +14,9 @@ import { environment } from 'src/environments/environment';
 })
 export class RevisionsListComponent implements OnInit, OnChanges {
   @Input() review : Review | null = null;
+  @Input() clearTableFiltersFlag : boolean | null = null;
+  @ViewChild('firstReleaseApprovalAllCheck') firstReleaseApprovalAllCheck!: ElementRef<HTMLInputElement>;
+
   reviewPageWebAppUrl : string = environment.webAppUrl + "Assemblies/review/";
   profilePageWebAppUrl : string = environment.webAppUrl + "Assemblies/profile/";
   revisions : Revision[] = [];
@@ -33,6 +36,7 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   details: any[] = [];
   selectedDetails: any[] = [];
   showDeletedAPIRevisions : boolean = false;
+  showAPIRevisionsAssignedToMe : boolean = false;
   @Output() firstReleaseApprovalEmitter : EventEmitter<FirstReleaseApproval> = new EventEmitter<FirstReleaseApproval>();
 
   // Context Menu
@@ -43,7 +47,7 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   showDiffButton : boolean = false;
 
   // Messages
-  apiRevisionsListDetail: string = "APIRevisions from"
+  apiRevisionsListDetail: string = "APIRevision(s) from"
 
   badgeClass : Map<string, string> = new Map<string, string>();
 
@@ -57,10 +61,24 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['review'].previousValue != changes['review'].currentValue){
-      this.loadRevisions(0, this.pageSize * 2, true);
+    if (changes['review'] && changes['review'].previousValue != changes['review'].currentValue){
+      if (this.showAPIRevisionsAssignedToMe)
+      {
+        this.toggleShowAPIRevisionsAssignedToMe();
+      }
+      else {
+        this.loadRevisions(0, this.pageSize * 2, true);
+      }
       this.showSelectionActions = false;
       this.showDiffButton = false;
+    }
+    
+    if (changes['clearTableFiltersFlag'] && changes['clearTableFiltersFlag'].currentValue) {
+      if (this.clearTableFiltersFlag) {
+        this.clearTableFiltersFlag = false;
+        this.firstReleaseApprovalAllCheck.nativeElement.checked = true;
+        this.updateFirstReleaseApproval("All");
+      }
     }
   }
 
@@ -80,7 +98,8 @@ export class RevisionsListComponent implements OnInit, OnChanges {
       details = (filters.details.value != null) ? filters.details.value.map((item: any) => item.data): details;
     }
 
-    this.revisionsService.getAPIRevisions(noOfItemsRead, pageSize, reviewId, label, author, details, sortField, sortOrder, this.showDeletedAPIRevisions).subscribe({
+    this.revisionsService.getAPIRevisions(noOfItemsRead, pageSize, reviewId, label, author, details, sortField, sortOrder, 
+      this.showDeletedAPIRevisions, this.showAPIRevisionsAssignedToMe).subscribe({
       next: (response: any) => {
         if (response.result && response.pagination) {
           if (resetReviews)
@@ -207,7 +226,10 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   * Return true if table has filters applied.
   */
   tableHasFilters() : boolean {
-    return (this.sortField != "lastUpdatedOn" || this.sortOrder != 1 || (this.filters && (this.filters.label.value != null || this.filters.author.value != null || this.filters.details.value != null)));
+    return (
+      this.sortField != "lastUpdatedOn" || this.sortOrder != 1 || 
+      (this.filters && (this.filters.label.value != null || this.filters.author.value != null || this.filters.details.value != null)) ||
+      this.showDeletedAPIRevisions || this.showAPIRevisionsAssignedToMe);
   }
 
   /**
@@ -223,16 +245,38 @@ export class RevisionsListComponent implements OnInit, OnChanges {
   */
   toggleShowDeletedAPIRevisions() {
     this.showDeletedAPIRevisions = !this.showDeletedAPIRevisions;
+    this.showAPIRevisionsAssignedToMe = false;
     this.loadRevisions(0, this.pageSize * 2, true);
     this.createContextMenuItems();
-    if (!this.showDeletedAPIRevisions)
-    {
-      this.apiRevisionsListDetail = "APIRevisions from";
+    this.updateAPIRevisoinsListDetails();
+  }
+
+  /**
+  * Toggle Show APIRevisions Assigned to Me
+  */
+  toggleShowAPIRevisionsAssignedToMe() {
+    this.showAPIRevisionsAssignedToMe = !this.showAPIRevisionsAssignedToMe;
+    this.showDeletedAPIRevisions = false;
+    if (this.showAPIRevisionsAssignedToMe) {
+      this.review = null;
     }
-    else
+    this.loadRevisions(0, this.pageSize * 2, true);
+    this.createContextMenuItems();
+    this.updateAPIRevisoinsListDetails();
+  }
+
+  updateAPIRevisoinsListDetails() {
+    let msg = "APIRevision(s)";
+    if (this.showDeletedAPIRevisions)
     {
-      this.apiRevisionsListDetail = "Deleted APIRevisions from";
+      msg = "Deleted " + msg;
     }
+    if (this.showAPIRevisionsAssignedToMe)
+    {
+      msg = msg + " Assigned to Me";
+    }
+    msg = msg + " from";
+    this.apiRevisionsListDetail = msg;
   }
 
   updateFirstReleaseApproval(value : string) {

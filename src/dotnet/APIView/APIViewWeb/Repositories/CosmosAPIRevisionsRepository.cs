@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using APIViewWeb.Helpers;
@@ -39,10 +40,11 @@ namespace APIViewWeb
         /// Retrieve Revisions from the Revisions container in CosmosDb after applying filter to the query
         /// Used for ClientSPA
         /// </summary>
+        /// <param name="user"></param>
         /// <param name="pageParams"></param> Contains paginationinfo
         /// <param name="filterAndSortParams"></param> Contains filter and sort parameters
         /// <returns></returns>
-        public async Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(PageParams pageParams, APIRevisionsFilterAndSortParams filterAndSortParams)
+        public async Task<PagedList<APIRevisionListItemModel>> GetAPIRevisionsAsync(ClaimsPrincipal user, PageParams pageParams, APIRevisionsFilterAndSortParams filterAndSortParams)
         {
             var queryStringBuilder = new StringBuilder(@"SELECT * FROM Revisions c");
             queryStringBuilder.Append($" WHERE c.IsDeleted = {filterAndSortParams.IsDeleted.ToString().ToLower()}");
@@ -61,6 +63,11 @@ namespace APIViewWeb
             if (!string.IsNullOrEmpty(filterAndSortParams.Author))
             {
                 queryStringBuilder.Append($" AND CONTAINS(c.CreatedBy, '{filterAndSortParams.Author}')");
+            }
+
+            if (filterAndSortParams.AssignedToMe)
+            {
+                queryStringBuilder.Append($" AND ARRAY_CONTAINS(c.AssignedReviewers, {{ 'AssingedTo': '{ user.GetGitHubLogin() }' }}, true)");
             }
 
             if (filterAndSortParams.Details != null && filterAndSortParams.Details.Count() > 0)

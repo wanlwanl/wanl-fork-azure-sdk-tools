@@ -19,7 +19,7 @@ export class RevisionsService {
 
   getAPIRevisions(noOfItemsRead: number, pageSize: number,
     reviewId : string, label: string, author: string, 
-    details: string [], sortField: string, sortOrder: number, isDeleted: boolean = false
+    details: string [], sortField: string, sortOrder: number, isDeleted: boolean = false, isAssignedToMe: boolean = false
     ): Observable<PaginatedResult<Revision[]>> {
     let params = new HttpParams();
     params = params.append('noOfItemsRead', noOfItemsRead);
@@ -27,6 +27,7 @@ export class RevisionsService {
 
     const data = {
       isDeleted: isDeleted,
+      assignedToMe: isAssignedToMe,
       label: label,
       author: author,
       reviewId: reviewId,
@@ -38,10 +39,7 @@ export class RevisionsService {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
     })
-   
-
-    console.log("getRevisions: " + JSON.stringify(data));
-    
+       
     return this.http.post<Revision[]>(this.baseUrl, data,
       { 
         headers:headers,
