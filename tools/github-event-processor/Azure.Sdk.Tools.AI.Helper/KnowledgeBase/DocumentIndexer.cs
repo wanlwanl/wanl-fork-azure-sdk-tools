@@ -15,12 +15,13 @@ public class DocumentIndexer
     private readonly ILogger<DocumentIndexer>? _logger;
     private readonly string _indexName;
     private readonly string _embeddingsModel;
+    private readonly string _repoName;
 
-    public DocumentIndexer(SearchConfig searchConfig, OpenAiConfig openAiConfig, ILogger<DocumentIndexer>? logger)
+    public DocumentIndexer(SearchConfig searchConfig, OpenAiConfig openAiConfig, string repoName, ILogger<DocumentIndexer>? logger)
     {
         _indexName = searchConfig.IndexName
             ?? throw new ArgumentNullException("IndexName");
-
+        _repoName = repoName ?? throw new ArgumentNullException(nameof(repoName));
         _logger = logger;
 
         var endpointUrl = new Uri(searchConfig.Endpoint ?? throw new ArgumentNullException("Endpoint"));
@@ -88,6 +89,7 @@ public class DocumentIndexer
         var documents = issues
             .Select(async i => await DocumentsFromIssue(i))
             .Select(t => t.Result)
+            .SelectMany(d => d)
             .Where(d => d != null)
             .Cast<Document>();
 
@@ -97,9 +99,14 @@ public class DocumentIndexer
 
     public async Task Index(IEnumerable<string> mdFiles, string azSdkRepoPath)
     {
+        // TODO: fix path, currently peopr links are generated only if
+        // we pass path/to/azure-sdk-for-*/
+        // but we don't care about ./eng, so we want to index ./sdk only
+        // but generated links are not right - https://github.com/Azure/azure-sdk-for-net/tree/main/monitor\Azure.Monitor.OpenTelemetry.Exporter\README.md
         var documents = mdFiles
             .Select(async f => await FromMdFile(f, Path.GetRelativePath(azSdkRepoPath, f)))
             .Select(t => t.Result)
+            .SelectMany(d => d)
             .Where(d => d != null)
             .Cast<Document>();
 
@@ -114,59 +121,79 @@ public class DocumentIndexer
         return embeddings.Value.Data[0].Embedding;
     }
 
-    private async Task<Document?> DocumentsFromIssue(Issue issue)
+    private async Task<IEnumerable<Document?>> DocumentsFromIssue(Issue issue)
     {
         var content = Document.GetFullContent(issue);
 
-        if (content.Length > 8000)
+        var docs = new List<Document>();
+        var chunks = Chunk(content);
+
+        for (var i = 0; i < chunks.Count(); i++)
         {
-            _logger?.LogWarning("Issue {issue} content length is too long - {length}", issue.IssueNumber, content.Length);
-            Console.WriteLine($"Issue {issue.IssueNumber} content length is too long - {content.Length}");
-            return null;
+            docs.Add(new Document()
+            {
+                Id = string.Concat(_repoName, "_", issue.IssueNumber + "_" + i),
+                Source = string.Concat(Document.RepoUrl, _repoName, "/issues/", issue.IssueNumber),
+                Title = issue.Title,
+                Content = chunks[i],
+                ContentVector = await Vectorize(chunks[i])
+            });
         }
-        return new Document()
-        {
-            Id = string.Concat(Document.RepoName, "_", issue.IssueNumber),
-            Source = string.Concat(Document.RepoUrl, "issues/", issue.IssueNumber),
-            Title = issue.Title,
-            Content = content,
-            ContentVector = await Vectorize(content)
-        };
+
+        return docs;
     }
 
-    public async Task<Document?> FromMdFile(string absolutePath, string relativePath)
+    public async Task<IEnumerable<Document?>> FromMdFile(string absolutePath, string relativePath)
     {
         var text = File.ReadAllText(absolutePath);
         var firstLineEnd = text.Trim().IndexOfAny(Document.EndOfLine);
 
         if (firstLineEnd <= 0)
         {
-            return null;
+            return Enumerable.Empty<Document?>();
         }
 
         var firstLine = text[..firstLineEnd];
 
-        if (text.Length > 8000)
+        var docs = new List<Document>();
+        var chunks = Chunk(text);
+        for (var i = 0; i < chunks.Count(); i ++)
         {
-            _logger?.LogWarning("Document {path} content length is too long - {length}", absolutePath, text.Length);
-            return null;
+            docs.Add(new Document()
+            {
+                Id = string.Concat(_repoName, "_", Document.GetId(relativePath) + "_" + i),
+                Source = string.Concat(Document.RepoUrl, _repoName, "/tree/main/", relativePath),
+                Title = firstLine,
+                Content = chunks[i],
+                ContentVector = await Vectorize(chunks[i])
+            });
         }
 
-        return new Document()
+        return docs;
+    }
+
+
+    private List<string> Chunk(string text)
+    {
+        var chunks = new List<string>();
+        for (int i = 0; i < text.Length; i += 8000)
         {
-            Id = string.Concat(Document.RepoName, "_", Document.GetId(relativePath)),
-            Source = string.Concat(Document.RepoUrl, "tree/main/", relativePath),
-            Title = firstLine,
-            Content = text,
-            ContentVector = await Vectorize(text)
-        };
+            if (i + 8000 >= text.Length)
+            {
+                chunks.Add(text.Substring(i));
+            }
+            else
+            {
+                chunks.Add(text.Substring(i, 8000));
+            }
+        }
+        return chunks;
     }
 
     public class Document
     {
         internal const string Separator = "\n~~~END~~~\n";
-        internal const string RepoName = "azure-sdk-for-net"; //TODO
-        internal static readonly string RepoUrl = $"https://github.com/Azure/{RepoName}/";
+        internal static readonly string RepoUrl = $"https://github.com/Azure/";
         internal static readonly char[] EndOfLine = new[] { '\n', '\r' };
 
         internal static string GetId(string url)

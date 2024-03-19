@@ -4,7 +4,7 @@ namespace Azure.Sdk.Tools.AI.Helper.KnowledgeBase;
 
 public class MarkdownFileIndexer : BaseIndexer
 {
-    public MarkdownFileIndexer(SearchConfig searchConfig, OpenAiConfig openAiConfig, ILoggerFactory loggerFactory) : base(searchConfig, openAiConfig, loggerFactory)
+    public MarkdownFileIndexer(SearchConfig searchConfig, OpenAiConfig openAiConfig, string repoName, ILoggerFactory loggerFactory) : base(searchConfig, openAiConfig, repoName, loggerFactory)
     {
     }
 

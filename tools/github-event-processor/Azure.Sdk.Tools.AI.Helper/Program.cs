@@ -28,8 +28,8 @@ internal class Program
         [Option('p', "path", HelpText = "When indexing markdown documents, path to the root - all md files except changelogs, swaggers, contributing will be indexed recursively")]
         public string? Path { get; set; }
 
-        [Option('d', "delete_index", HelpText = "Delete existing index before indexing. Defaults to true", Default = true)]
-        public bool Delete { get; set; }
+        [Option('k', "keep-index", HelpText = "Keep existing index. Defaults to false", Default = false)]
+        public bool KeepIndex { get; set; }
 
         [Option('q', "question", HelpText = "Issue description to get bot suggestion for")]
         public string? Question { get; set; }
@@ -79,11 +79,10 @@ internal class Program
         }
     }
 
-
     private static async Task IndexIssues(CloudMineConfig cloudMineConfig, SearchConfig searchConfig, OpenAiConfig openAiConfig, ILoggerFactory loggerFactory, ConsoleOptions options)
     {
-        var cloudMineIndexer = new CloudMineIndexer(cloudMineConfig, searchConfig, openAiConfig, loggerFactory);
-        if (options.Delete)
+        var cloudMineIndexer = new CloudMineIndexer(cloudMineConfig, searchConfig, openAiConfig, GetRepoName(options), loggerFactory);
+        if (!options.KeepIndex)
         {
             await cloudMineIndexer.DeleteIndex();
         }
@@ -92,8 +91,8 @@ internal class Program
 
     private static async Task IndexDocs(SearchConfig searchConfig, OpenAiConfig openAiConfig, ILoggerFactory loggerFactory, ConsoleOptions options)
     {
-        var mdIndexer = new MarkdownFileIndexer(searchConfig, openAiConfig, loggerFactory);
-        if (options.Delete)
+        var mdIndexer = new MarkdownFileIndexer(searchConfig, openAiConfig, GetRepoName(options), loggerFactory);
+        if (!options.KeepIndex)
         {
             await mdIndexer.DeleteIndex();
         }
@@ -111,7 +110,7 @@ internal class Program
             //{
             Console.WriteLine(suggestion.Solution);
             Console.WriteLine();
-            Console.WriteLine($"Related issues and documents:\r\n - {string.Join("\r\n  - ", suggestion.References)}");
+            Console.WriteLine($"Related issues and documents:\r\n  - {string.Join("\r\n  - ", suggestion.References)}");
             Console.WriteLine($"<!-- Confidence Level: {suggestion.ConfidenceLevel} -->\r\n");
             //}
         }
@@ -119,8 +118,15 @@ internal class Program
         {
             loggerFactory.CreateLogger<Program>().LogError(ex, "Failed to get suggestion");
         }
-
     }
+
+    private static string GetRepoName(ConsoleOptions options)
+    {
+        if (options.Language == "dotnet") return "azure-sdk-for-net";
+        if (options.Language == "java") return "azure-sdk-for-java";
+        throw new NotSupportedException("Language is not supported");
+    }
+
 
     private const string SampleQuery = @"
 [BUG] Azure.Security.KeyVault.Secrets GetSecret tries to spawn a child process even though it's a synchronous function. 
@@ -204,8 +210,8 @@ Run the application.
         string connectionString = configuration.GetSection("AzureMonitor").GetValue<string>("ConnectionString");
         var tpb = OpenTelemetry.Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(CreateResource())
-            .AddSource("Azure.*")
-            .AddHttpClientInstrumentation();
+            .AddSource("Azure.*");
+            //.AddHttpClientInstrumentation();
 
         if (connectionString == null)
         {

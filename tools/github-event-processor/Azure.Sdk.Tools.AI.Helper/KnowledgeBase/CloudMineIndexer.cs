@@ -8,7 +8,8 @@ namespace Azure.Sdk.Tools.AI.Helper.KnowledgeBase;
 public class CloudMineIndexer : BaseIndexer
 {
     private readonly ICslQueryProvider _kustoClient;
-    public CloudMineIndexer(CloudMineConfig cloudMineConfig, SearchConfig searchConfig, OpenAiConfig openAiConfig, ILoggerFactory loggerFactory) : base(searchConfig, openAiConfig, loggerFactory)
+    public CloudMineIndexer(CloudMineConfig cloudMineConfig, SearchConfig searchConfig, OpenAiConfig openAiConfig, string repoName, ILoggerFactory loggerFactory) : 
+        base(searchConfig, openAiConfig, repoName, loggerFactory)
     {
         _kustoClient = KustoClientFactory.CreateCslQueryProvider(new KustoConnectionStringBuilder(cloudMineConfig.Endpoint)
             .WithAadAzCliAuthentication(true));

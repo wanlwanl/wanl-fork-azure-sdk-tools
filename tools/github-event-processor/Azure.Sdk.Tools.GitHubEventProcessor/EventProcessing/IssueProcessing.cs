@@ -268,7 +268,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
             {
                 if (issueEventPayload.Action == ActionConstants.Labeled && issueEventPayload.Issue.State == ItemState.Open && issueEventPayload.Label.Name == TriageLabelConstants.ReferenceIssue)
                 {
-                    var indexer = new AI.Helper.KnowledgeBase.ReferenceIssueIndexer(new SearchConfig(), new OpenAiConfig(), null);
+                    var indexer = new AI.Helper.KnowledgeBase.ReferenceIssueIndexer(new SearchConfig(), new OpenAiConfig(), issueEventPayload.Repository.Name, null);
                     var issue = new AI.Helper.KnowledgeBase.Issue()
                     {
                         Title = issueEventPayload.Issue.Title,
