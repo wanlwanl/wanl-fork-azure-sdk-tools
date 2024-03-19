@@ -20,6 +20,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.Constants
         public const string NeedsTriage = "needs-triage";
         public const string NoRecentActivity = "no-recent-activity";
         public const string Question = "question";
+        public const string ReferenceIssue = "reference-issue";
         public const string ServiceAttention = "Service Attention";
     }
 }

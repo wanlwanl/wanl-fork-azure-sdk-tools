@@ -4,21 +4,11 @@ using System.Threading.Tasks;
 using Azure.Sdk.Tools.GitHubEventProcessor.GitHubPayload;
 using Azure.Sdk.Tools.GitHubEventProcessor.Constants;
 using Azure.Sdk.Tools.GitHubEventProcessor.Utils;
-using System.ComponentModel;
-using System.Diagnostics.Metrics;
-using static System.Net.Mime.MediaTypeNames;
-using System.Reflection.Emit;
-using System.Reflection.Metadata;
-using System.Xml.Linq;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security;
-using Azure.Sdk.Tools.CodeownersUtils.Verification;
-using System.Runtime.Intrinsics.X86;
 using Azure.Sdk.Tools.CodeownersUtils.Parsing;
 using Azure.Sdk.Tools.AI.Helper;
 using System.Threading;
-using System.Runtime.Intrinsics.X86;
 
 namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
 {
@@ -242,53 +232,6 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
         }
 
 
-        // TODO - Remove this when it's absolutely clear it's no longer needed. The only reason to keep this around, temporarily,
-        // is for "just in case" purposes.
-        //// This is the IntitialIssueTriage as it exists today. It's the old rule that needs to be replaced by the commented out
-        //// function above.
-        //public static async Task InitialIssueTriage(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload)
-        //{
-        //    if (gitHubEventClient.RulesConfiguration.RuleEnabled(RulesConstants.InitialIssueTriage))
-        //    {
-        //        if (issueEventPayload.Action == ActionConstants.Opened)
-        //        {
-        //            // If there are no labels and no assignees
-        //            if ((issueEventPayload.Issue.Labels.Count == 0) && (issueEventPayload.Issue.Assignee == null))
-        //            {
-        //                List<string> labelSuggestions = await gitHubEventClient.QueryAILabelService(issueEventPayload);
-        //                if (labelSuggestions.Count > 0)
-        //                {
-        //                    // If labels were predicted, add them to the issue
-        //                    foreach (string label in labelSuggestions)
-        //                    {
-        //                        gitHubEventClient.AddLabel(label);
-        //                    }
-
-        //                    gitHubEventClient.AddLabel(TriageLabelConstants.NeedsTeamTriage);
-
-        //                }
-        //                // If there are no labels predicted add NeedsTriage to the issue
-        //                else
-        //                {
-        //                    gitHubEventClient.AddLabel(TriageLabelConstants.NeedsTriage);
-        //                }
-
-        //                // If the user is not a member of the Azure Org AND the user does not have write or admin collaborator permission.
-        //                // This piece is executed for every issue created that doesn't have labels or owners on it at the time of creation.
-        //                bool isMemberOfOrg = await gitHubEventClient.IsUserMemberOfOrg(OrgConstants.Azure, issueEventPayload.Issue.User.Login);
-        //                if (!isMemberOfOrg)
-        //                {
-        //                    bool hasAdminOrWritePermission = await gitHubEventClient.DoesUserHaveAdminOrWritePermission(issueEventPayload.Repository.Id, issueEventPayload.Issue.User.Login);
-        //                    if (!hasAdminOrWritePermission)
-        //                    {
-        //                        gitHubEventClient.AddLabel(TriageLabelConstants.CustomerReported);
-        //                        gitHubEventClient.AddLabel(TriageLabelConstants.Question);
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
         private static async Task GetAiBotSuggestion(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload, CancellationToken cancellationToken)
         {
             if (gitHubEventClient.RulesConfiguration.RuleEnabled(RulesConstants.AiBotSuggestions))
@@ -316,6 +259,25 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
             }
 
             return issueEventPayload.Issue.Title + "\r\n" + description;
+        }
+
+
+        public static async Task IndexReferenceInssue(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload)
+        {
+            if (gitHubEventClient.RulesConfiguration.RuleEnabled(RulesConstants.ReferenceIssueIndexer))
+            {
+                if (issueEventPayload.Action == ActionConstants.Labeled && issueEventPayload.Issue.State == ItemState.Open && issueEventPayload.Label.Name == TriageLabelConstants.ReferenceIssue)
+                {
+                    var indexer = new AI.Helper.KnowledgeBase.ReferenceIssueIndexer(new SearchConfig(), new OpenAiConfig(), null);
+                    var issue = new AI.Helper.KnowledgeBase.Issue()
+                    {
+                        Title = issueEventPayload.Issue.Title,
+                        IssueNumber = issueEventPayload.Issue.Number,
+                        Description = issueEventPayload.Issue.Body,
+                    };
+                    await indexer.Index(issue);
+                }
+            }
         }
 
         /// <summary>

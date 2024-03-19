@@ -21,6 +21,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.Constants
         public const string AuthorFeedbackNeeded = "AuthorFeedbackNeeded";
         public const string IssueAddressed = "IssueAddressed";
         public const string IssueAddressedReset = "IssueAddressedReset";
+        public const string ReferenceIssueIndexer = "ReferenceIssueIndexer";
 
         // issue_comment rules
         public const string AuthorFeedback = "AuthorFeedback";
