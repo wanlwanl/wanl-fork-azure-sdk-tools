@@ -45,7 +45,7 @@ dotnet run --command index --language java --mode reference-issues
 dotnet run --command index --language java --mode docs --path c:\repo\azure-sdk-for-java\sdk
 ```
 
-> Note: when indexing data, existing index with provided name is deleted first. If you want to preserve the index, pass `--delete_index false`
+> Note: when indexing data, existing index with provided name is deleted first. If you want to preserve the index, pass `--keep-index`
 
 You can always get cli help with `dotnet run -- -h`
 
