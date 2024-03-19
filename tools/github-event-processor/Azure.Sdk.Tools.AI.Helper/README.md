@@ -50,3 +50,9 @@ dotnet run --command index --language java --mode docs --path c:\repo\azure-sdk-
 You can always get cli help with `dotnet run -- -h`
 
 ## Troubleshooting
+
+You can configure log level for individual categories via `appsettings.json`.
+
+You can also enable distributed tracing by providing ApplicationInsights connection string in one of the following ways:
+- set `"AzureMonitor": {"ConnectionString": ...}` to `appsetting.json`
+- set it via `AzureMonitor:ConnectionString` or `AZUREMONITOR__CONNECTIONSTRING` environment variables
