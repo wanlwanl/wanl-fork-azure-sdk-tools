@@ -44,7 +44,7 @@ namespace Azure.Sdk.Tools.TestProxy.Store
         private bool LocalCacheRefreshed = false;
 
         public GitStoreBreadcrumb BreadCrumb = new GitStoreBreadcrumb();
-        List<IPushProtection> ProtectionsList = new List<IPushProtection>() { new CredScanPushProtection() };
+        List<IPushProtection> PushProtections = new List<IPushProtection>() { new CredScanPushProtection() };
 
         /// <summary>
         /// We need to lock repo inititialization behind a queue.
@@ -99,22 +99,19 @@ namespace Azure.Sdk.Tools.TestProxy.Store
         public async Task<bool> PushProtection(string targetDirectory)
         {
             var scanResults = new List<ScanResult>();
-            await Task.Run(() =>
+
+            foreach(var protectionType in PushProtections)
             {
-                scanResults.Append(new ScanResult() { Success = false });
-            });
+                await Task.Run(() =>
+                {
+                    scanResults.Append(protectionType.Scan(targetDirectory);
+                });
+            }
+            
 
             var failedResults = scanResults.Where(x => !x.Success);
 
-            if (failedResults.Count() > 0)
-            {
-                // we've already invoked credscan, they should see the output. we will exit.
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            return failedResults.Count() > 0 ? false : true;
         }
 
         /// <summary>
