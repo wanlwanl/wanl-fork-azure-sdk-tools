@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Azure.Sdk.tools.TestProxy.Common;
+using System.Collections.Generic;
 
 namespace Azure.Sdk.Tools.TestProxy.Store
 {
@@ -43,6 +44,7 @@ namespace Azure.Sdk.Tools.TestProxy.Store
         private bool LocalCacheRefreshed = false;
 
         public GitStoreBreadcrumb BreadCrumb = new GitStoreBreadcrumb();
+        List<IPushProtection> ProtectionsList = new List<IPushProtection>() { new CredScanPushProtection() };
 
         /// <summary>
         /// We need to lock repo inititialization behind a queue.
@@ -94,6 +96,27 @@ namespace Azure.Sdk.Tools.TestProxy.Store
             return new NormalizedString(config.AssetsRepoLocation);
         }
 
+        public async Task<bool> PushProtection(string targetDirectory)
+        {
+            var scanResults = new List<ScanResult>();
+            await Task.Run(() =>
+            {
+                scanResults.Append(new ScanResult() { Success = false });
+            });
+
+            var failedResults = scanResults.Where(x => !x.Success);
+
+            if (failedResults.Count() > 0)
+            {
+                // we've already invoked credscan, they should see the output. we will exit.
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Pushes a set of changed files to the assets repo. Honors configuration of assets.json passed into it.
         /// </summary>
@@ -119,53 +142,59 @@ namespace Azure.Sdk.Tools.TestProxy.Store
 
             if (pendingChanges.Length > 0)
             {
-                try
+                var pushProtectionSucceeded = await PushProtection(config.AssetsRepoLocation);
+
+                if (pushProtectionSucceeded)
                 {
-                    string branchGuid = Guid.NewGuid().ToString().Substring(0, 8);
-                    string gitUserName = GetGitOwnerName(config);
-                    string gitUserEmail = GetGitOwnerEmail(config);
-                    GitHandler.Run($"branch {branchGuid}", config);
-                    GitHandler.Run($"checkout {branchGuid}", config);
-                    GitHandler.Run($"add -A .", config);
-                    GitHandler.Run($"-c user.name=\"{gitUserName}\" -c user.email=\"{gitUserEmail}\" commit --no-gpg-sign -m \"Automatic asset update from test-proxy.\"", config);
-                    // Get the first 10 digits of the commit SHA. The generatedTagName will be the
-                    // config.TagPrefix_<SHA>
-                    if (GitHandler.TryRun("rev-parse --short=10 HEAD", config.AssetsRepoLocation.ToString(), out CommandResult SHAResult))
+                    try
                     {
-                        var newSHA = SHAResult.StdOut.Trim();
-                        generatedTagName += $"_{newSHA}";
-                    } else
-                    {
-                        throw GenerateInvokeException(SHAResult);
-                    }
+                        string branchGuid = Guid.NewGuid().ToString().Substring(0, 8);
+                        string gitUserName = GetGitOwnerName(config);
+                        string gitUserEmail = GetGitOwnerEmail(config);
+                        GitHandler.Run($"branch {branchGuid}", config);
+                        GitHandler.Run($"checkout {branchGuid}", config);
+                        GitHandler.Run($"add -A .", config);
+                        GitHandler.Run($"-c user.name=\"{gitUserName}\" -c user.email=\"{gitUserEmail}\" commit --no-gpg-sign -m \"Automatic asset update from test-proxy.\"", config);
+                        // Get the first 10 digits of the commit SHA. The generatedTagName will be the
+                        // config.TagPrefix_<SHA>
+                        if (GitHandler.TryRun("rev-parse --short=10 HEAD", config.AssetsRepoLocation.ToString(), out CommandResult SHAResult))
+                        {
+                            var newSHA = SHAResult.StdOut.Trim();
+                            generatedTagName += $"_{newSHA}";
+                        }
+                        else
+                        {
+                            throw GenerateInvokeException(SHAResult);
+                        }
 
-                    GitHandler.Run($"tag --no-sign {generatedTagName}", config);
+                        GitHandler.Run($"tag --no-sign {generatedTagName}", config);
 
-                    var remoteResult = GitHandler.Run($"ls-remote origin --tags {generatedTagName}", config);
+                        var remoteResult = GitHandler.Run($"ls-remote origin --tags {generatedTagName}", config);
 
-                    if (string.IsNullOrWhiteSpace(remoteResult.StdOut))
-                    {
-                        GitHandler.Run($"push origin {generatedTagName}", config);
+                        if (string.IsNullOrWhiteSpace(remoteResult.StdOut))
+                        {
+                            GitHandler.Run($"push origin {generatedTagName}", config);
+                        }
+                        else
+                        {
+                            _consoleWrapper.WriteLine($"Not attempting to push tag '{generatedTagName}', as it already exists within the assets repo");
+                        }
                     }
-                    else
+                    catch (GitProcessException e)
                     {
-                        _consoleWrapper.WriteLine($"Not attempting to push tag '{generatedTagName}', as it already exists within the assets repo");
+                        HideOrigin(config);
+
+                        // the only executions that have a real chance of failing are
+                        // - ls-remote origin
+                        // - push
+                        // if we have a failure on either of these, we need to unstage our changes for an easy re-attempt at pushing.
+                        GitHandler.TryRun("reset --soft HEAD^", config.AssetsRepoLocation.ToString(), out CommandResult ResetResult);
+
+                        throw GenerateInvokeException(e.Result);
                     }
+                    await UpdateAssetsJson(generatedTagName, config);
+                    await BreadCrumb.Update(config);
                 }
-                catch(GitProcessException e)
-                {
-                    HideOrigin(config);
-
-                    // the only executions that have a real chance of failing are
-                    // - ls-remote origin
-                    // - push
-                    // if we have a failure on either of these, we need to unstage our changes for an easy re-attempt at pushing.
-                    GitHandler.TryRun("reset --soft HEAD^", config.AssetsRepoLocation.ToString(), out CommandResult ResetResult);
-
-                    throw GenerateInvokeException(e.Result);
-                }
-                await UpdateAssetsJson(generatedTagName, config);
-                await BreadCrumb.Update(config);
             }
 
             HideOrigin(config);
