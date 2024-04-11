@@ -28,24 +28,24 @@ There's a default issue text inside `Program.cs`, so `--question` is optional.
 2. To index existing issues (created by customers, closed, marked with `issue-addressed`) in the dotnet repo, do
 
 ```bash
-dotnet run --command index --language dotnet --mode issues
+dotnet run --command index --language dotnet --mode AddressedIssues
 ```
 
 Only `dotnet` and `java` are supported.
 
-3. As a variation, you can index all issues marked with `reference-issue` with
+3. Or you can index all issues marked with `reference-issue` with
 
 ```bash
-dotnet run --command index --language java --mode reference-issues
+dotnet run --command index --language java --mode ReferenceIssues
 ```
 
 4. To index all markdown docs in the path (except CHANGELOG, CONTRIBUTING, swaggers)
 
 ```bash
-dotnet run --command index --language java --mode docs --path c:\repo\azure-sdk-for-java\sdk
+dotnet run --command index --language java --mode Docs --path c:\repo\azure-sdk-for-java\sdk
 ```
 
-> Note: when indexing data, existing index with provided name is deleted first. If you want to preserve the index, pass `--keep-index`
+> Note: when indexing data, it's added to the existing index. If you want to clean the index first, pass `--drop-index`.
 
 You can always get cli help with `dotnet run -- -h`
 

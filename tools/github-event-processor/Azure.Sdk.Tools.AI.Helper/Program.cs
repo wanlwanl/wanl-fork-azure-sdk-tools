@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using Azure.Sdk.Tools.AI.Helper.KnowledgeBase;
 using CommandLine;
@@ -22,14 +23,14 @@ internal class Program
         [Option('c', "command", HelpText = "Select command, one of: `index`, `query`", Required = true)]
         public string? Command { get; set; }
 
-        [Option('m', "mode", HelpText = "Select indexing data subset: one of `issues`, `docs`, `reference-issues`")]
-        public string? Mode { get; set; }
+        [Option('m', "mode", HelpText = "Select indexing data subset: one of `Docs`, `ReferenceIssues`, `AddressedIssues`, `ClosedIssues`", Default = IndexMode.ClosedIssues)]
+        public IndexMode Mode { get; set; }
 
         [Option('p', "path", HelpText = "When indexing markdown documents, path to the root - all md files except changelogs, swaggers, contributing will be indexed recursively")]
         public string? Path { get; set; }
 
-        [Option('k', "keep-index", HelpText = "Keep existing index. Defaults to false", Default = false)]
-        public bool KeepIndex { get; set; }
+        [Option('k', "drop-index", HelpText = "Drop existing index. Defaults to false", Default = false)]
+        public bool DropIndex { get; set; }
 
         [Option('q', "question", HelpText = "Issue description to get bot suggestion for")]
         public string? Question { get; set; }
@@ -64,13 +65,13 @@ internal class Program
         }
         else if (options.Command == "index")
         {
-            if (options.Mode == "issues" || options.Mode == "reference-issues")
-            {
-                await IndexIssues(cloudMineConfig, searchConfig, openAiConfig, loggerFactory, options);
-            }
-            else if (options.Mode == "docs")
+            if (options.Mode == IndexMode.Docs)
             {
                 await IndexDocs(searchConfig, openAiConfig, loggerFactory, options);
+            } 
+            else
+            {
+                await IndexIssues(cloudMineConfig, searchConfig, openAiConfig, loggerFactory, options);
             }
         }
         else
@@ -82,7 +83,7 @@ internal class Program
     private static async Task IndexIssues(CloudMineConfig cloudMineConfig, SearchConfig searchConfig, OpenAiConfig openAiConfig, ILoggerFactory loggerFactory, ConsoleOptions options)
     {
         var cloudMineIndexer = new CloudMineIndexer(cloudMineConfig, searchConfig, openAiConfig, GetRepoName(options), loggerFactory);
-        if (!options.KeepIndex)
+        if (options.DropIndex)
         {
             await cloudMineIndexer.DeleteIndex();
         }
@@ -92,7 +93,7 @@ internal class Program
     private static async Task IndexDocs(SearchConfig searchConfig, OpenAiConfig openAiConfig, ILoggerFactory loggerFactory, ConsoleOptions options)
     {
         var mdIndexer = new MarkdownFileIndexer(searchConfig, openAiConfig, GetRepoName(options), loggerFactory);
-        if (!options.KeepIndex)
+        if (options.DropIndex)
         {
             await mdIndexer.DeleteIndex();
         }

@@ -52,26 +52,26 @@ public class DocumentIndexer
     public async Task CreateIndex()
     {
         string vectorSearchConfigName = "my-vector-config";
+        string vectorSearchHnswConfig = "my-hsnw-vector-config";
         var index = new SearchIndex(_indexName)
         {
            Fields =
            {
                 new SimpleField("Id", SearchFieldDataType.String) { IsKey = true, IsFilterable = true },
                 new SearchableField("Content") { IsFilterable = true },
-                new SearchField("ContentVector", SearchFieldDataType.Collection(SearchFieldDataType.Single))
-                {
-                    IsSearchable = true,
-                    VectorSearchDimensions = 1536,
-                    VectorSearchConfiguration = vectorSearchConfigName
-                },
+                new VectorSearchField("ContentVector", 1536, vectorSearchConfigName),
                 new SearchableField("Source") { IsFilterable = true, IsSortable = true, IsFacetable = true},
                 new SearchableField("Title") { IsFilterable = true, IsSortable = true, IsFacetable = true},
            },
            VectorSearch = new()
            {
-               AlgorithmConfigurations =
+               Profiles =
                {
-                   new HnswVectorSearchAlgorithmConfiguration(vectorSearchConfigName)
+                    new VectorSearchProfile(vectorSearchConfigName, vectorSearchHnswConfig)
+               },
+               Algorithms =
+               {
+                   new HnswAlgorithmConfiguration(vectorSearchHnswConfig)
                }
            }
         };
@@ -116,7 +116,9 @@ public class DocumentIndexer
 
     private async Task<IReadOnlyList<float>> Vectorize(string text)
     {
-        var embeddings = await _openAi.GetEmbeddingsAsync(_embeddingsModel, new EmbeddingsOptions(text));
+        text = text.Replace('\n', ' ').Replace('\r', ' ');
+
+        var embeddings = await _openAi.GetEmbeddingsAsync(_embeddingsModel, new EmbeddingsOptions(new[] { text }));
 
         return embeddings.Value.Data[0].Embedding;
     }
@@ -192,7 +194,6 @@ public class DocumentIndexer
 
     public class Document
     {
-        internal const string Separator = "\n~~~END~~~\n";
         internal static readonly string RepoUrl = $"https://github.com/Azure/";
         internal static readonly char[] EndOfLine = new[] { '\n', '\r' };
 
@@ -238,7 +239,7 @@ public class DocumentIndexer
             var content = new StringBuilder()
                 .AppendLine(issue.Title)
                 .AppendFormat("Customer: {0} ", description.Trim())
-                .Append(Separator);
+                .Append("\n");
 
             foreach (IssueComment comment in issue.Comments!)
             {
@@ -251,7 +252,7 @@ public class DocumentIndexer
                     content.Append("Customer: ");
                 }
 
-                content.Append(comment.Comment?.Trim()).Append(Separator);
+                content.Append(comment.Comment?.Trim()).Append("\n");
             }
 
             return content.ToString();

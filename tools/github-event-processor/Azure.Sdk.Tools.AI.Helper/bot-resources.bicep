@@ -8,7 +8,7 @@ param location string = resourceGroup().location
 param embeddingsCapacity int = 20
 param inferenceCapacity int = 10
 
-var embeddingModelName = 'text-embedding-3-small'
+var embeddingModelName = 'text-embedding-ada-002'
 var inferenceModelName = 'gpt-4'
 
 var openAiDeployments = [
