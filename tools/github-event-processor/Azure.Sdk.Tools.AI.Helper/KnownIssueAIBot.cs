@@ -41,11 +41,8 @@ You should return a known solution and your confidence level on a scale of 10 th
     {
         var parameters = new
         {
+            embeddingDeploymentName = openAiConfig.EmbeddingModel,
             endpoint = searchConfig.Endpoint,
-            key = searchConfig.Key,
-            embeddingEndpoint = openAiConfig.Endpoint! + $"openai/deployments/{openAiConfig.EmbeddingModel}/embeddings?api-version=2023-03-15-preview",
-            embeddingKey = openAiConfig.Key,
-            indexName = searchConfig.IndexName,
             fieldsMapping = new
             {
                 contentFields = new[] { "Content" },
@@ -53,10 +50,14 @@ You should return a known solution and your confidence level on a scale of 10 th
                 urlField = "Source",
                 titleField = "Title"
             },
+            inScope = true,
+            indexName = searchConfig.IndexName,
+            key = searchConfig.Key,
             queryType = "vector",
             roleInformation = Prompt,
             topNDocuments = 3,
-            strictness = 3
+            strictness = 3,
+            semanticConfiguration = "default",
         };
 
         return new AzureChatExtensionConfiguration(AzureChatExtensionType.AzureCognitiveSearch,
