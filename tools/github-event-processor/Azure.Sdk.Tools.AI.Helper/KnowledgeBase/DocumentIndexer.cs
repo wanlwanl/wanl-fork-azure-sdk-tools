@@ -241,18 +241,21 @@ public class DocumentIndexer
                 .AppendFormat("Customer: {0} ", description.Trim())
                 .Append("\n");
 
-            foreach (IssueComment comment in issue.Comments!)
+            if (issue.Comments != null)
             {
-                if (comment.AuthorIsInAzureOrg == true)
+                foreach (IssueComment comment in issue.Comments)
                 {
-                    content.Append("Agent: ");
-                }
-                else
-                {
-                    content.Append("Customer: ");
-                }
+                    if (comment.AuthorIsInAzureOrg == true)
+                    {
+                        content.Append("Agent: ");
+                    }
+                    else
+                    {
+                        content.Append("Customer: ");
+                    }
 
-                content.Append(comment.Comment?.Trim()).Append("\n");
+                    content.Append(comment.Comment?.Trim()).Append("\n");
+                }
             }
 
             return content.ToString();
