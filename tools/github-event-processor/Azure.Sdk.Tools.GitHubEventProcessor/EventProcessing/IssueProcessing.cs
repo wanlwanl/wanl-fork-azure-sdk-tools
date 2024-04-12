@@ -23,6 +23,7 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
         public static async Task ProcessIssueEvent(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload)
         {
             await InitialIssueTriage(gitHubEventClient, issueEventPayload);
+            await IndexReferenceIssue(gitHubEventClient, issueEventPayload);
             await GetAiBotSuggestion(gitHubEventClient, issueEventPayload, default);
             ManualIssueTriage(gitHubEventClient, issueEventPayload);
             ServiceAttention(gitHubEventClient, issueEventPayload);
@@ -236,15 +237,11 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
         {
             if (gitHubEventClient.RulesConfiguration.RuleEnabled(RulesConstants.AiBotSuggestions))
             {
-                if (issueEventPayload.Action == ActionConstants.Opened)
+                if (issueEventPayload.Action == ActionConstants.Labeled && issueEventPayload.Label.Name == TriageLabelConstants.CustomerReported && issueEventPayload.Issue.State == ItemState.Open)
                 {
-                    if (issueEventPayload.Issue.State == ItemState.Open /*&&
-                        issueEventPayload.Label.Name == LabelConstants.CustomerReported*/)
-                    {
-                        var knownIssueBot = new KnownIssueAIBot(new OpenAiConfig(), new SearchConfig());
-                        var suggestion = await knownIssueBot.GetSuggestionAsync(FormatIssue(issueEventPayload), cancellationToken);
-                        gitHubEventClient.CreateComment(issueEventPayload.Repository.Id, issueEventPayload.Issue.Number, suggestion.ToComment(issueEventPayload.Issue.User.Login));
-                    }
+                    var knownIssueBot = new KnownIssueAIBot(new OpenAiConfig(), new SearchConfig());
+                    var suggestion = await knownIssueBot.GetSuggestionAsync(FormatIssue(issueEventPayload), cancellationToken);
+                    gitHubEventClient.CreateComment(issueEventPayload.Repository.Id, issueEventPayload.Issue.Number, suggestion.ToComment(issueEventPayload.Issue.User.Login));
                 }
             }
         }
@@ -262,11 +259,11 @@ namespace Azure.Sdk.Tools.GitHubEventProcessor.EventProcessing
         }
 
 
-        public static async Task IndexReferenceInssue(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload)
+        public static async Task IndexReferenceIssue(GitHubEventClient gitHubEventClient, IssueEventGitHubPayload issueEventPayload)
         {
             if (gitHubEventClient.RulesConfiguration.RuleEnabled(RulesConstants.ReferenceIssueIndexer))
             {
-                if (issueEventPayload.Action == ActionConstants.Labeled && issueEventPayload.Issue.State == ItemState.Open && issueEventPayload.Label.Name == TriageLabelConstants.ReferenceIssue)
+                if (issueEventPayload.Action == ActionConstants.Labeled && issueEventPayload.Label.Name == TriageLabelConstants.ReferenceIssue && issueEventPayload.Issue.State == ItemState.Open)
                 {
                     var indexer = new AI.Helper.KnowledgeBase.ReferenceIssueIndexer(new SearchConfig(), new OpenAiConfig(), issueEventPayload.Repository.Name, null);
                     var issue = new AI.Helper.KnowledgeBase.Issue()

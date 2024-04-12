@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using Azure.Sdk.Tools.AI.Helper.KnowledgeBase;
 using CommandLine;
