@@ -450,7 +450,7 @@ stages:
         } elseif ($sourceBranch -match "^refs/tags/(.+)$") {
           $prBody = "Triggered from tag: [$($Matches[1])]($repoUrl/tree/$sourceBranch)"
         } elseif ($sourceBranch -match "^refs/pull/(\d+)/(head|merge)$") {
-          $prBody = "Triggered from pull request: [$($Matches[1])]($repoUrl/pull/$($Matches[1]))"
+          $prBody = "Triggered from pull request: $repoUrl/pull/$($Matches[1])"
         } else {
           $prBody = "Triggered from [$sourceBranch]($repoUrl/tree/$sourceBranch)"
         }
