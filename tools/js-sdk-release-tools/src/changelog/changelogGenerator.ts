@@ -7,6 +7,7 @@ import {
 import { IntersectionDeclaration } from "parse-ts-to-ast/build/declarations/IntersectionDeclaration";
 import { TypeLiteralDeclaration } from "parse-ts-to-ast/build/declarations/TypeLiteralDeclaration";
 import { TSExportedMetaData } from "./extractMetaData";
+import { StringMap } from "@azure-tools/openapi-tools-common";
 
 export class Changelog {
     // features
@@ -41,6 +42,9 @@ export class Changelog {
     public removedEnum: string[] = [];
     public removedEnumValue: string[] = [];
     public removedFunction: string[] = [];
+
+    // other
+    public subPathChangelogs: StringMap<Changelog> = {};
 
     public get hasBreakingChange() {
         return this.removedOperationGroup.length > 0 ||

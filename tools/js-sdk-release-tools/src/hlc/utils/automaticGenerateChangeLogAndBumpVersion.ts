@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import shell from 'shelljs';
 
-import {extractExportAndGenerateChangelog, readAllSourcesFromApiReports, readSourceAndExtractMetaData} from "../../changelog/extractMetaData";
+import {extractAllExportsAndGenerateChangelog, extractExportAndGenerateChangelog, readAllSourcesFromApiReports, readSourceAndExtractMetaData} from "../../changelog/extractMetaData";
 import {Changelog, changelogGenerator} from "../../changelog/changelogGenerator";
 import {NPMScope, NPMViewResult} from "@ts-common/azure-js-dev-tools";
 import {
@@ -61,10 +61,9 @@ export async function generateChangelogAndBumpVersion(packageFolderPath: string)
                 logger.log(`Package ${packageName} released before is track2 sdk`);
                 logger.log('Generating changelog by comparing api.md...');
                 const npmPackageRoot = path.join(packageFolderPath, 'changelog-temp', 'package');
-                const apiMdFileNPM = getApiReviewPath(npmPackageRoot);
-                const apiMdFileLocal = getApiReviewPath(packageFolderPath);
-                const x = await readAllSourcesFromApiReports(packageFolderPath);
-                const changelog: Changelog = await extractExportAndGenerateChangelog(apiMdFileNPM, apiMdFileLocal);
+                const newReviewPath = path.join(packageFolderPath, 'review');
+                const oldReviewPath = path.join(npmPackageRoot, 'review');
+                const changelog: Changelog = await extractAllExportsAndGenerateChangelog(oldReviewPath, newReviewPath);
                 let originalChangeLogContent = fs.readFileSync(path.join(packageFolderPath, 'changelog-temp', 'package', 'CHANGELOG.md'), {encoding: 'utf-8'});
                 if(nextVersion){
                     shell.cd(path.join(packageFolderPath, 'changelog-temp'));
