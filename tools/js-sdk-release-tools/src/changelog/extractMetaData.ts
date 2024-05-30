@@ -4,10 +4,10 @@ import { FunctionDeclaration, TypescriptParser } from "parse-ts-to-ast";
 import { ClassDeclaration, EnumDeclaration, InterfaceDeclaration, TypeAliasDeclaration } from "parse-ts-to-ast";
 import { Changelog, changelogGenerator } from "./changelogGenerator";
 import { logger } from "../utils/logger";
-import path from "path";
-import { getSDKType } from "../common/utils";
+import path, { basename } from "path";
+import { getNpmPackageName, getRootApiReviewPath, getSDKType } from "../common/utils";
 import { SDKType } from "../common/types";
-import { SdkType } from "../utils/changeConfigOfTestAndSample";
+import { StringMap } from "@azure-tools/openapi-tools-common";
 
 export class TSExportedMetaData {
     public typeAlias = {};
@@ -54,10 +54,38 @@ const extractMetaData = async (code: string, metaData: TSExportedMetaData) => {
     });
 };
 
-const getApiViews = async (reviewPath: string): Promise<string[]> => {
+const getSubApiViewPaths = async (reviewPath: string, packageName: string): Promise<string[]> => {
     const pattern = path.posix.join(reviewPath, '**/*.md');
-    const apiReports = await glob(pattern);
-    return apiReports;
+    const reportPaths = (await glob(pattern)).filter(p => {
+        const nameWithoutExtension = path.parse(p).name;
+        return packageName !== nameWithoutExtension;
+    });
+    return reportPaths;
+}
+
+const createSubChangelogsCore = async(toScanMap: StringMap<string>, toCheckMap: StringMap<string>, handledNames: Set<string>):  Promise<Array<Changelog>>=> {
+    const changelogs = new Array<Changelog>();
+    for (const scanName in Object.keys(toScanMap)) {
+        if (handledNames.has(scanName)) {continue;}
+        handledNames.add(scanName);
+        const scanPath = toScanMap[scanName];
+        const scanData = await readSourceAndExtractMetaData(scanPath!);
+        let checkData =   new TSExportedMetaData();
+        if (scanName in toCheckMap) { 
+            const checkPath = toCheckMap[scanName];
+            checkData = await readSourceAndExtractMetaData(checkPath!);
+        }
+        const changeLog = changelogGenerator(scanData, checkData);
+        changelogs.push(changeLog);
+    }
+    return changelogs;
+}
+
+const createSubChangelogs = async(oldMap: StringMap<string>, newMap: StringMap<string>, handledNames: Set<string>):  Promise<Array<Changelog>>=> {
+    const changelogs = [
+        ...await createSubChangelogsCore(oldMap, newMap, handledNames), 
+        ...await createSubChangelogsCore(newMap, oldMap, handledNames)];
+    return changelogs;
 }
 
 export const readAllSourcesFromApiReports = async (reviewPath: string): Promise<TSExportedMetaData> => {
@@ -95,11 +123,30 @@ export const extractNonModulerClientExportAndGenerateChangelog = async (mdFilePa
     return changeLog;
 }
 
+export const extractSubModularClientExportAndGenerateChangelog = async (packageName: string, oldSubApiViewPaths: Array<string>, newSubApiViewPaths: Array<string>) => {
+    const oldMap = oldSubApiViewPaths.reduce((map, p) => {
+        const fileName = path.basename(p);
+        map[fileName] = p;
+        return map;
+    }, {});
+    const newMap = newSubApiViewPaths.reduce((map, p) => {
+        const fileName = path.basename(p);
+        map[fileName] = p;
+        return map;
+    }, {});
+    
+    const handledNames = new Set<string>();
+    const subChangelogs = createSubChangelogs(oldMap, newMap, handledNames);
+    return subChangelogs;
+}
+
 export const extractExportAndGenerateChangelog = async (oldPackageRoot: string, newPackageRoot: string) => {
     const oldSdkType = getSDKType(oldPackageRoot);
     const newSdkType = getSDKType(newPackageRoot);
 
-    6
+    const newApiReviewPath = getRootApiReviewPath(newPackageRoot);
+    const oldApiReviewPath = getRootApiReviewPath(oldPackageRoot);
+
     if (oldSdkType !== newSdkType) {
         if (oldSdkType !== SDKType.HighLevelClient || newSdkType !== SDKType.ModularClient) {
             throw new Error(
@@ -109,20 +156,24 @@ export const extractExportAndGenerateChangelog = async (oldPackageRoot: string, 
                 `${SDKType.RestLevelClient} -> ${SDKType.RestLevelClient}\n` +
                 `${SDKType.ModularClient} -> ${SDKType.ModularClient}\n` +
                 `${SDKType.HighLevelClient} -> ${SDKType.HighLevelClient}\n`);
-            }
-            
+        }
+
         // oldSdkType === SDKType.HighLevelClient && newSdkType === SDKType.ModularClient
-        // TODO
+        const changelog = await extractNonModulerClientExportAndGenerateChangelog(oldApiReviewPath, newApiReviewPath);
+        return changelog;
     }
 
     // oldSdkType === newSdkType
     if (newSdkType !== SDKType.ModularClient) {
-        const newReviewPath = path.join(newPackageRoot, 'review');
-        const oldReviewPath = path.join(oldPackageRoot, 'review');
-        const changelog = await extractNonModulerClientExportAndGenerateChangelog(oldReviewPath, newReviewPath);
+        const changelog = await extractNonModulerClientExportAndGenerateChangelog(oldApiReviewPath, newApiReviewPath);
         return changelog;
     }
 
     // oldSdkType === newSdkType === SDKType.ModularClient
-
+    const packageName = getNpmPackageName(oldPackageRoot);
+    const getReviewFolderPath = (root: string) => path.join(root, 'review');
+    const oldSubApiViewPaths = await getSubApiViewPaths(getReviewFolderPath(oldPackageRoot), packageName);
+    const newSubApiViewPaths = await getSubApiViewPaths(getReviewFolderPath(newPackageRoot), packageName);
+    const subChangelogs = await extractSubModularClientExportAndGenerateChangelog(packageName, oldSubApiViewPaths, newSubApiViewPaths);
+    const rootChangelog = 
 };

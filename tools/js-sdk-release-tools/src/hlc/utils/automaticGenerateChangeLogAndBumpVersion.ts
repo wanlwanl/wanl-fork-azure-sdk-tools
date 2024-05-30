@@ -22,7 +22,7 @@ import {execSync} from "child_process";
 import { getversionDate } from "../../utils/version";
 import { ApiVersionType } from "../../common/types"
 import { getApiVersionType } from '../../xlc/apiVersion/apiVersionTypeExtractor'
-import { getApiReviewPath, getNpmPackageName } from '../../common/utils';
+import { getRootApiReviewPath, getNpmPackageName } from '../../common/utils';
 
 export async function generateChangelogAndBumpVersion(packageFolderPath: string) {
     const jsSdkRepoPath = String(shell.pwd());

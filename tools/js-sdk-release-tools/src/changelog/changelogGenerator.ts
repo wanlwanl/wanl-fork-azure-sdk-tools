@@ -44,7 +44,7 @@ export class Changelog {
     public removedFunction: string[] = [];
 
     // other
-    public subPathChangelogs: StringMap<Changelog> = {};
+    public subPathChangelogs: StringMap<Changelog> = {}; // key: api report name
 
     public get hasBreakingChange() {
         return this.removedOperationGroup.length > 0 ||
