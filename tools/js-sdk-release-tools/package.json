@@ -24,6 +24,7 @@
     "colors": "1.4.0",
     "command-line-args": "^5.1.1",
     "comment-json": "^4.1.0",
+    "glob": "^10.4.1",
     "js-yaml": "^4.1.0",
     "parse-ts-to-ast": "^0.1.1",
     "semver": "^7.3.5",

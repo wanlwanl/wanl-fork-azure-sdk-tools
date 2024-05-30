@@ -1,8 +1,10 @@
 import * as openapiToolsCommon from "@azure-tools/openapi-tools-common";
+import { glob, globSync, globStream, globStreamSync, Glob } from 'glob'
 import { FunctionDeclaration, TypescriptParser } from "parse-ts-to-ast";
 import {ClassDeclaration, EnumDeclaration, InterfaceDeclaration, TypeAliasDeclaration} from "parse-ts-to-ast";
 import {changelogGenerator} from "./changelogGenerator";
 import {logger} from "../utils/logger";
+import path from "path";
 
 export class TSExportedMetaData {
     public typeAlias = {};
@@ -48,6 +50,23 @@ const extractMetaData = async (code: string, metaData: TSExportedMetaData) => {
         }
     });
 };
+
+export const readAllSourcesFromApiReports = async (packageRoot: string): Promise<TSExportedMetaData> => {
+    const pattern = path.posix.join(packageRoot, 'review/**/*.md');
+    const apiReports = await glob(pattern);
+    const extractDataTasks =  apiReports.map(async report => await readSourceAndExtractMetaData(report));
+    const dataList = await Promise.all(extractDataTasks);
+    const allData = dataList.reduce((all, data) => {
+        all.typeAlias = { ...all.typeAlias, ...data.typeAlias };
+        all.operationInterface = { ...all.operationInterface, ...data.operationInterface };
+        all.modelInterface = { ...all.modelInterface, ...data.modelInterface };
+        all.classes = { ...all.classes, ...data.classes };
+        all.enums = { ...all.enums, ...data.enums };
+        all.functions = { ...all.functions, ...data.functions };
+        return all;
+    }, new TSExportedMetaData());
+    return allData;
+}
 
 export const readSourceAndExtractMetaData = async (mdFilePath: string) => {
     const metaData = new TSExportedMetaData();

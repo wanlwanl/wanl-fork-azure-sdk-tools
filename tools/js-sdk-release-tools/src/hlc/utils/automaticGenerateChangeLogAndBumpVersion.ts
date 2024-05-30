@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import shell from 'shelljs';
 
-import {extractExportAndGenerateChangelog, readSourceAndExtractMetaData} from "../../changelog/extractMetaData";
+import {extractExportAndGenerateChangelog, readAllSourcesFromApiReports, readSourceAndExtractMetaData} from "../../changelog/extractMetaData";
 import {Changelog, changelogGenerator} from "../../changelog/changelogGenerator";
 import {NPMScope, NPMViewResult} from "@ts-common/azure-js-dev-tools";
 import {
@@ -63,6 +63,7 @@ export async function generateChangelogAndBumpVersion(packageFolderPath: string)
                 const npmPackageRoot = path.join(packageFolderPath, 'changelog-temp', 'package');
                 const apiMdFileNPM = getApiReviewPath(npmPackageRoot);
                 const apiMdFileLocal = getApiReviewPath(packageFolderPath);
+                const x = await readAllSourcesFromApiReports(packageFolderPath);
                 const changelog: Changelog = await extractExportAndGenerateChangelog(apiMdFileNPM, apiMdFileLocal);
                 let originalChangeLogContent = fs.readFileSync(path.join(packageFolderPath, 'changelog-temp', 'package', 'CHANGELOG.md'), {encoding: 'utf-8'});
                 if(nextVersion){
