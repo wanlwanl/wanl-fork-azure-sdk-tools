@@ -63,28 +63,27 @@ const getSubApiViewPaths = async (reviewPath: string, packageName: string): Prom
     return reportPaths;
 }
 
-const createSubChangelogsCore = async(toScanMap: StringMap<string>, toCheckMap: StringMap<string>, handledNames: Set<string>):  Promise<Array<Changelog>>=> {
-    const changelogs = new Array<Changelog>();
-    for (const scanName in Object.keys(toScanMap)) {
-        if (handledNames.has(scanName)) {continue;}
-        handledNames.add(scanName);
-        const scanPath = toScanMap[scanName];
-        const scanData = await readSourceAndExtractMetaData(scanPath!);
-        let checkData =   new TSExportedMetaData();
-        if (scanName in toCheckMap) { 
-            const checkPath = toCheckMap[scanName];
-            checkData = await readSourceAndExtractMetaData(checkPath!);
-        }
-        const changeLog = changelogGenerator(scanData, checkData);
-        changelogs.push(changeLog);
+const createSubChangelogsCore = async (apiViewName: string, oldApiViewNamePathMap: {[id: string] : string;}, 
+    newApiViewNamePathMap: {[id: string] : string;}): Promise<Changelog> => {
+    if (!(apiViewName in oldApiViewNamePathMap) || !(apiViewName in newApiViewNamePathMap)) { return new Changelog();}
+    const oldApiViewPath = oldApiViewNamePathMap[apiViewName];
+    const newApiViewPath = newApiViewNamePathMap[apiViewName];
+    try {
+        const changelog = await extractSingleApiViewExportAndGenerateChangelog(oldApiViewPath, newApiViewPath);
+        return changelog;
+    } catch (err) {
+        logger.logError(`Failed to generate changelog for ${apiViewName}.api.md`);
+        throw err;
     }
-    return changelogs;
 }
 
-const createSubChangelogs = async(oldMap: StringMap<string>, newMap: StringMap<string>, handledNames: Set<string>):  Promise<Array<Changelog>>=> {
-    const changelogs = [
-        ...await createSubChangelogsCore(oldMap, newMap, handledNames), 
-        ...await createSubChangelogsCore(newMap, oldMap, handledNames)];
+const createSubChangelogs = async (oldApiViewNamePathMap: {[id: string] : string;}, newApiViewNamePathMap: {[id: string] : string;}):  Promise<{[id: string]: Changelog;}>=> {
+    const allApiViewNames = new Set<string>([...Object.keys(oldApiViewNamePathMap), ...Object.keys(newApiViewNamePathMap)]);
+    const changelogs = [...allApiViewNames].reduce(async (dict, apiViewName) => {
+        var changelog = await createSubChangelogsCore(apiViewName, oldApiViewNamePathMap, newApiViewNamePathMap);
+        dict[apiViewName] = changelog;
+        return dict;
+    }, {});
     return changelogs;
 }
 
@@ -115,7 +114,7 @@ export const readSourceAndExtractMetaData = async (mdFilePath: string) => {
     return metaData;
 };
 
-export const extractNonModulerClientExportAndGenerateChangelog = async (mdFilePathOld: string, mdFilePathNew: string) => {
+export const extractSingleApiViewExportAndGenerateChangelog = async (mdFilePathOld: string, mdFilePathNew: string) => {
     const metaDataOld = await readSourceAndExtractMetaData(mdFilePathOld);
     const metaDataNew = await readSourceAndExtractMetaData(mdFilePathNew);
     const changeLog = changelogGenerator(metaDataOld, metaDataNew);
@@ -123,24 +122,23 @@ export const extractNonModulerClientExportAndGenerateChangelog = async (mdFilePa
     return changeLog;
 }
 
-export const extractSubModularClientExportAndGenerateChangelog = async (packageName: string, oldSubApiViewPaths: Array<string>, newSubApiViewPaths: Array<string>) => {
-    const oldMap = oldSubApiViewPaths.reduce((map, p) => {
+export const extractSubModularClientExportAndGenerateChangelog = async (oldSubApiViewPaths: Array<string>, newSubApiViewPaths: Array<string>) => {
+    const oldApiViewNamePathMap = oldSubApiViewPaths.reduce((map, p) => {
         const fileName = path.basename(p);
         map[fileName] = p;
         return map;
     }, {});
-    const newMap = newSubApiViewPaths.reduce((map, p) => {
+    const newApiViewNamePathMap = newSubApiViewPaths.reduce((map, p) => {
         const fileName = path.basename(p);
         map[fileName] = p;
         return map;
     }, {});
     
-    const handledNames = new Set<string>();
-    const subChangelogs = createSubChangelogs(oldMap, newMap, handledNames);
+    const subChangelogs = createSubChangelogs(oldApiViewNamePathMap, newApiViewNamePathMap);
     return subChangelogs;
 }
 
-export const extractExportAndGenerateChangelog = async (oldPackageRoot: string, newPackageRoot: string) => {
+export const extractExportAndGenerateChangelog = async (oldPackageRoot: string, newPackageRoot: string): Promise<Changelog> => {
     const oldSdkType = getSDKType(oldPackageRoot);
     const newSdkType = getSDKType(newPackageRoot);
 
@@ -159,13 +157,13 @@ export const extractExportAndGenerateChangelog = async (oldPackageRoot: string, 
         }
 
         // oldSdkType === SDKType.HighLevelClient && newSdkType === SDKType.ModularClient
-        const changelog = await extractNonModulerClientExportAndGenerateChangelog(oldApiReviewPath, newApiReviewPath);
+        const changelog = await extractSingleApiViewExportAndGenerateChangelog(oldApiReviewPath, newApiReviewPath);
         return changelog;
     }
 
     // oldSdkType === newSdkType
     if (newSdkType !== SDKType.ModularClient) {
-        const changelog = await extractNonModulerClientExportAndGenerateChangelog(oldApiReviewPath, newApiReviewPath);
+        const changelog = await extractSingleApiViewExportAndGenerateChangelog(oldApiReviewPath, newApiReviewPath);
         return changelog;
     }
 
@@ -174,6 +172,10 @@ export const extractExportAndGenerateChangelog = async (oldPackageRoot: string, 
     const getReviewFolderPath = (root: string) => path.join(root, 'review');
     const oldSubApiViewPaths = await getSubApiViewPaths(getReviewFolderPath(oldPackageRoot), packageName);
     const newSubApiViewPaths = await getSubApiViewPaths(getReviewFolderPath(newPackageRoot), packageName);
-    const subChangelogs = await extractSubModularClientExportAndGenerateChangelog(packageName, oldSubApiViewPaths, newSubApiViewPaths);
-    const rootChangelog = 
+    const subChangelogs = await extractSubModularClientExportAndGenerateChangelog(oldSubApiViewPaths, newSubApiViewPaths);
+    const oldRootApiViewPath = getRootApiReviewPath(oldPackageRoot);
+    const newRootApiViewPath = getRootApiReviewPath(newPackageRoot);
+    const rootChangelog = await extractSingleApiViewExportAndGenerateChangelog(oldRootApiViewPath, newRootApiViewPath);
+    rootChangelog.subPathChangelogs = subChangelogs;
+    return rootChangelog;
 };
