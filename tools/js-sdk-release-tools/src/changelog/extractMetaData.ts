@@ -1,5 +1,5 @@
 import * as openapiToolsCommon from "@azure-tools/openapi-tools-common";
-import { glob, globSync, globStream, globStreamSync, Glob } from 'glob'
+import { glob } from 'glob'
 import { FunctionDeclaration, TypescriptParser } from "parse-ts-to-ast";
 import { ClassDeclaration, EnumDeclaration, InterfaceDeclaration, TypeAliasDeclaration } from "parse-ts-to-ast";
 import { Changelog, changelogGenerator } from "./changelogGenerator";
@@ -7,7 +7,6 @@ import { logger } from "../utils/logger";
 import path, { basename } from "path";
 import { getNpmPackageName, getRootApiReviewPath, getSDKType } from "../common/utils";
 import { SDKType } from "../common/types";
-import { StringMap } from "@azure-tools/openapi-tools-common";
 
 export class TSExportedMetaData {
     public typeAlias = {};

@@ -7,7 +7,6 @@ import {
 import { IntersectionDeclaration } from "parse-ts-to-ast/build/declarations/IntersectionDeclaration";
 import { TypeLiteralDeclaration } from "parse-ts-to-ast/build/declarations/TypeLiteralDeclaration";
 import { TSExportedMetaData } from "./extractMetaData";
-import { StringMap } from "@azure-tools/openapi-tools-common";
 
 export class Changelog {
     // features
