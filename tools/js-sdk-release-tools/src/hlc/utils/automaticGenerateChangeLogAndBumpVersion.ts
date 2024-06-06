@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import shell from 'shelljs';
 
-import {extractAllExportsAndGenerateChangelog, extractExportAndGenerateChangelog, readAllSourcesFromApiReports, readSourceAndExtractMetaData} from "../../changelog/extractMetaData";
-import {Changelog, changelogGenerator} from "../../changelog/changelogGenerator";
+import {extractExportAndGenerateChangelog} from "../../changelog/extractMetaData";
+import {Changelog} from "../../changelog/changelogGenerator";
 import {NPMScope, NPMViewResult} from "@ts-common/azure-js-dev-tools";
 import {
     makeChangesForFirstRelease,
@@ -48,12 +48,13 @@ export async function generateChangelogAndBumpVersion(packageFolderPath: string)
         const usedVersions = npmViewResult['versions'];
         // in our rule, we always compare to stableVersion. But here wo should pay attention to the some stableVersion which contains beta, which means the package has not been GA.
         try {
-            shell.mkdir(path.join(packageFolderPath, 'changelog-temp'));
-            shell.cd(path.join(packageFolderPath, 'changelog-temp'));
-            shell.exec(`npm pack ${packageName}@${stableVersion}`);
-            const files = shell.ls('*.tgz');
-            shell.exec(`tar -xzf ${files[0]}`);
-            shell.cd(packageFolderPath);
+            // ---- debug
+            // shell.mkdir(path.join(packageFolderPath, 'changelog-temp'));
+            // shell.cd(path.join(packageFolderPath, 'changelog-temp'));
+            // shell.exec(`npm pack ${packageName}@${stableVersion}`);
+            // const files = shell.ls('*.tgz');
+            // shell.exec(`tar -xzf ${files[0]}`);
+            // shell.cd(packageFolderPath);
 
             // only track2 sdk includes sdk-type with value mgmt
             const sdkType = JSON.parse(fs.readFileSync(path.join(packageFolderPath, 'changelog-temp', 'package', 'package.json'), {encoding: 'utf-8'}))['sdk-type'];
@@ -61,9 +62,7 @@ export async function generateChangelogAndBumpVersion(packageFolderPath: string)
                 logger.log(`Package ${packageName} released before is track2 sdk`);
                 logger.log('Generating changelog by comparing api.md...');
                 const npmPackageRoot = path.join(packageFolderPath, 'changelog-temp', 'package');
-                const newReviewPath = path.join(packageFolderPath, 'review');
-                const oldReviewPath = path.join(npmPackageRoot, 'review');
-                const changelog: Changelog = await extractAllExportsAndGenerateChangelog(oldReviewPath, newReviewPath);
+                const changelog: Changelog = await extractExportAndGenerateChangelog(npmPackageRoot, packageFolderPath);
                 let originalChangeLogContent = fs.readFileSync(path.join(packageFolderPath, 'changelog-temp', 'package', 'CHANGELOG.md'), {encoding: 'utf-8'});
                 if(nextVersion){
                     shell.cd(path.join(packageFolderPath, 'changelog-temp'));

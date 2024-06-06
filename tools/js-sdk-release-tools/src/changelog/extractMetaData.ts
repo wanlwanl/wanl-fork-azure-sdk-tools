@@ -48,7 +48,10 @@ const extractMetaData = async (code: string, metaData: TSExportedMetaData) => {
                 metaData.modelInterface[declartion.name] = declartion;
             }
         } else if (declartion instanceof FunctionDeclaration) {
-            metaData.functions[declartion.name] = declartion;
+            console.log('function name', declartion)
+            if (!declartion.name.startsWith('_')) {
+                metaData.functions[declartion.name] = declartion;
+            }
         }
     });
 };
