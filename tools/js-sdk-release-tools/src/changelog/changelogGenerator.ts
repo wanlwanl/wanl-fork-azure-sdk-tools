@@ -1012,7 +1012,6 @@ const findRemovedFunction = (metaDataOld: TSExportedMetaData, metaDataNew: TSExp
     return removedFunction;
 };
 
-
 export const changelogGenerator = (metaDataOld: TSExportedMetaData, metadataNew: TSExportedMetaData): Changelog => {
     const changLog = new Changelog();
 

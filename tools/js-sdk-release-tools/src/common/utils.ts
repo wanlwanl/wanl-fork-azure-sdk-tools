@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 
 import { SDKType } from './types'
-import { logger } from "../utils/logger";
 import { Project, ScriptTarget, SourceFile } from 'ts-morph';
 
 export function getClassicClientParametersPath(packageRoot: string): string {
@@ -11,11 +10,18 @@ export function getClassicClientParametersPath(packageRoot: string): string {
 }
 
 export function getSDKType(packageRoot: string): SDKType {
-    const paraPath = getClassicClientParametersPath(packageRoot);
-    const exist = shell.test('-e', paraPath);
-    const type = exist ? SDKType.HighLevelClient : SDKType.ModularClient;
-    logger.logInfo(`SDK type: ${type} detected in ${packageRoot}`);
-    return type;
+    const packageJsonPath = path.join(packageRoot, 'package.json');
+    const packageJson = fs.readFileSync(packageJsonPath, { encoding: 'utf-8' });
+    const parsed = JSON.parse(packageJson);
+    const isTrack1Client = !("sdk-type" in parsed);
+    if (isTrack1Client) { return SDKType.Track1Client; }
+    const npmSdkType = parsed["sdk-type"];
+    if (npmSdkType !== "mgmt" && npmSdkType !== "client") { throw new Error(`Not supported NPM SDK Type '${npmSdkType}'`); }
+    if (npmSdkType === "mgmt") { return SDKType.HighLevelClient; }
+    // npmSdkType === "client"
+    const packageName = parsed.name;
+    const isRestLevelClient = packageName.startsWith('@azure-rest/');
+    return isRestLevelClient ? SDKType.RestLevelClient : SDKType.ModularClient;
 }
 
 export function getNpmPackageName(packageRoot: string): string {
