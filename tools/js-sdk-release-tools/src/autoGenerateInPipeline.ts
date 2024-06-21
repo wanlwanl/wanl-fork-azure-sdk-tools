@@ -6,6 +6,8 @@ import { backupNodeModules, restoreNodeModules } from './utils/backupNodeModules
 import { logger } from "./utils/logger";
 import { generateRLCInPipeline } from "./llc/generateRLCInPipeline/generateRLCInPipeline";
 import { RunningEnvironment } from "./utils/runningEnvironment";
+import { parse } from 'yaml'
+
 
 const shell = require('shelljs');
 const fs = require('fs');
@@ -43,9 +45,16 @@ async function automationGenerateInPipeline(inputJsonPath: string, outputJsonPat
     const typespecProject = isTypeSpecProject ? typeof typespecProjectFolder === 'string' ? typespecProjectFolder : typespecProjectFolder![0] : undefined;
     const isMgmt = isTypeSpecProject ? false : readmeMd!.includes('resource-manager');
     const runningEnvironment = typeof readmeFiles === 'string' || typeof typespecProjectFolder === 'string' ? RunningEnvironment.SdkGeneration : RunningEnvironment.SwaggerSdkAutomation;
+    
+    const typespecConfigFile : string | undefined = typespecProject ? path.join(typespecProject!, 'tspconfig.yaml') : undefined;
+    const typespecConfigContent = typespecConfigFile ? parse(fs.readFileSync(typespecConfigFile, { encoding: 'utf-8' })) : undefined;
+    const typespecConfig = typespecConfigContent ? parse(typespecConfigContent) : undefined;
+    const emit: Array<string> = typespecConfig ? typespecConfig.emit : undefined;
+    const isModular = emit.length === 1 && emit[0] === '@azure-tools/typespec-ts';
+
     try {
         await backupNodeModules(String(shell.pwd()));
-        if (isMgmt) {
+        if (isMgmt || isModular) {
             await generateMgmt({
                 sdkRepo: String(shell.pwd()),
                 swaggerRepo: specFolder,
