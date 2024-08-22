@@ -4,7 +4,7 @@ import { ParserServices } from '@typescript-eslint/parser';
 import type { ScopeManager } from '@typescript-eslint/scope-manager';
 import { TSESTree } from '@typescript-eslint/utils';
 import type { VisitorKeys } from '@typescript-eslint/visitor-keys';
-import { EnumDeclaration, InterfaceDeclaration, Node, TypeAliasDeclaration } from 'ts-morph';
+import { EnumDeclaration, InterfaceDeclaration, Project, SourceFile, TypeAliasDeclaration } from 'ts-morph';
 
 export interface ParseForESLintResult {
   ast: TSESTree.Program & {
@@ -18,7 +18,10 @@ export interface ParseForESLintResult {
 }
 
 export interface CreateOperationRule {
-  (baselineParsedResult: ParseForESLintResult | undefined): RuleModule<'default', readonly unknown[], RuleListener>;
+  (
+    baselineParsedResult: ParseForESLintResult | undefined,
+    detectProject: DetectProject
+  ): RuleModule<'default', readonly unknown[], unknown, RuleListener>;
 }
 
 export interface RuleMessage {
@@ -28,6 +31,7 @@ export interface RuleMessage {
 
 export enum RuleMessageKind {
   InlineDeclarationNameSetMessage = 'InlineDeclarationNameSetMessage',
+  PatchMessage = 'PatchMessage',
 }
 
 export interface InlineDeclarationNameSetMessage extends RuleMessage {
@@ -36,8 +40,13 @@ export interface InlineDeclarationNameSetMessage extends RuleMessage {
   kind: RuleMessageKind.InlineDeclarationNameSetMessage;
 }
 
+export interface PatchMessage extends RuleMessage {
+  incompatibleTypeAlias: Set<string>;
+  kind: RuleMessageKind.PatchMessage;
+}
+
 export interface LinterSettings {
-  reportInlineDeclarationNameSetMessage(message: InlineDeclarationNameSetMessage): void;
+  report<TMessage extends RuleMessage>(message: TMessage): void;
 }
 
 export interface NodeContext {
@@ -49,4 +58,10 @@ export interface RenameAbleDeclarations {
   interfaces: InterfaceDeclaration[];
   typeAliases: TypeAliasDeclaration[];
   enums: EnumDeclaration[];
+}
+
+export interface DetectProject {
+  baseline: SourceFile;
+  current: SourceFile;
+  project: Project;
 }

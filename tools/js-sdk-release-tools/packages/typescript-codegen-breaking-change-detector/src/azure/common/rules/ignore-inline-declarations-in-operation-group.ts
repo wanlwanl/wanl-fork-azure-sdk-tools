@@ -1,5 +1,6 @@
 import {
   CreateOperationRule,
+  DetectProject,
   InlineDeclarationNameSetMessage,
   NodeContext,
   ParseForESLintResult,
@@ -33,7 +34,10 @@ function getInlineDeclarationNameSet(service: ParserServicesWithTypeInformation,
   return inlineDeclarationMap;
 }
 
-const rule: CreateOperationRule = (baselineParsedResult: ParseForESLintResult | undefined) => {
+const rule: CreateOperationRule = (
+  baselineParsedResult: ParseForESLintResult | undefined,
+  detectProject: DetectProject
+) => {
   if (!baselineParsedResult)
     throw new Error(`ParseForESLintResult is required in ${ignoreInlineDeclarationsInOperationGroup} rule`);
   const baselineService = baselineParsedResult.services;
@@ -55,7 +59,7 @@ const rule: CreateOperationRule = (baselineParsedResult: ParseForESLintResult | 
         current: currentInlineDeclarationMap,
         kind: RuleMessageKind.InlineDeclarationNameSetMessage,
       };
-      getSettings(context).reportInlineDeclarationNameSetMessage(message);
+      getSettings(context).report(message);
       return {};
     }
   );
