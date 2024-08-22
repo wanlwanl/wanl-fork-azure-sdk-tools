@@ -6,8 +6,8 @@ import { detectBreakingChangesBetweenPackages } from '../azure/detect-breaking-c
 import { createTempFolder, getFormattedDate } from './utils';
 
 describe('detect rest level client breaking changes', async () => {
-  test('should ignore operation rename', async () => {
-    const testCaseDir = '../../misc/test-cases/rest-level-client-to-rest-level-client/';
+  test('qqqqqq should ignore operation rename', async () => {
+    const testCaseDir = '../../misc/test-cases/patch-basic-detection';
     const currentPackageFolder = join(__dirname, testCaseDir, 'current-package');
     const baselinePackageFolder = join(__dirname, testCaseDir, 'baseline-package');
     const date = getFormattedDate();
@@ -18,6 +18,8 @@ describe('detect rest level client breaking changes', async () => {
         currentPackageFolder,
         tempFolder
       );
+      console.log(`🚀 ✶ messagesMap ✶ 🦄:`);
+      console.dir(messagesMap);
       expect(messagesMap.size).toBe(1);
       // TODO: add more checks
     } finally {

@@ -2,9 +2,11 @@ import * as parser from '@typescript-eslint/parser';
 import * as ruleIds from '../common/models/rules/rule-ids';
 
 import {
+  DetectProject,
   InlineDeclarationNameSetMessage,
   LinterSettings,
   ParseForESLintResult,
+  PatchMessage,
   RuleMessage,
 } from './common/types';
 import { Renderer, marked } from 'marked';
@@ -14,8 +16,10 @@ import { exists, outputFile, readFile, remove } from 'fs-extra';
 
 import { TSESLint } from '@typescript-eslint/utils';
 import ignoreInlineDeclarationsInOperationGroup from './common/rules/ignore-inline-declarations-in-operation-group';
+import patchBreakingChangeDetection from './common/rules/patch-breaking-change-detection';
 import { glob } from 'glob';
 import { logger } from '../logging/logger';
+import { Project, ScriptTarget } from 'ts-morph';
 
 const tsconfig = `
 {
@@ -107,22 +111,39 @@ async function parseBaselinePackage(projectContext: ProjectContext): Promise<Par
   return result;
 }
 
+function prepareDetectPackage(projectContext: ProjectContext): DetectProject {
+  const project = new Project({
+    compilerOptions: { target: ScriptTarget.ES2022 },
+  });
+  const baseline = project.createSourceFile('review/baseline/index.ts', projectContext.baseline.code);
+  const current = project.createSourceFile('review/current/index.ts', projectContext.current.code);
+  return { baseline, current, project };
+}
+
 async function detectBreakingChangesCore(projectContext: ProjectContext): Promise<RuleMessage[] | undefined> {
   try {
     const breakingChangeResults: RuleMessage[] = [];
     const baselineParsed = await parseBaselinePackage(projectContext);
+    const detectProject = prepareDetectPackage(projectContext);
     const linter = new TSESLint.Linter({ cwd: projectContext.root });
-    // linter.defineRule(ruleIds.ignoreOperationGroupNameChanges, ignoreOperationGroupNameChangesRule(baselineParsed));
-    linter.defineRule(
-      ruleIds.ignoreInlineDeclarationsInOperationGroup,
-      ignoreInlineDeclarationsInOperationGroup(baselineParsed)
-    );
+    linter.defineRules({
+      [ruleIds.ignoreInlineDeclarationsInOperationGroup]: ignoreInlineDeclarationsInOperationGroup(
+        baselineParsed,
+        detectProject
+      ),
+      [ruleIds.patchBreakingChangeDetection]: patchBreakingChangeDetection(baselineParsed, detectProject),
+    });
     linter.defineParser('@typescript-eslint/parser', parser);
+    const lintSettings: LinterSettings = {
+      report<TMessage extends RuleMessage>(message: TMessage) {
+        breakingChangeResults.push(message);
+      },
+    };
     linter.verify(
       projectContext.current.code,
       {
         rules: {
-          // [ruleIds.ignoreOperationGroupNameChanges]: [2],
+          [ruleIds.patchBreakingChangeDetection]: [2],
           [ruleIds.ignoreInlineDeclarationsInOperationGroup]: [2],
         },
         parser: '@typescript-eslint/parser',
@@ -135,11 +156,7 @@ async function detectBreakingChangesCore(projectContext: ProjectContext): Promis
           project: './tsconfig.json',
           tsconfigRootDir: projectContext.root,
         },
-        settings: (<LinterSettings>{
-          reportInlineDeclarationNameSetMessage: (message: InlineDeclarationNameSetMessage) => {
-            breakingChangeResults.push(message);
-          },
-        }) as any,
+        settings: lintSettings as any,
       },
       projectContext.current.relativeFilePath
     );
@@ -150,16 +167,15 @@ async function detectBreakingChangesCore(projectContext: ProjectContext): Promis
   }
 }
 
+// TODO: remove cleanUpAtTheEnd
 export async function detectBreakingChangesBetweenPackages(
   baselinePackageFolder: string | undefined,
   currentPackageFolder: string | undefined,
   tempFolder: string | undefined,
-  cleanUpAtTheEnd: boolean
+  cleanUpAtTheEnd: boolean = false
 ): Promise<Map<string, RuleMessage[] | undefined>> {
   if (!baselinePackageFolder) throw new Error(`Failed to use undefined or null baseline package folder`);
-
   if (!currentPackageFolder) throw new Error(`Failed to use undefined or null current package folder`);
-
   if (!tempFolder) throw new Error(`Failed to use undefined or null temp folder`);
 
   try {

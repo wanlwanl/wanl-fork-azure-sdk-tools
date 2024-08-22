@@ -15,25 +15,6 @@ import { TSESTree } from '@typescript-eslint/types';
 import { findVariable } from '@typescript-eslint/utils/ast-utils';
 import { logger } from '../logging/logger';
 
-function tryFindDeclaration<TNode extends TSESTree.Node>(
-  name: string,
-  scope: Scope,
-  typeGuard: ((node: TSESTree.Node) => node is TNode) | undefined,
-  shouldLog: boolean = true
-): TNode | undefined {
-  const variable = findVariable(scope as Scope, name);
-  const node = variable?.defs?.[0]?.node;
-  if (!node) {
-    if (shouldLog) logger.warn(`Failed to find ${name}'s declaration`);
-    return undefined;
-  }
-  if (typeGuard && !typeGuard(node)) {
-    if (shouldLog) logger.warn(`Found ${name}'s declaration but with another node type "${node.type}"`);
-    return undefined;
-  }
-  return node as TNode;
-}
-
 function getAllTypeReferencesInNode(node: Node, found: Set<string>) {
   const types: TypeReferenceNode[] = [];
   if (!node) return types;
@@ -116,6 +97,25 @@ export function getGlobalScope(scopeManager: ScopeManager | null): Scope {
   const globalScope = scopeManager?.globalScope;
   if (!globalScope) throw new Error(`Failed to find global scope`);
   return globalScope;
+}
+
+export function tryFindDeclaration<TNode extends TSESTree.Node>(
+  name: string,
+  scope: Scope,
+  typeGuard: ((node: TSESTree.Node) => node is TNode)  = undefined,
+  shouldLog: boolean = true
+): TNode | undefined {
+  const variable = findVariable(scope as Scope, name);
+  const node = variable?.defs?.[0]?.node;
+  if (!node) {
+    if (shouldLog) logger.warn(`Failed to find ${name}'s declaration`);
+    return undefined;
+  }
+  if (typeGuard && !typeGuard(node)) {
+    if (shouldLog) logger.warn(`Found ${name}'s declaration but with another node type "${node.type}"`);
+    return undefined;
+  }
+  return node as TNode;
 }
 
 export function findDeclaration<TNode extends TSESTree.Node>(
