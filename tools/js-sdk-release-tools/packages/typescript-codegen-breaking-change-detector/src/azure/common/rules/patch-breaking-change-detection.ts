@@ -6,7 +6,7 @@ import {
 
 import { RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { SourceFile, SyntaxKind, UnionTypeNode } from 'ts-morph';
-import { patchBreakingChangeDetection } from '../../../common/models/rules/rule-ids';
+import { RuleIds } from '../../../common/models/rules/rule-ids';
 import { getSettings } from '../../../utils/common-utils';
 import { createOperationRuleListener } from '../../utils/azure-rule-utils';
 
@@ -43,7 +43,7 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const patchMessage = <PatchMessage>{ incompatibleTypeAlias };
 
   return createOperationRuleListener(
-    patchBreakingChangeDetection,
+    RuleIds.patchBreakingChangeDetection,
     (context: RuleContext<string, readonly unknown[]>): RuleListener => {
       getSettings(context).report(patchMessage);
       return {};

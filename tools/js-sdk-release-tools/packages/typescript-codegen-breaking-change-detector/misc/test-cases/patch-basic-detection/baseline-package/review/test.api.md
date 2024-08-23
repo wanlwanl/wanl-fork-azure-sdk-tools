@@ -1,5 +1,5 @@
 
 ```ts
 
-export type x =  
+export type x =  "aa" | "bb";
 ```

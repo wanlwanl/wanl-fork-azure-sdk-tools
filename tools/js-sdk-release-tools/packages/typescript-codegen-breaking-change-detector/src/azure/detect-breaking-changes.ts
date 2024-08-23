@@ -1,22 +1,17 @@
+import { RuleIds } from './../common/models/rules/rule-ids';
 import * as parser from '@typescript-eslint/parser';
-import * as ruleIds from '../common/models/rules/rule-ids';
 
 import {
-  DetectProject,
-  InlineDeclarationNameSetMessage,
-  LinterSettings,
-  ParseForESLintResult,
-  PatchMessage,
-  RuleMessage,
+  CreateOperationRule,
+  DetectProject, LinterSettings,
+  ParseForESLintResult, RuleMessage
 } from './common/types';
 import { Renderer, marked } from 'marked';
 import { basename, join, posix, relative } from 'node:path';
-import { devConsolelog, toPosixPath } from '../utils/common-utils';
+import { toPosixPath } from '../utils/common-utils';
 import { exists, outputFile, readFile, remove } from 'fs-extra';
 
 import { TSESLint } from '@typescript-eslint/utils';
-import ignoreInlineDeclarationsInOperationGroup from './common/rules/ignore-inline-declarations-in-operation-group';
-import patchBreakingChangeDetection from './common/rules/patch-breaking-change-detection';
 import { glob } from 'glob';
 import { logger } from '../logging/logger';
 import { Project, ScriptTarget } from 'ts-morph';
@@ -120,19 +115,21 @@ function prepareDetectPackage(projectContext: ProjectContext): DetectProject {
   return { baseline, current, project };
 }
 
-async function detectBreakingChangesCore(projectContext: ProjectContext): Promise<RuleMessage[] | undefined> {
+function loadRules(rules: Array<RuleIds>): Promise<{ creator: CreateOperationRule; id: RuleIds }[]> {
+  return Promise.all(rules.map(async (id) => ({ creator: (await import(`./common/rules/${id}.ts`)).default, id })));
+}
+
+async function detectBreakingChangesCore(
+  projectContext: ProjectContext,
+  ruleIds: Array<RuleIds>
+): Promise<RuleMessage[] | undefined> {
   try {
     const breakingChangeResults: RuleMessage[] = [];
     const baselineParsed = await parseBaselinePackage(projectContext);
     const detectProject = prepareDetectPackage(projectContext);
     const linter = new TSESLint.Linter({ cwd: projectContext.root });
-    linter.defineRules({
-      [ruleIds.ignoreInlineDeclarationsInOperationGroup]: ignoreInlineDeclarationsInOperationGroup(
-        baselineParsed,
-        detectProject
-      ),
-      [ruleIds.patchBreakingChangeDetection]: patchBreakingChangeDetection(baselineParsed, detectProject),
-    });
+    const rules = await loadRules(ruleIds);
+    rules.forEach((rule) => linter.defineRule(rule.id, rule.creator(baselineParsed, detectProject)));
     linter.defineParser('@typescript-eslint/parser', parser);
     const lintSettings: LinterSettings = {
       report<TMessage extends RuleMessage>(message: TMessage) {
@@ -143,8 +140,8 @@ async function detectBreakingChangesCore(projectContext: ProjectContext): Promis
       projectContext.current.code,
       {
         rules: {
-          [ruleIds.patchBreakingChangeDetection]: [2],
-          [ruleIds.ignoreInlineDeclarationsInOperationGroup]: [2],
+          [RuleIds.patchBreakingChangeDetection]: [2],
+          [RuleIds.ignoreInlineDeclarationsInOperationGroup]: [2],
         },
         parser: '@typescript-eslint/parser',
         parserOptions: {
@@ -169,6 +166,7 @@ async function detectBreakingChangesCore(projectContext: ProjectContext): Promis
 
 // TODO: remove cleanUpAtTheEnd
 export async function detectBreakingChangesBetweenPackages(
+  ruleIds: Array<RuleIds>,
   baselinePackageFolder: string | undefined,
   currentPackageFolder: string | undefined,
   tempFolder: string | undefined,
@@ -191,7 +189,7 @@ export async function detectBreakingChangesBetweenPackages(
       const currentApiViewPath = join(currentPackageFolder!, relativeApiViewPath);
       if (!(await exists(currentApiViewPath))) throw new Error(`Failed to find API view: ${currentApiViewPath}`);
       const projectContext = await prepareProject(currentApiViewPath, baselineApiViewPath, tempFolder!);
-      const messages = await detectBreakingChangesCore(projectContext);
+      const messages = await detectBreakingChangesCore(projectContext, ruleIds);
       return { name: apiViewBasename, messages };
     });
     const messagesMap = new Map<string, RuleMessage[] | undefined>();

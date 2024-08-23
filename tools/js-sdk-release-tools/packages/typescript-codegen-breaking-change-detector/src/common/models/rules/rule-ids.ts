@@ -1,2 +1,4 @@
-export const ignoreInlineDeclarationsInOperationGroup = 'ignore-inline-declarations-in-operation-group';
-export const patchBreakingChangeDetection = 'patch-breaking-change-detection';
+export enum RuleIds {
+  ignoreInlineDeclarationsInOperationGroup = 'ignore-inline-declarations-in-operation-group',
+  patchBreakingChangeDetection = 'patch-breaking-change-detection',
+}

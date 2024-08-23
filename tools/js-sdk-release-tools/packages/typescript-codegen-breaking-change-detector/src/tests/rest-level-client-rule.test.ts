@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { join } from 'node:path';
 import { detectBreakingChangesBetweenPackages } from '../azure/detect-breaking-changes';
 import { createTempFolder, getFormattedDate } from './utils';
+import { RuleIds } from '../common/models/rules/rule-ids';
 
 describe('detect rest level client breaking changes', async () => {
   test('should ignore operation rename', async () => {
@@ -14,6 +15,7 @@ describe('detect rest level client breaking changes', async () => {
     const tempFolder = await createTempFolder(`.tmp/temp-${date}`);
     try {
       const messagesMap = await detectBreakingChangesBetweenPackages(
+        [RuleIds.ignoreInlineDeclarationsInOperationGroup],
         baselinePackageFolder,
         currentPackageFolder,
         tempFolder

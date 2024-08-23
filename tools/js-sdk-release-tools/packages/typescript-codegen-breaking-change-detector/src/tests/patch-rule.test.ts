@@ -3,7 +3,9 @@ import { describe, expect, test } from 'vitest';
 
 import { join } from 'node:path';
 import { detectBreakingChangesBetweenPackages } from '../azure/detect-breaking-changes';
+import { RuleIds } from '../common/models/rules/rule-ids';
 import { createTempFolder, getFormattedDate } from './utils';
+import { turbolog, turbologDetails } from '../utils/common-utils';
 
 describe('detect rest level client breaking changes', async () => {
   test('qqqqqq should ignore operation rename', async () => {
@@ -14,12 +16,11 @@ describe('detect rest level client breaking changes', async () => {
     const tempFolder = await createTempFolder(`.tmp/temp-${date}`);
     try {
       const messagesMap = await detectBreakingChangesBetweenPackages(
+        [RuleIds.patchBreakingChangeDetection],
         baselinePackageFolder,
         currentPackageFolder,
         tempFolder
       );
-      console.log(`🚀 ✶ messagesMap ✶ 🦄:`);
-      console.dir(messagesMap);
       expect(messagesMap.size).toBe(1);
       // TODO: add more checks
     } finally {

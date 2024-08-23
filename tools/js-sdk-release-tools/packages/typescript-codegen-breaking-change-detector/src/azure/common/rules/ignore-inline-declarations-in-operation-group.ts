@@ -21,7 +21,7 @@ import { RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { Scope } from '@typescript-eslint/scope-manager';
 import { createOperationRuleListener } from '../../utils/azure-rule-utils';
 import { getSettings } from '../../../utils/common-utils';
-import { ignoreInlineDeclarationsInOperationGroup } from '../../../common/models/rules/rule-ids';
+import { RuleIds } from '../../../common/models/rules/rule-ids';
 
 function getInlineDeclarationNameSet(service: ParserServicesWithTypeInformation, scope: Scope) {
   const inlineDeclarationMap = new Map<string, NodeContext>();
@@ -39,7 +39,7 @@ const rule: CreateOperationRule = (
   detectProject: DetectProject
 ) => {
   if (!baselineParsedResult)
-    throw new Error(`ParseForESLintResult is required in ${ignoreInlineDeclarationsInOperationGroup} rule`);
+    throw new Error(`ParseForESLintResult is required in ${RuleIds.ignoreInlineDeclarationsInOperationGroup} rule`);
   const baselineService = baselineParsedResult.services;
   if (!isParseServiceWithTypeInfo(baselineService)) {
     throw new Error(`Failed to get ParserServicesWithTypeInformation. It indicates the parser configuration is wrong.`);
@@ -48,13 +48,13 @@ const rule: CreateOperationRule = (
   const baselineInlineDeclarationNameSet = getInlineDeclarationNameSet(baselineService, baselineGlobalScope);
 
   return createOperationRuleListener(
-    ignoreInlineDeclarationsInOperationGroup,
+    RuleIds.ignoreInlineDeclarationsInOperationGroup,
     (context: RuleContext<string, readonly unknown[]>): RuleListener => {
       const currentService = getParserServices(context);
       const currentGlobalScope = getGlobalScope(context.sourceCode.scopeManager);
       const currentInlineDeclarationMap = getInlineDeclarationNameSet(currentService, currentGlobalScope);
       const message: InlineDeclarationNameSetMessage = {
-        id: ignoreInlineDeclarationsInOperationGroup,
+        id: RuleIds.ignoreInlineDeclarationsInOperationGroup,
         baseline: baselineInlineDeclarationNameSet,
         current: currentInlineDeclarationMap,
         kind: RuleMessageKind.InlineDeclarationNameSetMessage,
