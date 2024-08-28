@@ -1,11 +1,7 @@
 import { RuleIds } from './../common/models/rules/rule-ids';
 import * as parser from '@typescript-eslint/parser';
 
-import {
-  CreateOperationRule,
-  DetectProject, LinterSettings,
-  ParseForESLintResult, RuleMessage
-} from './common/types';
+import { CreateOperationRule, DetectProject, LinterSettings, ParseForESLintResult, RuleMessage } from './common/types';
 import { Renderer, marked } from 'marked';
 import { basename, join, posix, relative } from 'node:path';
 import { toPosixPath } from '../utils/common-utils';
@@ -140,7 +136,7 @@ async function detectBreakingChangesCore(
       projectContext.current.code,
       {
         rules: {
-          [RuleIds.patchBreakingChangeDetection]: [2],
+          [RuleIds.includeUnionTypeAlias]: [2],
           [RuleIds.ignoreInlineDeclarationsInOperationGroup]: [2],
         },
         parser: '@typescript-eslint/parser',

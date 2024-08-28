@@ -1,14 +1,12 @@
 import { RuleListener } from '@typescript-eslint/utils/eslint-utils';
-import {
-  CreateOperationRule,
-  DetectProject, PatchMessage
-} from '../types';
+import { CreateOperationRule, DetectProject, PatchMessage, RuleMessageKind } from '../types';
 
 import { RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { SourceFile, SyntaxKind, UnionTypeNode } from 'ts-morph';
 import { RuleIds } from '../../../common/models/rules/rule-ids';
 import { getSettings } from '../../../utils/common-utils';
 import { createOperationRuleListener } from '../../utils/azure-rule-utils';
+import { findIncompatibleDeclarations } from '../../../common/utils/ast-utils';
 
 function findUnionTypes(root: SourceFile): Map<string, UnionTypeNode> {
   const typeAliases = root
@@ -25,25 +23,16 @@ function findUnionTypes(root: SourceFile): Map<string, UnionTypeNode> {
   return unionTypes;
 }
 
-function findIncompatibleTypeAlias(detectProject: DetectProject): Set<string> {
-  const baselineUnionTypes = findUnionTypes(detectProject.baseline.getSourceFile());
-  const currentUnionTypes = findUnionTypes(detectProject.current.getSourceFile());
-  const incompatibleTypeAlias = new Set<string>();
-  baselineUnionTypes.forEach((baselineUnion, name) => {
-    const currentUnion = currentUnionTypes.get(name);
-    if (!currentUnion?.getType().isAssignableTo(baselineUnion.getType())) {
-      incompatibleTypeAlias.add(name);
-    }
-  });
-  return incompatibleTypeAlias;
-}
-
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
-  const incompatibleTypeAlias = findIncompatibleTypeAlias(detectProject);
-  const patchMessage = <PatchMessage>{ incompatibleTypeAlias };
+  const incompatibleTypeAlias = findIncompatibleDeclarations(detectProject, findUnionTypes);
+  const patchMessage: PatchMessage = {
+    incompatibleTypeAlias,
+    kind: RuleMessageKind.PatchMessage,
+    id: RuleIds.includeUnionTypeAlias,
+  };
 
   return createOperationRuleListener(
-    RuleIds.patchBreakingChangeDetection,
+    RuleIds.includeUnionTypeAlias,
     (context: RuleContext<string, readonly unknown[]>): RuleListener => {
       getSettings(context).report(patchMessage);
       return {};

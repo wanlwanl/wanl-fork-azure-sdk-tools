@@ -41,7 +41,8 @@ export interface InlineDeclarationNameSetMessage extends RuleMessage {
 }
 
 export interface PatchMessage extends RuleMessage {
-  incompatibleTypeAlias: Set<string>;
+  incompatibleTypeAlias?: Set<string>;
+  incompatibleInterfaces?: Set<string>;
   kind: RuleMessageKind.PatchMessage;
 }
 
