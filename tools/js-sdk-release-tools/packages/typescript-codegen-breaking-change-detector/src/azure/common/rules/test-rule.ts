@@ -25,13 +25,13 @@ function findUnionTypes(root: SourceFile): Map<string, UnionTypeNode> {
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const incompatibleTypeAlias = findIncompatibleDeclarations(detectProject, findUnionTypes);
   const patchMessage: PatchMessage = {
-    incompatibleTypeAlias: new Set<string>(Array.from(incompatibleTypeAlias).map(({ current }) => current.name)),
+    incompatibleTypeAlias: new Set<string>(Array.from(incompatibleTypeAlias).map(({ name }) => name)),
     kind: RuleMessageKind.PatchMessage,
-    id: RuleIds.includeUnionTypeAlias,
+    id: RuleIds.testRule,
   };
 
   return createOperationRuleListener(
-    RuleIds.includeUnionTypeAlias,
+    RuleIds.testRule,
     (context: RuleContext<string, readonly unknown[]>): RuleListener => {
       getSettings(context).report(patchMessage);
       return {};

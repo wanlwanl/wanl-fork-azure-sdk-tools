@@ -1,18 +1,70 @@
-import { Node, SourceFile } from 'ts-morph';
-import { DetectProject } from '../../azure/common/types';
+import { Node, SourceFile, SyntaxKind } from 'ts-morph';
+import { ChangeNode, DetectProject } from '../../azure/common/types';
 
-export function findIncompatibleDeclarations<TNode extends Node>(
+function findDeclarations<TNode extends Node>(
   detectProject: DetectProject,
-  findDeclaration: (sourceFile: SourceFile) => Map<string, TNode>
-): Set<string> {
-  const baselineDeclarations = findDeclaration(detectProject.baseline.getSourceFile());
-  const currentDeclarations = findDeclaration(detectProject.current.getSourceFile());
-  const incompatibleDeclarations = new Set<string>();
-  baselineDeclarations.forEach((baselineDeclaration, name) => {
-    const currentDeclaration = currentDeclarations.get(name);
-    if (!currentDeclaration?.getType().isAssignableTo(baselineDeclaration.getType())) {
-      incompatibleDeclarations.add(name);
+  findDeclaration: (sourceFile: SourceFile) => Map<string, TNode> | undefined
+): { baseline: Map<string, TNode>; current: Map<string, TNode> } {
+  const baseline = findDeclaration(detectProject.baseline.getSourceFile());
+  const current = findDeclaration(detectProject.current.getSourceFile());
+  if (!baseline) throw new Error(`Failed to find baseline declarations`);
+  if (!current) throw new Error(`Failed to find current declarations`);
+  return { baseline: baseline, current: current };
+}
+
+export function findIncompatibleDeclarations(
+  detectProject: DetectProject,
+  findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
+): Set<{ baseline: ChangeNode; current: ChangeNode }> {
+  const declarations = findDeclarations(detectProject, findDeclaration);
+  const incompatibleDeclarations = new Set<{ baseline: ChangeNode; current: ChangeNode }>();
+  declarations.baseline.forEach((baselineDeclaration, name) => {
+    const currentDeclaration = declarations.current.get(name);
+    if (currentDeclaration?.getType().isAssignableTo(baselineDeclaration.getType()) === false) {
+      const baseline: ChangeNode = { name, node: baselineDeclaration };
+      const current: ChangeNode = { name, node: currentDeclaration };
+      incompatibleDeclarations.add({ baseline, current });
     }
   });
   return incompatibleDeclarations;
+}
+
+export function findAddedDeclarations(
+  detectProject: DetectProject,
+  findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
+): Set<ChangeNode> {
+  const declarations = findDeclarations(detectProject, findDeclaration);
+  const addedDeclarations = new Set<ChangeNode>();
+  declarations.current.forEach((currentDeclaration, name) => {
+    if (!declarations.baseline.has(name)) addedDeclarations.add({ name, node: currentDeclaration });
+  });
+  return addedDeclarations;
+}
+
+export function findRemovedDeclarations(
+  detectProject: DetectProject,
+  findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
+): Set<ChangeNode> {
+  const declarations = findDeclarations(detectProject, findDeclaration);
+  const removedDeclarations = new Set<ChangeNode>();
+  declarations.baseline.forEach((baselineDeclaration, name) => {
+    if (!declarations.current.has(name)) removedDeclarations.add({ name, node: baselineDeclaration });
+  });
+  return removedDeclarations;
+}
+
+export function getTopLevelDeclarations(sourceFile: SourceFile): Map<SyntaxKind, Map<string, Node>> {
+  const map = new Map<SyntaxKind, Map<string, Node>>();
+  const statements = sourceFile.getStatements();
+  statements.forEach((s) => {
+    const kind = s.getKind();
+
+    let name: string;
+    if ('getName' in s && typeof s.getName === 'function') name = s.getName();
+    else name = s.getText();
+
+    if (!map.has(kind)) map.set(kind, new Map<string, Node>());
+    map.get(kind)!.set(name, s);
+  });
+  return map;
 }

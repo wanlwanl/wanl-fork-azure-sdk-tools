@@ -1,4 +1,5 @@
 import {
+  CreateWrappedNodeOptions,
   EnumDeclaration,
   InterfaceDeclaration,
   Node,
@@ -93,16 +94,10 @@ function findAllRenameAbleDeclarationsInNodeCore(
   });
 }
 
-export function getGlobalScope(scopeManager: ScopeManager | null): Scope {
-  const globalScope = scopeManager?.globalScope;
-  if (!globalScope) throw new Error(`Failed to find global scope`);
-  return globalScope;
-}
-
-export function tryFindDeclaration<TNode extends TSESTree.Node>(
+function tryFindDeclaration<TNode extends TSESTree.Node>(
   name: string,
   scope: Scope,
-  typeGuard: ((node: TSESTree.Node) => node is TNode)  = undefined,
+  typeGuard: ((node: TSESTree.Node) => node is TNode) | undefined  = undefined,
   shouldLog: boolean = true
 ): TNode | undefined {
   const variable = findVariable(scope as Scope, name);
@@ -116,6 +111,12 @@ export function tryFindDeclaration<TNode extends TSESTree.Node>(
     return undefined;
   }
   return node as TNode;
+}
+
+export function getGlobalScope(scopeManager: ScopeManager | null): Scope {
+  const globalScope = scopeManager?.globalScope;
+  if (!globalScope) throw new Error(`Failed to find global scope`);
+  return globalScope;
 }
 
 export function findDeclaration<TNode extends TSESTree.Node>(
@@ -139,7 +140,7 @@ export function isInterfaceDeclarationNode(node: TSESTree.Node): node is TSESTre
 export function convertToMorphNode(node: TSESTree.Node, service: ParserServicesWithTypeInformation) {
   const tsNode = service.esTreeNodeToTSNodeMap.get(node);
   const typeChecker = service.program.getTypeChecker();
-  const moNode = createWrappedNode(tsNode, { typeChecker });
+  const moNode = createWrappedNode(tsNode, { typeChecker } as CreateWrappedNodeOptions);
   return moNode;
 }
 

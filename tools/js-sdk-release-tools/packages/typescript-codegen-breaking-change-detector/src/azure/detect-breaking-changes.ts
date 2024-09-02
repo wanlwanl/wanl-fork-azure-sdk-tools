@@ -11,6 +11,11 @@ import { TSESLint } from '@typescript-eslint/utils';
 import { glob } from 'glob';
 import { logger } from '../logging/logger';
 import { Project, ScriptTarget } from 'ts-morph';
+import includeInterfaceRule from './common/rules/include-interface';
+import includeUnionTypeAliasRule from './common/rules/include-union-type-alias';
+import testRule from './common/rules/test-rule';
+import ignoreInlineDeclarationsInOperationGroupRule from './common/rules/ignore-inline-declarations-in-operation-group';
+import { SharedConfig } from '@typescript-eslint/utils/ts-eslint';
 
 const tsconfig = `
 {
@@ -111,10 +116,32 @@ function prepareDetectPackage(projectContext: ProjectContext): DetectProject {
   return { baseline, current, project };
 }
 
-function loadRules(rules: Array<RuleIds>): Promise<{ creator: CreateOperationRule; id: RuleIds }[]> {
+function loadRuleDefinitions(rules: Array<RuleIds>): Promise<{ creator: CreateOperationRule; id: RuleIds }[]> {
   return Promise.all(rules.map(async (id) => ({ creator: (await import(`./common/rules/${id}.ts`)).default, id })));
 }
 
+// // TODO: dynamic load
+// async function loadRules(rules: Array<RuleIds>): Promise<{ creator: any; id: RuleIds }[]> {
+//   const map = {
+//     [RuleIds.includeInterface]: {
+//       id: RuleIds.includeInterface,
+//       creator: includeInterfaceRule,
+//     },[RuleIds.includeUnionTypeAlias]: {
+//       id: RuleIds.includeUnionTypeAlias,
+//       creator: includeUnionTypeAliasRule,
+//     },[RuleIds.ignoreInlineDeclarationsInOperationGroup]: {
+//       id: RuleIds.testRule,
+//       creator: ignoreInlineDeclarationsInOperationGroupRule,
+//     },
+//     [RuleIds.testRule]: {
+//       id: RuleIds.testRule,
+//       creator: testRule,
+//     }
+//   };
+//   return rules.map((ruleId) => map[ruleId]);
+// }
+
+// TODO: decouple defining rules and verification
 async function detectBreakingChangesCore(
   projectContext: ProjectContext,
   ruleIds: Array<RuleIds>
@@ -124,21 +151,24 @@ async function detectBreakingChangesCore(
     const baselineParsed = await parseBaselinePackage(projectContext);
     const detectProject = prepareDetectPackage(projectContext);
     const linter = new TSESLint.Linter({ cwd: projectContext.root });
-    const rules = await loadRules(ruleIds);
-    rules.forEach((rule) => linter.defineRule(rule.id, rule.creator(baselineParsed, detectProject)));
+    const ruleDefinitions = await loadRuleDefinitions(ruleIds);
+    ruleDefinitions.forEach((ruleDef) => {
+      linter.defineRule(ruleDef.id, ruleDef.creator(baselineParsed, detectProject));
+    });
     linter.defineParser('@typescript-eslint/parser', parser);
     const lintSettings: LinterSettings = {
       report<TMessage extends RuleMessage>(message: TMessage) {
         breakingChangeResults.push(message);
       },
     };
+    const rules = ruleDefinitions.reduce((map: SharedConfig.RulesRecord, r) => {
+      map[r.id] = [2];
+      return map;
+     }, {});
     linter.verify(
       projectContext.current.code,
       {
-        rules: {
-          [RuleIds.includeUnionTypeAlias]: [2],
-          [RuleIds.ignoreInlineDeclarationsInOperationGroup]: [2],
-        },
+        rules,
         parser: '@typescript-eslint/parser',
         parserOptions: {
           filePath: projectContext.current.relativeFilePath,
