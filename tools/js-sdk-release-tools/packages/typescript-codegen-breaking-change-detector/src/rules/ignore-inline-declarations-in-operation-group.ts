@@ -5,7 +5,7 @@ import {
   NodeContext,
   ParseForESLintResult,
   RuleMessageKind,
-} from '../types';
+} from '../azure/common/types';
 import { RuleListener, getParserServices } from '@typescript-eslint/utils/eslint-utils';
 import {
   convertToMorphNode,
@@ -14,14 +14,14 @@ import {
   getGlobalScope,
   isInterfaceDeclarationNode,
   isParseServiceWithTypeInfo,
-} from '../../../utils/ast-utils';
+} from '../utils/ast-utils';
 
 import { ParserServicesWithTypeInformation } from '@typescript-eslint/typescript-estree';
 import { RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { Scope } from '@typescript-eslint/scope-manager';
-import { createOperationRuleListener } from '../../utils/azure-rule-utils';
-import { getSettings } from '../../../utils/common-utils';
-import { RuleIds } from '../../../common/models/rules/rule-ids';
+import { createOperationRuleListener } from '../azure/utils/azure-rule-utils';
+import { getSettings } from '../utils/common-utils';
+import { RuleIds } from '../common/models/rules/rule-ids';
 
 function getInlineDeclarationNameSet(service: ParserServicesWithTypeInformation, scope: Scope) {
   const inlineDeclarationMap = new Map<string, NodeContext>();

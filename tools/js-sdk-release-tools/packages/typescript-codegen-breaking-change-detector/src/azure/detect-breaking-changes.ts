@@ -113,7 +113,7 @@ function prepareDetectPackage(projectContext: ProjectContext): DetectProject {
 }
 
 function loadRuleDefinitions(rules: Array<RuleIds>): Promise<{ creator: CreateOperationRule; id: RuleIds }[]> {
-  return Promise.all(rules.map(async (id) => ({ creator: (await import(`./common/rules/${id}`)).default, id })));
+  return Promise.all(rules.map(async (id) => ({ creator: (await import(`../rules/${id}`)).default, id })));
 }
 
 // TODO: decouple defining rules and verification
