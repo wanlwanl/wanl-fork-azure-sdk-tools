@@ -12,13 +12,15 @@ import {
   findRemovedDeclarations,
   getTopLevelDeclarations,
 } from '../../../common/utils/ast-utils';
-import { create } from '../../change-info';
+import { create } from '../../change-handler/change-info';
+import { compareInterfaces } from '../../change-handler/node-comparer';
 
 function findInterfaceTypes(root: SourceFile): Map<string, Node> | undefined {
   return getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration);
 }
 
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
+
   const incompatibleInterfaces = findIncompatibleDeclarations(detectProject, findInterfaceTypes);
   const addedInterfaces = findAddedDeclarations(detectProject, findInterfaceTypes);
   const removedInterfaces = findRemovedDeclarations(detectProject, findInterfaceTypes);
@@ -29,14 +31,17 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
 
   incompatibleInterfaces.forEach((i) => {
     const info: ChangeInfo = create(ChangeType.Incompatible, i.baseline, i.current);
+    const baseline = i.baseline.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
+    const current = i.current.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
+    compareInterfaces(baseline, current);
     interfaceChangeSet.set(i.current.name, info);
   });
   addedInterfaces.forEach((i) => {});
   removedInterfaces.forEach((i) => {});
 
-  console.log('--------------------- incompatible', incompatibleInterfaces);
-  console.log('--------------------- add', addedInterfaces);
-  console.log('--------------------- remove', removedInterfaces);
+  // console.log('--------------------- incompatible', incompatibleInterfaces);
+  // console.log('--------------------- add', addedInterfaces);
+  // console.log('--------------------- remove', removedInterfaces);
 
   const patchMessage: PatchMessage = {
     detectionInfo,
@@ -47,7 +52,6 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const listener = createOperationRuleListener(
     RuleIds.includeInterface,
     (context: RuleContext<string, readonly unknown[]>): RuleListener => {
-      console.log('--------------------- report');
       getSettings(context).report(patchMessage);
       return {};
     }

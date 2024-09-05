@@ -1,5 +1,5 @@
 import { Node, SyntaxKind } from 'ts-morph';
-import { ChangeInfo, ChangeInfoCreator, ChangeNode, ChangeType } from './common/types';
+import { ChangeInfo, ChangeInfoCreator, ChangeNode, ChangeType } from '../common/types';
 
 function updateAddedMessage(info: ChangeInfo): void {
   switch (info.kind) {
@@ -20,13 +20,33 @@ function updateRemovedMessage(info: ChangeInfo): void {
   }
 }
 
+function HandleInterfaceDeclaration(info: ChangeInfo) {
+  const baseline = info.baseline!.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
+  const current = info.current!.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
+}
+
+// TODO: impl
+function updateInCompatibleMessage(info: ChangeInfo): void {
+  if (!info.current || !info.baseline) throw new Error('Any of current or baseline change info is undefined.');
+  switch (info.kind) {
+    case SyntaxKind.InterfaceDeclaration:
+      HandleInterfaceDeclaration(info);
+      return;
+    default:
+      throw new Error(`Unknown node syntax kind: ${info.kind}`);
+  }
+}
+
 function updateMessage(info: ChangeInfo): void {
   switch (info.type) {
-    case 'added':
+    case ChangeType.Added:
       updateAddedMessage(info);
       return;
-    case 'removed':
+    case ChangeType.Removed:
       updateRemovedMessage(info);
+      return;
+    case ChangeType.Incompatible:
+      updateInCompatibleMessage(info);
       return;
     default:
       throw new Error(`Unknown type: ${info.type}`);

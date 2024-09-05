@@ -9,10 +9,7 @@ import { createOperationRuleListener } from '../../utils/azure-rule-utils';
 import { findIncompatibleDeclarations, getTopLevelDeclarations } from '../../../common/utils/ast-utils';
 
 function findUnionTypes(root: SourceFile): Map<string, UnionTypeNode> {
-  const typeAliasSet = getTopLevelDeclarations(root).get(SyntaxKind.TypeAliasDeclaration);
-  const typeAliases: TypeAliasDeclaration[] = [];
-  typeAliasSet?.forEach((s) => typeAliases.push(s.asKindOrThrow(SyntaxKind.TypeAliasDeclaration)));
-  const unionTypes = typeAliases
+  const unionTypes = root.getTypeAliases()
     .filter((s) => s.getTypeNode()?.getKind() === SyntaxKind.UnionType)
     .reduce((map, s) => {
       const union = s.getTypeNode()!.asKindOrThrow(SyntaxKind.UnionType);

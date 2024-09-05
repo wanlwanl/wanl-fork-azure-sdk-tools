@@ -4,17 +4,13 @@ import * as parser from '@typescript-eslint/parser';
 import { CreateOperationRule, DetectProject, LinterSettings, ParseForESLintResult, RuleMessage } from './common/types';
 import { Renderer, marked } from 'marked';
 import { basename, join, posix, relative } from 'node:path';
-import { toPosixPath } from '../utils/common-utils';
+import { toPosixPath, turbolog } from '../utils/common-utils';
 import { exists, outputFile, readFile, remove } from 'fs-extra';
 
 import { TSESLint } from '@typescript-eslint/utils';
 import { glob } from 'glob';
 import { logger } from '../logging/logger';
 import { Project, ScriptTarget } from 'ts-morph';
-import includeInterfaceRule from './common/rules/include-interface';
-import includeUnionTypeAliasRule from './common/rules/include-union-type-alias';
-import testRule from './common/rules/test-rule';
-import ignoreInlineDeclarationsInOperationGroupRule from './common/rules/ignore-inline-declarations-in-operation-group';
 import { SharedConfig } from '@typescript-eslint/utils/ts-eslint';
 
 const tsconfig = `
@@ -117,29 +113,8 @@ function prepareDetectPackage(projectContext: ProjectContext): DetectProject {
 }
 
 function loadRuleDefinitions(rules: Array<RuleIds>): Promise<{ creator: CreateOperationRule; id: RuleIds }[]> {
-  return Promise.all(rules.map(async (id) => ({ creator: (await import(`./common/rules/${id}.ts`)).default, id })));
+  return Promise.all(rules.map(async (id) => ({ creator: (await import(`./common/rules/${id}`)).default, id })));
 }
-
-// // TODO: dynamic load
-// async function loadRules(rules: Array<RuleIds>): Promise<{ creator: any; id: RuleIds }[]> {
-//   const map = {
-//     [RuleIds.includeInterface]: {
-//       id: RuleIds.includeInterface,
-//       creator: includeInterfaceRule,
-//     },[RuleIds.includeUnionTypeAlias]: {
-//       id: RuleIds.includeUnionTypeAlias,
-//       creator: includeUnionTypeAliasRule,
-//     },[RuleIds.ignoreInlineDeclarationsInOperationGroup]: {
-//       id: RuleIds.testRule,
-//       creator: ignoreInlineDeclarationsInOperationGroupRule,
-//     },
-//     [RuleIds.testRule]: {
-//       id: RuleIds.testRule,
-//       creator: testRule,
-//     }
-//   };
-//   return rules.map((ruleId) => map[ruleId]);
-// }
 
 // TODO: decouple defining rules and verification
 async function detectBreakingChangesCore(

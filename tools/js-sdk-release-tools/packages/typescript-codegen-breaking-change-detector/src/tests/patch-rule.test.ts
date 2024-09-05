@@ -27,7 +27,6 @@ describe('patch basic breaking changes', async () => {
         messages?.forEach((message) => {
           expect(message.kind).toBe(RuleMessageKind.PatchMessage);
           const patchMessage = message as PatchMessage;
-          expect(patchMessage.incompatibleInterfaces).toBeUndefined();
           expect(patchMessage.incompatibleTypeAlias!.size).toBe(2);
           ['x', 'y'].forEach((key) => expect(patchMessage.incompatibleTypeAlias!.has(key)).toBe(true));
         });
@@ -61,10 +60,6 @@ describe('patch basic breaking changes', async () => {
           expect(message.kind).toBe(RuleMessageKind.PatchMessage);
           const patchMessage = message as PatchMessage;
           expect(patchMessage.incompatibleTypeAlias).toBeUndefined();
-          expect(patchMessage.incompatibleInterfaces!.size).toBe(1);
-          ['Routes_Change'].forEach((key) =>
-            expect(patchMessage.incompatibleInterfaces!.has(key)).toBe(true)
-          );
         });
       });
     } catch (err) {

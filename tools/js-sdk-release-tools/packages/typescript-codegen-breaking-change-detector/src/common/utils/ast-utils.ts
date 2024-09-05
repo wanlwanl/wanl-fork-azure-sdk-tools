@@ -12,6 +12,7 @@ function findDeclarations<TNode extends Node>(
   return { baseline: baseline, current: current };
 }
 
+// TODO: pass top level declarations instead
 export function findIncompatibleDeclarations(
   detectProject: DetectProject,
   findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
@@ -29,6 +30,7 @@ export function findIncompatibleDeclarations(
   return incompatibleDeclarations;
 }
 
+// TODO: pass top level declarations instead
 export function findAddedDeclarations(
   detectProject: DetectProject,
   findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
@@ -41,6 +43,7 @@ export function findAddedDeclarations(
   return addedDeclarations;
 }
 
+// TODO: pass top level declarations instead
 export function findRemovedDeclarations(
   detectProject: DetectProject,
   findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
@@ -53,6 +56,7 @@ export function findRemovedDeclarations(
   return removedDeclarations;
 }
 
+// TODO: remove, ts-morph is enough
 export function getTopLevelDeclarations(sourceFile: SourceFile): Map<SyntaxKind, Map<string, Node>> {
   const map = new Map<SyntaxKind, Map<string, Node>>();
   const statements = sourceFile.getStatements();
