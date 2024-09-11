@@ -17,7 +17,6 @@ import { BreakingLocation, BreakingPair, BreakingReasons, NameNode } from '../co
 function isSameSignature(left: Signature, right: Signature): boolean {
   if (left.getReturnType().getText() !== right.getReturnType().getText()) return false;
   if (left.getTypeParameters().length !== right.getTypeParameters().length) return false;
-  // TODO: compare type parameters
   if (left.getParameters().length !== right.getParameters().length) return false;
 
   const sameParameters = left.getParameters().filter((leftParameter, i) => {
@@ -37,8 +36,6 @@ function isSameSignature(left: Signature, right: Signature): boolean {
   return sameParameters.length === left.getParameters().length;
 }
 
-// TODO: find a better way to compare call signatures, right now it's too strict
-// TODO: detect signature breaking change details
 function findCallSignatureBreakingChanges(
   baselineSignatures: Signature[],
   currentSignatures: Signature[]
@@ -138,7 +135,6 @@ function findClassicPropertyBreakingChanges(
 }
 
 // NOTE: this function compares methods and arrow functions in interface
-// TODO: detect type changes
 function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProperties: Symbol[]): BreakingPair[] {
   const currentPropMap = currentProperties.reduce((map, p) => {
     map.set(p.getName(), p);
@@ -171,7 +167,6 @@ function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProper
     // NOTE: for method and arrow function, assignable set is the super set of non-breaking-change set,
     // it contains all non breaking changes and some breaking changes,
     // we still need to find out the whether the property has breaking changes
-    // TODO: handle type: any
     console.log(
       '----incompatibleOptional--',
       name,
@@ -205,7 +200,6 @@ function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProper
       return [...result, classicBreakingPair];
     }
 
-    // TODO: support arrow functions
     // handle method and arrow function
     console.log('----method condition--', name, isMethod(baselineProperty), isMethod(currentProperty));
     if (
@@ -335,8 +329,6 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
   return pairs;
 }
 
-// TODO: support arrow functions
-// TODO: consider optional on arrow function
 function findFunctionPropertyBreakingChangeDetails(baselineMethod: Symbol, currentMethod: Symbol): BreakingPair[] {
   console.log('------detail--');
   const returnTypePairs = findReturnTypeBreakingChanges(baselineMethod, currentMethod);

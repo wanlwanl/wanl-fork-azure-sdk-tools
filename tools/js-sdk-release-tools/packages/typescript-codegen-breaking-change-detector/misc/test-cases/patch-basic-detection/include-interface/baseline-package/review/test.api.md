@@ -45,19 +45,20 @@ export interface Routes_Extends extends Routes_Inherit {
     method_parameter_optional_compatible(a?: string): string
 
     // test arrow functions
-    arrow_function_return_type_incompatible(a: string): number
+    arrow_function_return_type_incompatible: (a: string) => number
     // NOTE: assignable
-    arrow_function_return_type_incompatible_any(a: string): number
-    arrow_function_return_type_compatible(a: string): any
-    arrow_function_parameter_type_incompatible(arrow_function_parameter_type_incompatible_parameter_baseline: number): string
-    arrow_function_parameter_type_compatible(arrow_function_parameter_type_compatible_parameter_baseline: any): string
+    arrow_function_return_type_incompatible_any: (a: string) => number
+    arrow_function_return_type_compatible: (a: string) => any
+    arrow_function_parameter_type_incompatible: (arrow_function_parameter_type_incompatible_parameter_baseline: number) => string
+    arrow_function_parameter_type_compatible: (arrow_function_parameter_type_compatible_parameter_baseline: any) => string
     // NOTE: assignable
-    arrow_function_parameter_type_incompatible_concrete_type_to_any(arrow_function_parameter_type_incompatible_concrete_type_to_any_parameter_baseline: number): string
+    arrow_function_parameter_type_incompatible_concrete_type_to_any: (arrow_function_parameter_type_incompatible_concrete_type_to_any_parameter_baseline: number) => string
     // NOTE: assignable
-    arrow_function_parameter_list_count_incompatible_more_to_less(a: string, b: number): string
-    arrow_function_parameter_list_count_change_incompatible_less_to_more(a: string): string
-    arrow_function_parameter_optional_incompatible(a: string): string
-    arrow_function_parameter_optional_compatible(a?: string): string
+    arrow_function_parameter_list_count_incompatible_more_to_less: (a: string, b: number) => string
+    arrow_function_parameter_list_count_change_incompatible_less_to_more: (a: string) => string
+    arrow_function_parameter_optional_incompatible: (a: string) => string
+    arrow_function_parameter_optional_incompatible2: (a: string) => string
+    arrow_function_parameter_optional_compatible: (a?: string) => string
 
     // test cross between arrow functions and methods
     cross_function_parameter_type_incompatible_1(cross_function_parameter_type_incompatible_parameter_1_baseline: number): string
