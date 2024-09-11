@@ -1,11 +1,11 @@
 import { RuleListener } from '@typescript-eslint/utils/eslint-utils';
 import {
+  BreakingPair,
+  BreakingReasons,
   CreateOperationRule,
-  ChangeInfo,
   DetectProject,
   PatchMessage,
   RuleMessageKind,
-  ChangeType,
 } from '../azure/common/types';
 
 import { RuleContext } from '@typescript-eslint/utils/ts-eslint';
@@ -19,8 +19,7 @@ import {
   findRemovedDeclarations,
   getTopLevelDeclarations,
 } from '../common/utils/ast-utils';
-import { create } from '../azure/change-handler/change-info';
-import { compareInterfaces } from '../azure/change-handler/node-comparer';
+import { findInterfaceBreakingChanges } from '../azure/core/breaking-change-finder';
 
 function findInterfaceTypes(root: SourceFile): Map<string, Node> | undefined {
   return getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration);
@@ -31,26 +30,20 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const addedInterfaces = findAddedDeclarations(detectProject, findInterfaceTypes);
   const removedInterfaces = findRemovedDeclarations(detectProject, findInterfaceTypes);
 
-  const interfaceChangeSet = new Map<string, ChangeInfo>();
-  const detectionInfo = new Map<SyntaxKind, Map<string, ChangeInfo>>();
-  detectionInfo.set(SyntaxKind.InterfaceDeclaration, interfaceChangeSet);
+  const interfaceChangeSet = new Map<string, BreakingPair[]>();
 
   incompatibleInterfaces.forEach((i) => {
-    const info: ChangeInfo = create(ChangeType.Incompatible, i.baseline, i.current);
     const baseline = i.baseline.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
     const current = i.current.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
-    compareInterfaces(baseline, current);
-    interfaceChangeSet.set(i.current.name, info);
+    const breakingChanges = findInterfaceBreakingChanges(baseline, current);
+    interfaceChangeSet.set(i.current.name, breakingChanges);
   });
   addedInterfaces.forEach((i) => {});
   removedInterfaces.forEach((i) => {});
 
-  // console.log('--------------------- incompatible', incompatibleInterfaces);
-  // console.log('--------------------- add', addedInterfaces);
-  // console.log('--------------------- remove', removedInterfaces);
-
+  // TODO: add message
   const patchMessage: PatchMessage = {
-    detectionInfo,
+    breakingChanges: interfaceChangeSet,
     kind: RuleMessageKind.PatchMessage,
     id: RuleIds.includeInterface,
   };

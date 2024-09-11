@@ -1,4 +1,4 @@
-import { RuleIds } from './../common/models/rules/rule-ids';
+import { RuleIds } from '../common/models/rules/rule-ids';
 import * as parser from '@typescript-eslint/parser';
 
 import { CreateOperationRule, DetectProject, LinterSettings, ParseForESLintResult, RuleMessage } from './common/types';
@@ -116,7 +116,7 @@ function loadRuleDefinitions(rules: Array<RuleIds>): Promise<{ creator: CreateOp
   return Promise.all(rules.map(async (id) => ({ creator: (await import(`../rules/${id}`)).default, id })));
 }
 
-// TODO: decouple defining rules and verification
+// TODO: decouple rules definitions and verification
 async function detectBreakingChangesCore(
   projectContext: ProjectContext,
   ruleIds: Array<RuleIds>
@@ -128,6 +128,7 @@ async function detectBreakingChangesCore(
     const linter = new TSESLint.Linter({ cwd: projectContext.root });
     const ruleDefinitions = await loadRuleDefinitions(ruleIds);
     ruleDefinitions.forEach((ruleDef) => {
+      // TODO: remove baselineParsed
       linter.defineRule(ruleDef.id, ruleDef.creator(baselineParsed, detectProject));
     });
     linter.defineParser('@typescript-eslint/parser', parser);
@@ -139,7 +140,7 @@ async function detectBreakingChangesCore(
     const rules = ruleDefinitions.reduce((map: SharedConfig.RulesRecord, r) => {
       map[r.id] = [2];
       return map;
-     }, {});
+    }, {});
     linter.verify(
       projectContext.current.code,
       {

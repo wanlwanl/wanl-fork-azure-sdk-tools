@@ -1,16 +1,7 @@
 import { Node, SyntaxKind } from 'ts-morph';
-import { ChangeInfo, ChangeInfoCreator, ChangeNode, ChangeType } from '../common/types';
+import { BreakingChangeContext, BreakingChangeContextCreator, NameNode, BreakingChangeCategory } from '../common/types';
 
-function updateAddedMessage(info: ChangeInfo): void {
-  switch (info.kind) {
-    case SyntaxKind.InterfaceDeclaration:
-      info.message = `Added interface ${info.current!.name}`;
-    default:
-      throw new Error(`Unknown node syntax kind: ${info.kind}`);
-  }
-}
-
-function updateRemovedMessage(info: ChangeInfo): void {
+function updateRemovedMessage(info: BreakingChangeContext): void {
   switch (info.kind) {
     case SyntaxKind.InterfaceDeclaration:
       info.message = `Removed interface ${info.baseline!.name}`;
@@ -20,13 +11,13 @@ function updateRemovedMessage(info: ChangeInfo): void {
   }
 }
 
-function HandleInterfaceDeclaration(info: ChangeInfo) {
+function HandleInterfaceDeclaration(info: BreakingChangeContext) {
   const baseline = info.baseline!.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
   const current = info.current!.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
 }
 
 // TODO: impl
-function updateInCompatibleMessage(info: ChangeInfo): void {
+function updateInCompatibleMessage(info: BreakingChangeContext): void {
   if (!info.current || !info.baseline) throw new Error('Any of current or baseline change info is undefined.');
   switch (info.kind) {
     case SyntaxKind.InterfaceDeclaration:
@@ -37,15 +28,12 @@ function updateInCompatibleMessage(info: ChangeInfo): void {
   }
 }
 
-function updateMessage(info: ChangeInfo): void {
+function updateMessage(info: BreakingChangeContext): void {
   switch (info.type) {
-    case ChangeType.Added:
-      updateAddedMessage(info);
-      return;
-    case ChangeType.Removed:
+    case BreakingChangeCategory.Removed:
       updateRemovedMessage(info);
       return;
-    case ChangeType.Incompatible:
+    case BreakingChangeCategory.Incompatible:
       updateInCompatibleMessage(info);
       return;
     default:
@@ -53,15 +41,15 @@ function updateMessage(info: ChangeInfo): void {
   }
 }
 
-export const create: ChangeInfoCreator = (
-  changeType: ChangeType,
-  baseline: ChangeNode | undefined,
-  current: ChangeNode | undefined
+export const create: BreakingChangeContextCreator = (
+  changeType: BreakingChangeCategory,
+  baseline: NameNode | undefined,
+  current: NameNode | undefined
 ) => {
   if (!baseline && !current) throw new Error('Both baseline and current nodes are undefined');
 
   const kind = baseline?.node?.getKind() ?? current?.node?.getKind();
-  const info: ChangeInfo = {
+  const info: BreakingChangeContext = {
     type: changeType,
     message: '',
     kind: kind!,

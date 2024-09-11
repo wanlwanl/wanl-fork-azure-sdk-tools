@@ -50,33 +50,42 @@ export interface InlineDeclarationNameSetMessage extends RuleMessage {
   kind: RuleMessageKind.InlineDeclarationNameSetMessage;
 }
 
-export interface ChangeNode {
+export interface NameNode {
   name: string;
   node: Node;
 }
 
-export enum ChangeType {
-  Added = 'added',
-  Removed = 'removed',
-  Incompatible = 'incompatible',
+export enum BreakingReasons {
+  None = 0,
+  Removed = 1,
+  TypeChanged = 2,
+  CountChanged = 4,
+  OptionalChanged = 8,
 }
 
-export interface ChangeInfo {
-  type: ChangeType;
-  baseline?: ChangeNode;
-  current?: ChangeNode;
-  message: string;
-  kind: SyntaxKind;
+export interface BreakingPair {
+  baseline: NameNode | undefined;
+  current: NameNode | undefined;
+  location: BreakingLocation;
+  reasons: BreakingReasons;
+  messages: Map<BreakingReasons, string>;
 }
 
-export interface ChangeInfoCreator {
-  (changeType: ChangeType, baselineNode: ChangeNode | undefined, currentNode: ChangeNode | undefined): ChangeInfo;
+export enum BreakingLocation {
+  None = 0,
+  PropertyCall = 1,
+  PropertyFunction =2,
+  PropertyFunctionReturnType = 3,
+  PropertyFunctionParameterList = 4,
+  PropertyFunctionParameter = 5,
+  PropertyClassicProperty = 6,
+  PropertyGeneral = 7,
 }
 
 export interface PatchMessage extends RuleMessage {
   // TODO: add more info
   incompatibleTypeAlias?: Set<string>;
-  detectionInfo?: Map<SyntaxKind, Map<string, ChangeInfo>>;
+  breakingChanges?: Map<string, BreakingPair[]>;
   kind: RuleMessageKind.PatchMessage;
 }
 

@@ -2,7 +2,7 @@ import { remove } from 'fs-extra';
 import { describe, expect, test } from 'vitest';
 
 import { join } from 'node:path';
-import { detectBreakingChangesBetweenPackages } from '../azure/detect-breaking-changes';
+import { detectBreakingChangesBetweenPackages } from '../azure/breaking-change-detector';
 import { createTempFolder, getFormattedDate } from './utils';
 import { RuleIds } from '../common/models/rules/rule-ids';
 

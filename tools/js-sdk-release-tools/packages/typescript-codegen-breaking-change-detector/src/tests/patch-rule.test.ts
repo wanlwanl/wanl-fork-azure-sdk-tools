@@ -2,7 +2,7 @@ import { remove } from 'fs-extra';
 import { describe, expect, test } from 'vitest';
 
 import { join } from 'node:path';
-import { detectBreakingChangesBetweenPackages } from '../azure/detect-breaking-changes';
+import { detectBreakingChangesBetweenPackages } from '../azure/breaking-change-detector';
 import { RuleIds } from '../common/models/rules/rule-ids';
 import { createTempFolder, getFormattedDate } from './utils';
 import { PatchMessage, RuleMessageKind } from '../azure/common/types';
@@ -52,7 +52,7 @@ describe('patch basic breaking changes', async () => {
         currentPackageFolder,
         tempFolder
       );
-      
+
       console.log('-----------res-----', messagesMap);
       expect(messagesMap.size).toBe(1);
       messagesMap.forEach((messages) => {

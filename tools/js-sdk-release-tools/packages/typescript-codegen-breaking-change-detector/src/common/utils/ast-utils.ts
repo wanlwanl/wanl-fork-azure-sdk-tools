@@ -1,5 +1,5 @@
 import { Node, SourceFile, SyntaxKind } from 'ts-morph';
-import { ChangeNode, DetectProject } from '../../azure/common/types';
+import { NameNode, DetectProject } from '../../azure/common/types';
 
 function findDeclarations<TNode extends Node>(
   detectProject: DetectProject,
@@ -16,14 +16,14 @@ function findDeclarations<TNode extends Node>(
 export function findIncompatibleDeclarations(
   detectProject: DetectProject,
   findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
-): Set<{ baseline: ChangeNode; current: ChangeNode }> {
+): Set<{ baseline: NameNode; current: NameNode }> {
   const declarations = findDeclarations(detectProject, findDeclaration);
-  const incompatibleDeclarations = new Set<{ baseline: ChangeNode; current: ChangeNode }>();
+  const incompatibleDeclarations = new Set<{ baseline: NameNode; current: NameNode }>();
   declarations.baseline.forEach((baselineDeclaration, name) => {
     const currentDeclaration = declarations.current.get(name);
     if (currentDeclaration?.getType().isAssignableTo(baselineDeclaration.getType()) === false) {
-      const baseline: ChangeNode = { name, node: baselineDeclaration };
-      const current: ChangeNode = { name, node: currentDeclaration };
+      const baseline: NameNode = { name, node: baselineDeclaration };
+      const current: NameNode = { name, node: currentDeclaration };
       incompatibleDeclarations.add({ baseline, current });
     }
   });
@@ -34,9 +34,9 @@ export function findIncompatibleDeclarations(
 export function findAddedDeclarations(
   detectProject: DetectProject,
   findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
-): Set<ChangeNode> {
+): Set<NameNode> {
   const declarations = findDeclarations(detectProject, findDeclaration);
-  const addedDeclarations = new Set<ChangeNode>();
+  const addedDeclarations = new Set<NameNode>();
   declarations.current.forEach((currentDeclaration, name) => {
     if (!declarations.baseline.has(name)) addedDeclarations.add({ name, node: currentDeclaration });
   });
@@ -47,9 +47,9 @@ export function findAddedDeclarations(
 export function findRemovedDeclarations(
   detectProject: DetectProject,
   findDeclaration: (sourceFile: SourceFile) => Map<string, Node> | undefined
-): Set<ChangeNode> {
+): Set<NameNode> {
   const declarations = findDeclarations(detectProject, findDeclaration);
-  const removedDeclarations = new Set<ChangeNode>();
+  const removedDeclarations = new Set<NameNode>();
   declarations.baseline.forEach((baselineDeclaration, name) => {
     if (!declarations.current.has(name)) removedDeclarations.add({ name, node: baselineDeclaration });
   });
