@@ -11,7 +11,7 @@ import {
 import { RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { Node, SourceFile, SyntaxKind } from 'ts-morph';
 import { RuleIds } from '../common/models/rules/rule-ids';
-import { getSettings } from '../utils/common-utils';
+import { getSettings, turbolog } from '../utils/common-utils';
 import { createOperationRuleListener } from '../azure/utils/azure-rule-utils';
 import {
   findAddedDeclarations,
@@ -27,9 +27,10 @@ function findInterfaceTypes(root: SourceFile): Map<string, Node> | undefined {
 
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const incompatibleInterfaces = findIncompatibleDeclarations(detectProject, findInterfaceTypes);
-  const addedInterfaces = findAddedDeclarations(detectProject, findInterfaceTypes);
   const removedInterfaces = findRemovedDeclarations(detectProject, findInterfaceTypes);
-
+  turbolog(`🚀 \t file: include-interface.ts:31 \t removedInterfaces `);
+  removedInterfaces.forEach((i) => turbolog(`name: `, i.name));
+  
   const interfaceChangeSet = new Map<string, BreakingPair[]>();
 
   incompatibleInterfaces.forEach((i) => {
@@ -38,7 +39,6 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
     const breakingChanges = findInterfaceBreakingChanges(baseline, current);
     interfaceChangeSet.set(i.current.name, breakingChanges);
   });
-  addedInterfaces.forEach((i) => {});
   removedInterfaces.forEach((i) => {});
 
   // TODO: add message
