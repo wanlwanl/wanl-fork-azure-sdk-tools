@@ -10,30 +10,49 @@ import {
   CallSignatureDeclaration,
   Type,
   FunctionTypeNode,
+  FunctionDeclaration,
+  PropertyDeclaration,
+  TypeNode,
 } from 'ts-morph';
 import { turbolog, turbologDetails } from '../../utils/common-utils';
 import { BreakingLocation, BreakingPair, BreakingReasons, NameNode } from '../common/types';
+import {
+  getCallableEntityParameters,
+  getCallableEntityParametersFromSymbol,
+  getCallableEntityReturnTypeNode,
+  getCallableEntityReturnTypeNodeFromSymbol,
+  isArrowFunction,
+  isMethod,
+  isSameSignature,
+} from './node-revealers/callable-entity-revealer';
 
-function isSameSignature(left: Signature, right: Signature): boolean {
-  if (left.getReturnType().getText() !== right.getReturnType().getText()) return false;
-  if (left.getTypeParameters().length !== right.getTypeParameters().length) return false;
-  if (left.getParameters().length !== right.getParameters().length) return false;
+function findBreakingReasons(baselineNode: Node, currentNode: Node): BreakingReasons {
+  let breakingReasons = BreakingReasons.None;
 
-  const sameParameters = left.getParameters().filter((leftParameter, i) => {
-    const rightParameter = right.getParameters()[i];
-    if (leftParameter.getName() !== rightParameter.getName()) return false;
+  const baselineTypeNode = 'getTypeNode' in baselineNode ? (baselineNode as any).getTypeNode() : undefined;
+  const currentTypeNode = 'getTypeNode' in currentNode ? (currentNode as any).getTypeNode() : undefined;
 
-    const getParameterType = (parameter: Symbol) =>
-      (parameter.getValueDeclaration() as ParameterDeclaration)?.getTypeNode()?.getType();
-    const leftParaType = getParameterType(leftParameter);
-    const rightParaType = getParameterType(rightParameter);
+  // check if concrete type -> any. e.g. string -> any
+  const isConcretTypeToAny = canConvertConcretTypeToAny(baselineTypeNode, currentTypeNode);
+  if (isConcretTypeToAny) breakingReasons |= BreakingReasons.TypeChanged;
 
-    if (!leftParaType && !rightParaType) return true;
-    if (!leftParaType || !rightParaType) return false;
-    if (!leftParaType.isAssignableTo(rightParaType) || !rightParaType.isAssignableTo(leftParaType)) return false;
-    return true;
-  });
-  return sameParameters.length === left.getParameters().length;
+  // check type predicates
+  if (baselineTypeNode && currentTypeNode && baselineTypeNode.getKind() === SyntaxKind.TypePredicate && currentTypeNode.getKind() === SyntaxKind.TypePredicate) {
+        
+  }
+
+  // check assignability
+  const assignable = currentNode.getType().isAssignableTo(baselineNode.getType());
+  if (!assignable) breakingReasons |= BreakingReasons.TypeChanged;
+
+
+  // check required -> optional
+  const isBaselineNodeOptional = baselineNode.getSymbolOrThrow().isOptional();
+  const isCurrentNodeOptional = currentNode.getSymbolOrThrow().isOptional();
+  const incompatibleOptional = isBaselineNodeOptional && !isCurrentNodeOptional;
+  if (incompatibleOptional) breakingReasons |= BreakingReasons.OptionalChanged;
+
+  return breakingReasons;
 }
 
 function findCallSignatureBreakingChanges(
@@ -72,16 +91,6 @@ function getType(p: Symbol) {
   return p.getValueDeclarationOrThrow().getType();
 }
 
-function isMethod(p: Symbol) {
-  return p.getFlags() === SymbolFlags.Method;
-}
-
-function isArrowFunction(p: Symbol) {
-  return (
-    p.getFlags() === SymbolFlags.Property && p.getValueDeclarationOrThrow().getType().getCallSignatures().length > 0
-  );
-}
-
 function isMethodOrArrowFunction(p: Symbol) {
   return isMethod(p) || isArrowFunction(p);
 }
@@ -90,7 +99,7 @@ function isClassicProperty(p: Symbol) {
   return (p.getFlags() & SymbolFlags.Property) !== 0 && !isMethodOrArrowFunction(p);
 }
 
-function isConcretTypeToAny(baselineKind: SyntaxKind | undefined, currentKind: SyntaxKind | undefined) {
+function canConvertConcretTypeToAny(baselineKind: SyntaxKind | undefined, currentKind: SyntaxKind | undefined) {
   return baselineKind !== SyntaxKind.AnyKeyword && currentKind === SyntaxKind.AnyKeyword;
 }
 
@@ -112,19 +121,12 @@ function findClassicPropertyBreakingChanges(
     getTypeNode(currentProperty)?.getKindName()
   );
 
-  const baselinePropertyTypeKind = getTypeNode(baselineProperty)?.getKind();
-  const currentPropertyTypeKind = getTypeNode(currentProperty)?.getKind();
-  const assignable = getType(currentProperty).isAssignableTo(getType(baselineProperty));
-  const incompatibleOptional = currentProperty.isOptional() && !baselineProperty.isOptional();
-  const concretTypeToAny = isConcretTypeToAny(baselinePropertyTypeKind, currentPropertyTypeKind);
-  const hasBreakingChange = !assignable || incompatibleOptional || concretTypeToAny;
+  const reasons = findBreakingReasons(
+    baselineProperty.getValueDeclarationOrThrow(),
+    currentProperty.getValueDeclarationOrThrow()
+  );
 
-  if (!hasBreakingChange) return;
-
-  const reasons =
-    (assignable ? BreakingReasons.None : BreakingReasons.TypeChanged) |
-    (incompatibleOptional ? BreakingReasons.OptionalChanged : BreakingReasons.None) |
-    (concretTypeToAny ? BreakingReasons.TypeChanged : BreakingReasons.None);
+  if (reasons === BreakingReasons.None) return undefined;
   return {
     location: BreakingLocation.PropertyClassicProperty,
     reasons,
@@ -216,34 +218,35 @@ function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProper
   return [...removed, ...changed];
 }
 
-function getArrowFunctionTypeNode(arrowFunction: Node): FunctionTypeNode {
-  return arrowFunction
-    .asKindOrThrow(SyntaxKind.PropertySignature)
-    .getTypeNode()!
-    .asKindOrThrow(SyntaxKind.FunctionType);
-}
-
 function findReturnTypeBreakingChanges(baselineMethod: Symbol, currentMethod: Symbol): BreakingPair[] {
   const getReturnType = (propertyFunction: Symbol): Type => {
-    const declaration = propertyFunction.getValueDeclarationOrThrow();
-    if (isMethod(propertyFunction)) return declaration.asKindOrThrow(SyntaxKind.MethodSignature).getReturnType();
-    // arrow function
-    return getArrowFunctionTypeNode(declaration).getReturnType();
+    const type = getCallableEntityReturnTypeNodeFromSymbol(propertyFunction)?.getType();
+    if (!type) throw new Error(`Unable to get return type of ${propertyFunction.getName()}`);
+    return type;
   };
 
   const getReturnTypeKind = (propertyFunction: Symbol): SyntaxKind => {
-    const declaration = propertyFunction.getValueDeclarationOrThrow();
-    if (isMethod(propertyFunction))
-      return declaration.asKindOrThrow(SyntaxKind.MethodSignature).getReturnTypeNode()!.getKind();
-    // arrow function
-    return getArrowFunctionTypeNode(declaration).getReturnTypeNode()!.getKind();
+    const kind = getCallableEntityReturnTypeNodeFromSymbol(propertyFunction)?.getKind();
+    if (!kind) throw new Error('Implicit return type is not supported.');
+    return kind;
   };
 
   const assignable = getReturnType(currentMethod).isAssignableTo(getReturnType(baselineMethod));
   const baselineReturnTypeKind = getReturnTypeKind(baselineMethod);
   const currentReturnTypeKind = getReturnTypeKind(currentMethod);
-  const hasBreakingChange = !assignable || isConcretTypeToAny(baselineReturnTypeKind, currentReturnTypeKind);
-  if (!hasBreakingChange) return [];
+  const reasons = findBreakingReasons(
+    baselineMethod.getValueDeclarationOrThrow(),
+    currentMethod.getValueDeclarationOrThrow()
+  );
+  console.log(
+    '-- returnn type--',
+    currentMethod.getValueDeclarationOrThrow().getText(),
+    assignable,
+    baselineReturnTypeKind,
+    currentReturnTypeKind,
+    reasons
+  );
+  if (reasons === BreakingReasons.None) return [];
   const pair: BreakingPair = {
     location: BreakingLocation.PropertyFunctionReturnType,
     reasons: BreakingReasons.TypeChanged,
@@ -255,17 +258,17 @@ function findReturnTypeBreakingChanges(baselineMethod: Symbol, currentMethod: Sy
 }
 
 function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Symbol): BreakingPair[] {
-  const getParameters = (propertyFunction: Symbol): ParameterDeclaration[] => {
-    const declaration = propertyFunction.getValueDeclarationOrThrow();
-    if (isMethod(propertyFunction)) return declaration.asKindOrThrow(SyntaxKind.MethodSignature).getParameters();
-    return getArrowFunctionTypeNode(declaration).getParameters();
-  };
-
   const pairs: BreakingPair[] = [];
 
   // handle parameter counts
-  const isSameParameterCount = getParameters(baselineMethod).length === getParameters(currentMethod).length;
-  console.log('--------para count--', getParameters(baselineMethod).length, getParameters(currentMethod).length);
+  const baselineParameters = getCallableEntityParametersFromSymbol(baselineMethod);
+  const currentParameters = getCallableEntityParametersFromSymbol(currentMethod);
+  const isSameParameterCount = baselineParameters.length === currentParameters.length;
+  console.log(
+    '--------para count--',
+    getCallableEntityParametersFromSymbol(baselineMethod).length,
+    getCallableEntityParametersFromSymbol(currentMethod).length
+  );
   if (!isSameParameterCount) {
     const pair: BreakingPair = {
       location: BreakingLocation.PropertyFunctionParameterList,
@@ -278,13 +281,10 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
     return pairs;
   }
 
-  const getParameterNameNode = (p: ParameterDeclaration | undefined) =>
-    p ? { name: p.getName() || '', node: p } : undefined;
-
   // NOTE: parameter count is the same
   // handle each parameter
-  getParameters(baselineMethod).forEach((baselineParameter, i) => {
-    const currentParameter = getParameters(currentMethod)[i];
+  baselineParameters.forEach((baselineParameter, i) => {
+    const currentParameter = currentParameters[i];
     // handle optional
     const isOptionalIncompatible = currentParameter.isOptional() && !baselineParameter.isOptional();
     console.log(
@@ -296,6 +296,8 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
       'c',
       currentParameter.isOptional()
     );
+    const getParameterNameNode = (p: ParameterDeclaration | undefined) =>
+      p ? { name: p.getName() || '', node: p } : undefined;
     const pair: BreakingPair = {
       baseline: getParameterNameNode(baselineParameter),
       current: getParameterNameNode(currentParameter),
@@ -303,26 +305,11 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
       reasons: BreakingReasons.None,
       messages: new Map<BreakingReasons, string>(),
     };
-    if (isOptionalIncompatible) pair.reasons |= BreakingReasons.OptionalChanged;
 
-    // handle type
-    const assignable = currentParameter.getType().isAssignableTo(baselineParameter.getType());
-    const concretTypeToAny = isConcretTypeToAny(
-      baselineParameter.getTypeNode()?.getKind(),
-      currentParameter.getTypeNode()?.getKind()
-    );
-    const hasBreakingChange = !assignable || concretTypeToAny;
+    pair.reasons = findBreakingReasons(baselineParameter, currentParameter);
 
-    console.log(
-      '--------handle type--',
-      getNameNode(baselineMethod).name,
-      'concretTypeToAny',
-      concretTypeToAny,
-      'assignable',
-      assignable
-    );
+    console.log('--------handle type--', getNameNode(baselineMethod).name, 'reasons', pair.reasons);
 
-    if (hasBreakingChange) pair.reasons |= BreakingReasons.TypeChanged;
     if (pair.reasons !== BreakingReasons.None) pairs.push(pair);
   });
 
@@ -333,7 +320,7 @@ function findFunctionPropertyBreakingChangeDetails(baselineMethod: Symbol, curre
   console.log('------detail--');
   const returnTypePairs = findReturnTypeBreakingChanges(baselineMethod, currentMethod);
   const parameterPairs = findParameterBreakingChanges(baselineMethod, currentMethod);
- 
+
   return [...returnTypePairs, ...parameterPairs];
 }
 
@@ -361,4 +348,14 @@ export function findInterfaceBreakingChanges(
   );
 
   return [...callSignatureBreakingChanges, ...propertyBreakingChanges];
+}
+
+export function findFunctionBreakingChanges(
+  baselineFunction: FunctionDeclaration,
+  currentFunction: FunctionDeclaration
+): BreakingPair[] {
+  const baselineMethod = baselineFunction.getSymbol();
+  const currentMethod = currentFunction.getSymbol();
+  if (!baselineMethod || !currentMethod) return [];
+  return findFunctionPropertyBreakingChangeDetails(baselineMethod, currentMethod);
 }

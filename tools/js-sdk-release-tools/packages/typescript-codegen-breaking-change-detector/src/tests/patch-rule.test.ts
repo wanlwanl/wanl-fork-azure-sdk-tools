@@ -99,4 +99,35 @@ describe('patch basic breaking changes', async () => {
       await remove(tempFolder);
     }
   });
+
+  test('detect function\'s breaking changes for include-function rule', async () => {
+    const testCaseDir = '../../misc/test-cases/patch-basic-detection/include-function/';
+    const currentPackageFolder = join(__dirname, testCaseDir, 'current-package');
+    const baselinePackageFolder = join(__dirname, testCaseDir, 'baseline-package');
+    const date = getFormattedDate();
+    let tempFolder = '';
+    try {
+      tempFolder = await createTempFolder(`.tmp/temp-${date}`);
+      const messagesMap = await detectBreakingChangesBetweenPackages(
+        [RuleIds.includeFunction],
+        baselinePackageFolder,
+        currentPackageFolder,
+        tempFolder
+      );
+
+      console.log('-----------res-----', messagesMap);
+      expect(messagesMap.size).toBe(1);
+      messagesMap.forEach((messages) => {
+        messages?.forEach((message) => {
+          expect(message.kind).toBe(RuleMessageKind.PatchMessage);
+          const patchMessage = message as PatchMessage;
+          expect(patchMessage.incompatibleTypeAlias).toBeUndefined();
+        });
+      });
+    } catch (err) {
+      throw err;
+    } finally {
+      await remove(tempFolder);
+    }
+  });
 });

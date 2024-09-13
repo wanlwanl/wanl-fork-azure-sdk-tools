@@ -12,6 +12,7 @@ function findDeclarations<TNode extends Node>(
   return { baseline: baseline, current: current };
 }
 
+// TODO: consider "any" keyword case, assignableTo is not enough
 // TODO: pass top level declarations instead
 export function findIncompatibleDeclarations(
   detectProject: DetectProject,
