@@ -58,12 +58,16 @@ export function isSameSignature(left: Signature, right: Signature): boolean {
   return sameParameters.length === left.getParameters().length;
 }
 
-export function isMethod(p: Symbol) {
+export function isPropertyMethod(p: Symbol) {
   return p.getFlags() === SymbolFlags.Method;
 }
 
-export function isArrowFunction(p: Symbol) {
+export function isPropertyArrowFunction(p: Symbol) {
   return (
     p.getFlags() === SymbolFlags.Property && p.getValueDeclarationOrThrow().getType().getCallSignatures().length > 0
   );
+}
+
+export function isMethodOrArrowFunction(p: Symbol) {
+  return isPropertyMethod(p) || isPropertyArrowFunction(p);
 }

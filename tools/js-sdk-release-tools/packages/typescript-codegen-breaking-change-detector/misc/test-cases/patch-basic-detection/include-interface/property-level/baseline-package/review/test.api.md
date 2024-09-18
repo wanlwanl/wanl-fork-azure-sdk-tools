@@ -1,3 +1,5 @@
+# Test Case
+
 ```ts
 // export interface Routes_Change {
 //     (path: "path1"): string;
@@ -82,6 +84,11 @@ export interface Routes_Extends extends Routes_Inherit {
     prop_other_to_classic2(): string
     prop_any_to_classic: any
     prop_classic_to_any: string
+    readonly prop_readonly_to_mutable: string
+    prop_mutable_to_readonly: string
 }
 
+export interface GenericInterface<T> {
+    
+}
 ```

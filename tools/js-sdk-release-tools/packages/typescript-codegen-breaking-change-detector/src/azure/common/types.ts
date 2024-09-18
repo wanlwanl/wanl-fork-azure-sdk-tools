@@ -14,6 +14,7 @@ import {
   SyntaxKind,
   TypeAliasDeclaration,
   Node,
+  TypeNode,
 } from 'ts-morph';
 
 export interface ParseForESLintResult {
@@ -52,7 +53,7 @@ export interface InlineDeclarationNameSetMessage extends RuleMessage {
 
 export interface NameNode {
   name: string;
-  node: Node;
+  node: Node | TypeNode;
 }
 
 export enum BreakingReasons {
@@ -60,7 +61,8 @@ export enum BreakingReasons {
   Removed = 1,
   TypeChanged = 2,
   CountChanged = 4,
-  OptionalChanged = 8,
+  RequiredToOptional = 8,
+  ReadonlyToMutable = 16,
 }
 
 export interface BreakingPair {
@@ -74,7 +76,7 @@ export interface BreakingPair {
 export enum BreakingLocation {
   None = 0,
   PropertyCall = 1,
-  PropertyFunction =2,
+  PropertyFunction = 2,
   PropertyFunctionReturnType = 3,
   PropertyFunctionParameterList = 4,
   PropertyFunctionParameter = 5,

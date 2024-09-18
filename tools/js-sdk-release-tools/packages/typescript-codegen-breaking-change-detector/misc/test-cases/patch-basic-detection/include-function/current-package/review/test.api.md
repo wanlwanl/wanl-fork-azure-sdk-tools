@@ -25,5 +25,7 @@ export function type_guard_compatible(type_guard_compatible_para_1_baseline: Der
 export function type_guard_incompatible_1(type_guard_incompatible_1_para_1_current: Derived3 | Derived2): type_guard_incompatible_1_para_1_current is Derived1;
 export function type_guard_incompatible_2(type_guard_incompatible_2_para_1_current: Derived1 | Derived2): type_guard_incompatible_2_para_1_current is Derived2;
 
+// TODO: add arrow function
+
 
 ```

@@ -1,3 +1,5 @@
+// TODO: support class
+
 import {
   InterfaceDeclaration,
   Node,
@@ -6,52 +8,68 @@ import {
   SyntaxKind,
   Symbol,
   SymbolFlags,
-  MethodDeclaration,
-  CallSignatureDeclaration,
-  Type,
-  FunctionTypeNode,
   FunctionDeclaration,
-  PropertyDeclaration,
+  TypePredicateNode,
+  PropertySignature,
   TypeNode,
+  PropertyDeclaration,
+  MethodDeclaration,
 } from 'ts-morph';
-import { turbolog, turbologDetails } from '../../utils/common-utils';
 import { BreakingLocation, BreakingPair, BreakingReasons, NameNode } from '../common/types';
 import {
-  getCallableEntityParameters,
   getCallableEntityParametersFromSymbol,
-  getCallableEntityReturnTypeNode,
   getCallableEntityReturnTypeNodeFromSymbol,
-  isArrowFunction,
-  isMethod,
+  isMethodOrArrowFunction,
+  isPropertyArrowFunction,
+  isPropertyMethod,
   isSameSignature,
 } from './node-revealers/callable-entity-revealer';
 
 function findBreakingReasons(baselineNode: Node, currentNode: Node): BreakingReasons {
+  const getTypeNode = (node: Node): TypeNode => {
+    if (Node.isReturnTyped(node)) return node.getReturnTypeNodeOrThrow();
+    if (Node.isTyped(node)) return node.getTypeNodeOrThrow();
+    throw new Error(`Unsupported ${node.getKindName()} node: "${node.getText()}"`);
+  };
   let breakingReasons = BreakingReasons.None;
 
-  const baselineTypeNode = 'getTypeNode' in baselineNode ? (baselineNode as any).getTypeNode() : undefined;
-  const currentTypeNode = 'getTypeNode' in currentNode ? (currentNode as any).getTypeNode() : undefined;
+  const baselineTypeNode = getTypeNode(baselineNode);
+  const currentTypeNode = getTypeNode(currentNode);
 
   // check if concrete type -> any. e.g. string -> any
-  const isConcretTypeToAny = canConvertConcretTypeToAny(baselineTypeNode, currentTypeNode);
+  const isConcretTypeToAny = canConvertConcretTypeToAny(baselineTypeNode?.getKind(), currentTypeNode?.getKind());
   if (isConcretTypeToAny) breakingReasons |= BreakingReasons.TypeChanged;
 
   // check type predicates
-  if (baselineTypeNode && currentTypeNode && baselineTypeNode.getKind() === SyntaxKind.TypePredicate && currentTypeNode.getKind() === SyntaxKind.TypePredicate) {
-        
+  if (
+    baselineTypeNode &&
+    currentTypeNode &&
+    baselineTypeNode.isKind(SyntaxKind.TypePredicate) &&
+    currentTypeNode.isKind(SyntaxKind.TypePredicate)
+  ) {
+    const getTypeName = (node: TypeNode) => node.asKindOrThrow(SyntaxKind.TypePredicate).getTypeNodeOrThrow().getText();
+    if (getTypeName(baselineTypeNode) !== getTypeName(currentTypeNode)) breakingReasons |= BreakingReasons.TypeChanged;
   }
 
   // check assignability
   const assignable = currentNode.getType().isAssignableTo(baselineNode.getType());
   if (!assignable) breakingReasons |= BreakingReasons.TypeChanged;
 
-
   // check required -> optional
-  const isBaselineNodeOptional = baselineNode.getSymbolOrThrow().isOptional();
-  const isCurrentNodeOptional = currentNode.getSymbolOrThrow().isOptional();
-  const incompatibleOptional = isBaselineNodeOptional && !isCurrentNodeOptional;
-  if (incompatibleOptional) breakingReasons |= BreakingReasons.OptionalChanged;
+  const isOptional = (node: Node) => node.getSymbolOrThrow().isOptional();
+  const incompatibleOptional = isOptional(baselineNode) && !isOptional(currentNode);
+  if (incompatibleOptional) breakingReasons |= BreakingReasons.RequiredToOptional;
 
+  // check readonly -> mutable
+  const isReadonly = (node: Node) => Node.isReadonlyable(node) && node.isReadonly();
+  const incompatibleReadonly = isReadonly(baselineNode) && !isReadonly(currentNode);
+
+  // debug
+  if (currentNode.asKind(SyntaxKind.PropertySignature)?.getName() === 'prop_readonly_to_mutable') {
+    console.log('--- prop_readonly_to_mutable', isReadonly(baselineNode), isReadonly(currentNode));
+  }
+
+  if (incompatibleReadonly) breakingReasons |= BreakingReasons.ReadonlyToMutable;
   return breakingReasons;
 }
 
@@ -87,14 +105,6 @@ function getNameNode(s: Symbol): NameNode {
   return { name: s.getName(), node: s.getValueDeclarationOrThrow() };
 }
 
-function getType(p: Symbol) {
-  return p.getValueDeclarationOrThrow().getType();
-}
-
-function isMethodOrArrowFunction(p: Symbol) {
-  return isMethod(p) || isArrowFunction(p);
-}
-
 function isClassicProperty(p: Symbol) {
   return (p.getFlags() & SymbolFlags.Property) !== 0 && !isMethodOrArrowFunction(p);
 }
@@ -107,20 +117,6 @@ function findClassicPropertyBreakingChanges(
   baselineProperty: Symbol,
   currentProperty: Symbol
 ): BreakingPair | undefined {
-  const getTypeNode = (s: Symbol) =>
-    s.getValueDeclarationOrThrow().asKindOrThrow(SyntaxKind.PropertySignature).getTypeNode();
-  console.log(
-    '----classic prop--',
-    baselineProperty.getName(),
-    'type',
-    getTypeNode(baselineProperty)?.getText(),
-    '->',
-    getTypeNode(currentProperty)?.getText(),
-    getTypeNode(baselineProperty)?.getKindName(),
-    '->',
-    getTypeNode(currentProperty)?.getKindName()
-  );
-
   const reasons = findBreakingReasons(
     baselineProperty.getValueDeclarationOrThrow(),
     currentProperty.getValueDeclarationOrThrow()
@@ -162,21 +158,8 @@ function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProper
 
   const changed = baselineProperties.reduce((result, baselineProperty) => {
     const name = baselineProperty.getName();
-    console.log('--property--', name);
     const currentProperty = currentPropMap.get(name);
     if (!currentProperty) return result;
-
-    // NOTE: for method and arrow function, assignable set is the super set of non-breaking-change set,
-    // it contains all non breaking changes and some breaking changes,
-    // we still need to find out the whether the property has breaking changes
-    console.log(
-      '----incompatibleOptional--',
-      name,
-      'base',
-      baselineProperty.isOptional(),
-      'curr',
-      currentProperty.isOptional()
-    );
 
     const isBaselinePropertyClassic = isClassicProperty(baselineProperty);
     const isCurrentPropertyClassic = isClassicProperty(currentProperty);
@@ -203,12 +186,10 @@ function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProper
     }
 
     // handle method and arrow function
-    console.log('----method condition--', name, isMethod(baselineProperty), isMethod(currentProperty));
     if (
-      (isMethod(baselineProperty) || isArrowFunction(baselineProperty)) &&
-      (isMethod(currentProperty) || isArrowFunction(currentProperty))
+      (isPropertyMethod(baselineProperty) || isPropertyArrowFunction(baselineProperty)) &&
+      (isPropertyMethod(currentProperty) || isPropertyArrowFunction(currentProperty))
     ) {
-      console.log('----method--', name);
       const functionPropertyDetails = findFunctionPropertyBreakingChangeDetails(baselineProperty, currentProperty);
       return [...result, ...functionPropertyDetails];
     }
@@ -219,40 +200,26 @@ function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProper
 }
 
 function findReturnTypeBreakingChanges(baselineMethod: Symbol, currentMethod: Symbol): BreakingPair[] {
-  const getReturnType = (propertyFunction: Symbol): Type => {
-    const type = getCallableEntityReturnTypeNodeFromSymbol(propertyFunction)?.getType();
-    if (!type) throw new Error(`Unable to get return type of ${propertyFunction.getName()}`);
-    return type;
-  };
-
-  const getReturnTypeKind = (propertyFunction: Symbol): SyntaxKind => {
-    const kind = getCallableEntityReturnTypeNodeFromSymbol(propertyFunction)?.getKind();
-    if (!kind) throw new Error('Implicit return type is not supported.');
-    return kind;
-  };
-
-  const assignable = getReturnType(currentMethod).isAssignableTo(getReturnType(baselineMethod));
-  const baselineReturnTypeKind = getReturnTypeKind(baselineMethod);
-  const currentReturnTypeKind = getReturnTypeKind(currentMethod);
   const reasons = findBreakingReasons(
     baselineMethod.getValueDeclarationOrThrow(),
     currentMethod.getValueDeclarationOrThrow()
   );
-  console.log(
-    '-- returnn type--',
-    currentMethod.getValueDeclarationOrThrow().getText(),
-    assignable,
-    baselineReturnTypeKind,
-    currentReturnTypeKind,
-    reasons
-  );
+
   if (reasons === BreakingReasons.None) return [];
+  const baselineReturnTypeNode = getCallableEntityReturnTypeNodeFromSymbol(baselineMethod);
+  const currentReturnTypeNode = getCallableEntityReturnTypeNodeFromSymbol(currentMethod);
+  const baselineNameNode = baselineReturnTypeNode
+    ? { name: baselineReturnTypeNode.getText(), node: baselineReturnTypeNode }
+    : undefined;
+  const currentNameNode = currentReturnTypeNode
+    ? { name: currentReturnTypeNode.getText(), node: currentReturnTypeNode }
+    : undefined;
   const pair: BreakingPair = {
     location: BreakingLocation.PropertyFunctionReturnType,
     reasons: BreakingReasons.TypeChanged,
     messages: new Map<BreakingReasons, string>(),
-    baseline: getNameNode(baselineMethod),
-    current: getNameNode(currentMethod),
+    baseline: baselineNameNode,
+    current: currentNameNode,
   };
   return [pair];
 }
@@ -264,11 +231,6 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
   const baselineParameters = getCallableEntityParametersFromSymbol(baselineMethod);
   const currentParameters = getCallableEntityParametersFromSymbol(currentMethod);
   const isSameParameterCount = baselineParameters.length === currentParameters.length;
-  console.log(
-    '--------para count--',
-    getCallableEntityParametersFromSymbol(baselineMethod).length,
-    getCallableEntityParametersFromSymbol(currentMethod).length
-  );
   if (!isSameParameterCount) {
     const pair: BreakingPair = {
       location: BreakingLocation.PropertyFunctionParameterList,
@@ -285,17 +247,6 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
   // handle each parameter
   baselineParameters.forEach((baselineParameter, i) => {
     const currentParameter = currentParameters[i];
-    // handle optional
-    const isOptionalIncompatible = currentParameter.isOptional() && !baselineParameter.isOptional();
-    console.log(
-      '--------isOptionalIncompatible--',
-      getNameNode(baselineMethod).name,
-      isOptionalIncompatible,
-      'b',
-      baselineParameter.isOptional(),
-      'c',
-      currentParameter.isOptional()
-    );
     const getParameterNameNode = (p: ParameterDeclaration | undefined) =>
       p ? { name: p.getName() || '', node: p } : undefined;
     const pair: BreakingPair = {
@@ -305,11 +256,7 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
       reasons: BreakingReasons.None,
       messages: new Map<BreakingReasons, string>(),
     };
-
     pair.reasons = findBreakingReasons(baselineParameter, currentParameter);
-
-    console.log('--------handle type--', getNameNode(baselineMethod).name, 'reasons', pair.reasons);
-
     if (pair.reasons !== BreakingReasons.None) pairs.push(pair);
   });
 
@@ -317,39 +264,29 @@ function findParameterBreakingChanges(baselineMethod: Symbol, currentMethod: Sym
 }
 
 function findFunctionPropertyBreakingChangeDetails(baselineMethod: Symbol, currentMethod: Symbol): BreakingPair[] {
-  console.log('------detail--');
   const returnTypePairs = findReturnTypeBreakingChanges(baselineMethod, currentMethod);
   const parameterPairs = findParameterBreakingChanges(baselineMethod, currentMethod);
-
   return [...returnTypePairs, ...parameterPairs];
 }
 
-// TODO: add generic test case
+// TODO: support readonly properties
+// TODO: add generic test case: parameter with generic, return type with generic
 export function findInterfaceBreakingChanges(
   baseline: InterfaceDeclaration,
   current: InterfaceDeclaration
 ): BreakingPair[] {
-  turbolog(`🚀 \t file: breaking-change-finder.ts:48 \t interface `, baseline.getName());
   const baselineSignatures = baseline.getType().getCallSignatures();
   const currentSignatures = current.getType().getCallSignatures();
   const callSignatureBreakingChanges = findCallSignatureBreakingChanges(baselineSignatures, currentSignatures);
-  console.log('---callSignatureBreakingChanges', callSignatureBreakingChanges);
   const baselineProperties = baseline.getType().getProperties();
   const currentProperties = current.getType().getProperties();
 
   const propertyBreakingChanges = findPropertyBreakingChanges(baselineProperties, currentProperties);
-  turbolog(
-    `🚀 \t file: breaking-change-finder.ts:222 \t propertyBreakingChanges `,
-    propertyBreakingChanges.map((p) => ({
-      name: p.baseline?.name ?? p.current?.name ?? 'no-name',
-      kind: p.location,
-      reasons: p.reasons,
-    }))
-  );
 
   return [...callSignatureBreakingChanges, ...propertyBreakingChanges];
 }
 
+// TODO: support arrow function
 export function findFunctionBreakingChanges(
   baselineFunction: FunctionDeclaration,
   currentFunction: FunctionDeclaration

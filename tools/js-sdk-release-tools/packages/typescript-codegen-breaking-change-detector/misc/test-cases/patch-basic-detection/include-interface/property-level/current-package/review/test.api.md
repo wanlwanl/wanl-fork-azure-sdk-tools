@@ -1,3 +1,5 @@
+# Test Case
+
 ```ts
 
 // export interface Routes_Change {
@@ -79,10 +81,11 @@ export interface Routes_Extends extends Routes_Inherit {
     prop_classic_to_other: () => string
     prop_classic_to_other2(): string
     prop_other_to_classic: string
-    // TODO: check any
     prop_other_to_classic2: string
     prop_any_to_classic: string
     prop_classic_to_any: any
+    prop_readonly_to_mutable: string
+    readonly prop_mutable_to_readonly: string
 }
 
 ```
