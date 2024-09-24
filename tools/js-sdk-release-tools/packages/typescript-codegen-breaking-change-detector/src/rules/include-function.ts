@@ -14,20 +14,40 @@ import { RuleIds } from '../common/models/rules/rule-ids';
 import { getSettings, turbolog } from '../utils/common-utils';
 import { createOperationRuleListener } from '../azure/utils/azure-rule-utils';
 import {
-  findAddedDeclarations,
   findIncompatibleDeclarations,
   findRemovedDeclarations,
   getTopLevelDeclarations,
 } from '../common/utils/ast-utils';
-import { findFunctionBreakingChanges, findInterfaceBreakingChanges } from '../azure/core/breaking-change-finder';
-
+import { findFunctionBreakingChanges } from '../azure/core/breaking-change-finder';
 
 function findFunctionTypes(root: SourceFile): Map<string, Node> | undefined {
-  return getTopLevelDeclarations(root).get(SyntaxKind.FunctionDeclaration);
+  const normalFunctions = getTopLevelDeclarations(root).get(SyntaxKind.FunctionDeclaration);
+  // const arrowFunctions: Map<string, Node> | undefined = new Map<string, Node>();
+  // getTopLevelDeclarations(root)
+  //   .get(SyntaxKind.VariableStatement)
+  //   ?.forEach((stat) => {
+  //     stat
+  //       .asKindOrThrow(SyntaxKind.VariableStatement)
+  //       .getDeclarations()
+  //       .forEach((decl) => {
+  //         console.log(`)))))))))))))))))))))))) --- decl: ${decl?.getText()}`);
+
+  //         const arrowFunction = decl
+  //           .asKindOrThrow(SyntaxKind.VariableDeclaration)
+  //           .getInitializer()
+  //           ?.asKind(SyntaxKind.ArrowFunction);
+  //         console.log(`)))))))))))))))))))))))) --- arrow: ${arrowFunction?.getText()}`);
+  //         if (arrowFunction!) return;
+  //         arrowFunctions.set(decl.getText(), arrowFunction!);
+  //       });
+  //   });
+  return normalFunctions;
+  // return new Map<string, Node>([...normalFunctions!.entries(), ...arrowFunctions.entries()]);
 }
 
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const incompatibleFunctions = findIncompatibleDeclarations(detectProject, findFunctionTypes);
+
   const removedFunctions = findRemovedDeclarations(detectProject, findFunctionTypes);
   turbolog(`🚀 \t file: include-function.ts:31 \t removedFunctions `);
   removedFunctions.forEach((i) => turbolog(`name: `, i.name));
@@ -35,10 +55,15 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const functionChangeSet = new Map<string, BreakingPair[]>();
 
   incompatibleFunctions.forEach((i) => {
+    console.log(`
+      ******** incompa func
+        baseline: ${i.baseline.node.getText()}
+      `);
     const baseline = i.baseline.node.asKindOrThrow(SyntaxKind.FunctionDeclaration);
     const current = i.current.node.asKindOrThrow(SyntaxKind.FunctionDeclaration);
     const breakingChanges = findFunctionBreakingChanges(baseline, current);
-    if (breakingChanges.length === 0) throw new Error(`Failed to find breaking changes for (${i.baseline.name}, ${i.current.name})`);
+    if (breakingChanges.length === 0)
+      throw new Error(`Failed to find breaking changes for (${i.baseline.name}, ${i.current.name})`);
     functionChangeSet.set(i.current.name, breakingChanges);
   });
 

@@ -25,4 +25,9 @@ export function type_guard_compatible(type_guard_compatible_para_1_baseline: Der
 export function type_guard_incompatible_1(type_guard_incompatible_1_para_1_baseline: Derived1 | Derived2): type_guard_incompatible_1_para_1_baseline is Derived1;
 export function type_guard_incompatible_2(type_guard_incompatible_2_para_1_baseline: Derived1 | Derived2): type_guard_incompatible_2_para_1_baseline is Derived1;
 
+export const arrow_function_compatible = (arrow_function_compatible_para_1_baseline: number) : string;
+export const arrow_function_incompatible_1 = (arrow_function_incompatible_1_para_1_baseline: number) : string;
+export const arrow_function_incompatible_2 = (arrow_function_incompatible_2_para_1_baseline: number) : string;
+export const arrow_function_incompatible_3 = (arrow_function_incompatible_3_para_1_baseline: number) : string;
+
 ```

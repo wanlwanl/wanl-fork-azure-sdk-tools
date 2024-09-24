@@ -26,6 +26,10 @@ import {
 } from './node-revealers/callable-entity-revealer';
 
 function findBreakingReasons(baselineNode: Node, currentNode: Node): BreakingReasons {
+  // Note: if return type node defined,
+  // it's a funtion/method/signature's return type node,
+  // return it, it will be used to compare later
+  // Otherwise, it's a non-funtion/method/signature node, return its type node
   const getTypeNode = (node: Node): TypeNode => {
     if (Node.isReturnTyped(node)) return node.getReturnTypeNodeOrThrow();
     if (Node.isTyped(node)) return node.getTypeNodeOrThrow();
@@ -51,8 +55,8 @@ function findBreakingReasons(baselineNode: Node, currentNode: Node): BreakingRea
     if (getTypeName(baselineTypeNode) !== getTypeName(currentTypeNode)) breakingReasons |= BreakingReasons.TypeChanged;
   }
 
-  // check assignability
-  const assignable = currentNode.getType().isAssignableTo(baselineNode.getType());
+  // check type
+  const assignable = currentTypeNode.getType().isAssignableTo(baselineTypeNode.getType());
   if (!assignable) breakingReasons |= BreakingReasons.TypeChanged;
 
   // check required -> optional
@@ -70,6 +74,7 @@ function findBreakingReasons(baselineNode: Node, currentNode: Node): BreakingRea
   }
 
   if (incompatibleReadonly) breakingReasons |= BreakingReasons.ReadonlyToMutable;
+
   return breakingReasons;
 }
 

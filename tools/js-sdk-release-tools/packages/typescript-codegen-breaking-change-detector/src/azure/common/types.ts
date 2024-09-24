@@ -73,6 +73,7 @@ export interface BreakingPair {
   messages: Map<BreakingReasons, string>;
 }
 
+// TODO: use better name, due to name is used for different types e.g. interface method, global function, etc.
 export enum BreakingLocation {
   None = 0,
   PropertyCall = 1,

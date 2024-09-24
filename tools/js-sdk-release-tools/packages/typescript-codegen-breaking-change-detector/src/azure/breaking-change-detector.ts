@@ -11,7 +11,7 @@ import { TSESLint } from '@typescript-eslint/utils';
 import { glob } from 'glob';
 import { logger } from '../logging/logger';
 import { Project, ScriptTarget } from 'ts-morph';
-import { SharedConfig } from '@typescript-eslint/utils/ts-eslint';
+import { ClassicConfig } from '@typescript-eslint/utils/ts-eslint';
 
 const tsconfig = `
 {
@@ -137,7 +137,7 @@ async function detectBreakingChangesCore(
         breakingChangeResults.push(message);
       },
     };
-    const rules = ruleDefinitions.reduce((map: SharedConfig.RulesRecord, r) => {
+    const rules = ruleDefinitions.reduce((map: ClassicConfig.RulesRecord, r) => {
       map[r.id] = [2];
       return map;
     }, {});

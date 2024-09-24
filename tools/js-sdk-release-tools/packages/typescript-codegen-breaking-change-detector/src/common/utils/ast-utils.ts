@@ -65,7 +65,7 @@ export function getTopLevelDeclarations(sourceFile: SourceFile): Map<SyntaxKind,
     const kind = s.getKind();
 
     let name: string;
-    if ('getName' in s && typeof s.getName === 'function') name = s.getName();
+    if (Node.isNameable(s) && s.getName()) name = s.getName()!;
     else name = s.getText();
 
     if (!map.has(kind)) map.set(kind, new Map<string, Node>());
