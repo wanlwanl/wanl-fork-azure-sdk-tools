@@ -20,29 +20,9 @@ import {
 } from '../common/utils/ast-utils';
 import { findFunctionBreakingChanges } from '../azure/core/breaking-change-finder';
 
+// TODO: support arrow function
 function findFunctionTypes(root: SourceFile): Map<string, Node> | undefined {
-  const normalFunctions = getTopLevelDeclarations(root).get(SyntaxKind.FunctionDeclaration);
-  // const arrowFunctions: Map<string, Node> | undefined = new Map<string, Node>();
-  // getTopLevelDeclarations(root)
-  //   .get(SyntaxKind.VariableStatement)
-  //   ?.forEach((stat) => {
-  //     stat
-  //       .asKindOrThrow(SyntaxKind.VariableStatement)
-  //       .getDeclarations()
-  //       .forEach((decl) => {
-  //         console.log(`)))))))))))))))))))))))) --- decl: ${decl?.getText()}`);
-
-  //         const arrowFunction = decl
-  //           .asKindOrThrow(SyntaxKind.VariableDeclaration)
-  //           .getInitializer()
-  //           ?.asKind(SyntaxKind.ArrowFunction);
-  //         console.log(`)))))))))))))))))))))))) --- arrow: ${arrowFunction?.getText()}`);
-  //         if (arrowFunction!) return;
-  //         arrowFunctions.set(decl.getText(), arrowFunction!);
-  //       });
-  //   });
-  return normalFunctions;
-  // return new Map<string, Node>([...normalFunctions!.entries(), ...arrowFunctions.entries()]);
+  return getTopLevelDeclarations(root).get(SyntaxKind.FunctionDeclaration);
 }
 
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
