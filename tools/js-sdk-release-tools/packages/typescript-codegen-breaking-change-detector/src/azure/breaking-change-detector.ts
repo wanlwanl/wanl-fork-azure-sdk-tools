@@ -125,7 +125,7 @@ async function detectBreakingChangesCore(
     const breakingChangeResults: RuleMessage[] = [];
     const baselineParsed = await parseBaselinePackage(projectContext);
     const detectProject = prepareDetectPackage(projectContext);
-    const linter = new TSESLint.Linter({ cwd: projectContext.root });
+    const linter = new TSESLint.Linter({ cwd: projectContext.root, configType: 'eslintrc' });
     const ruleDefinitions = await loadRuleDefinitions(ruleIds);
     ruleDefinitions.forEach((ruleDef) => {
       // TODO: remove baselineParsed

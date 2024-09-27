@@ -59,11 +59,16 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
     console.log(res);
   });
 
+  const patchMessage: PatchMessage = {
+    breakingChanges: functionChangeSet,
+    kind: RuleMessageKind.PatchMessage,
+    id: RuleIds.includeFunction,
+  };
+
   const listener = createOperationRuleListener(
     RuleIds.includeFunction,
     (context: RuleContext<string, readonly unknown[]>): RuleListener => {
-      // TODO: report message
-      // getSettings(context).report(patchMessage);
+      getSettings(context).report(patchMessage);
       return {};
     }
   );
