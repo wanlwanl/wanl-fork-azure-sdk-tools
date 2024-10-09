@@ -1,22 +1,19 @@
 # Test Case
 
 ```ts
-// export interface Routes_Change {
-//     (path: "path1"): string;
-//     (path: "path2"): string;
-// }
-
-// export interface Routes_Remove {
-//     (path: "path1"): string;
-//     (path: "path2"): string;
-// }
-
 class Base {
     b: string
 }
 
 class Derived extends Base {
     d: number
+}
+
+interface method_return_type_incompatible_return_type_baseline {
+    a: string
+}
+interface method_return_type_incompatible_any_return_type_baseline {
+    a: string
 }
 
 export interface Routes_Inherit {
@@ -32,9 +29,9 @@ export interface Routes_Extends extends Routes_Inherit {
     (path: "path_nochange"): string;
     
     // test methods
-    method_return_type_incompatible(a: string): number
+    method_return_type_incompatible(a: string): method_return_type_incompatible_return_type_baseline
     // NOTE: assignable
-    method_return_type_incompatible_any(a: string): number
+    method_return_type_incompatible_any(a: string): method_return_type_incompatible_any_return_type_baseline
     method_return_type_compatible(a: string): any
     method_parameter_type_incompatible(method_parameter_type_incompatible_parameter_baseline: number): string
     method_parameter_type_compatible(method_parameter_type_compatible_parameter_baseline: any): string

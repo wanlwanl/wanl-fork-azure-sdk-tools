@@ -30,7 +30,7 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
 
   const removedFunctions = findRemovedDeclarations(detectProject, findFunctionTypes);
   turbolog(`🚀 \t file: include-function.ts:31 \t removedFunctions `);
-  removedFunctions.forEach((i) => turbolog(`name: `, i.name));
+  removedFunctions.forEach((i) => turbolog(`removed function name: `, i.name));
 
   const functionChangeSet = new Map<string, BreakingPair[]>();
 

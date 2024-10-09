@@ -82,7 +82,6 @@ export enum BreakingLocation {
   PropertyFunctionParameterList = 4,
   PropertyFunctionParameter = 5,
   PropertyClassicProperty = 6,
-  PropertyGeneral = 7,
 }
 
 export interface PatchMessage extends RuleMessage {

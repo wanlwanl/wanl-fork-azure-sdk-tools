@@ -20,7 +20,7 @@ export function findIncompatibleDeclarations(
 ): Set<{ baseline: NameNode; current: NameNode }> {
   const declarations = findDeclarations(detectProject, findDeclaration);
   const incompatibleDeclarations = new Set<{ baseline: NameNode; current: NameNode }>();
-  declarations.baseline.forEach((baselineDeclaration, name) => {
+    declarations.baseline.forEach((baselineDeclaration, name) => {
     const currentDeclaration = declarations.current.get(name);
     if (currentDeclaration?.getType().isAssignableTo(baselineDeclaration.getType()) === false) {
       const baseline: NameNode = { name, node: baselineDeclaration };
@@ -28,6 +28,7 @@ export function findIncompatibleDeclarations(
       incompatibleDeclarations.add({ baseline, current });
     }
   });
+  console.log('&&&&& incompatibleDeclarations.size = ', incompatibleDeclarations.size);
   return incompatibleDeclarations;
 }
 
@@ -65,9 +66,11 @@ export function getTopLevelDeclarations(sourceFile: SourceFile): Map<SyntaxKind,
     const kind = s.getKind();
 
     let name: string;
-    if (Node.isNameable(s) && s.getName()) name = s.getName()!;
+    if (Node.hasName(s)) name = s.getName()!;
     else name = s.getText();
-
+    
+      console.log('+++++++ name =',name, Node.hasName(s), Node.isNameable(s), Node.isNamed(s))
+      
     if (!map.has(kind)) map.set(kind, new Map<string, Node>());
     map.get(kind)!.set(name, s);
   });

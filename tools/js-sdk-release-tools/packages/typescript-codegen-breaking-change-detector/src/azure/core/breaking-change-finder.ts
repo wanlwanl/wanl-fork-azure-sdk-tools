@@ -150,8 +150,11 @@ function findPropertyBreakingChanges(baselineProperties: Symbol[], currentProper
       return result;
     }
 
+    const isPropertyFunction = isMethodOrArrowFunction(baselineProperty);
+    const location = isPropertyFunction ? BreakingLocation.PropertyFunction : BreakingLocation.PropertyClassicProperty;
+
     const pair: BreakingPair = {
-      location: BreakingLocation.PropertyGeneral,
+      location,
       reasons: BreakingReasons.Removed,
       messages: new Map<BreakingReasons, string>(),
       baseline: getNameNode(baselineProperty),

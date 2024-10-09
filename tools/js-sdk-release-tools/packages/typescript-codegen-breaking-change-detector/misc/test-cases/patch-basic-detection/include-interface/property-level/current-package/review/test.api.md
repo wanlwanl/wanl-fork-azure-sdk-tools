@@ -1,16 +1,6 @@
 # Test Case
 
 ```ts
-
-// export interface Routes_Change {
-//     (path: "path1"): string;
-//     (path: "path_change"): string;
-// }
-
-// export interface Routes_Add {
-//     (path: "path1"): string;
-// }
-
 class Base {
     b: string
 }
@@ -25,6 +15,7 @@ export interface Routes_Inherit {
     (path: "path_base_add"): string;
 }
 
+// TODO: add multi-pair breaking change
 export interface Routes_Extends extends Routes_Inherit {
     // test call signatures
     (path: "path_nochange"): string;

@@ -22,32 +22,37 @@ import {
 import { findInterfaceBreakingChanges } from '../azure/core/breaking-change-finder';
 
 function findInterfaceTypes(root: SourceFile): Map<string, Node> | undefined {
+    console.log(`getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration) = `, getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration)?.size)
   return getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration);
 }
 
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const incompatibleInterfaces = findIncompatibleDeclarations(detectProject, findInterfaceTypes);
   const removedInterfaces = findRemovedDeclarations(detectProject, findInterfaceTypes);
-  removedInterfaces.forEach((i) => turbolog(`name: `, i.name));
-  
+//   removedInterfaces.forEach((i) => turbolog(`removed interface name: `, i.name));
+
   const interfaceChangeSet = new Map<string, BreakingPair[]>();
 
   incompatibleInterfaces.forEach((i) => {
     const baseline = i.baseline.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
     const current = i.current.node.asKindOrThrow(SyntaxKind.InterfaceDeclaration);
     const breakingChanges = findInterfaceBreakingChanges(baseline, current);
-    if (breakingChanges.length === 0) throw new Error(`Failed to find breaking changes for (${i.baseline.name}, ${i.current.name})`);
+    if (breakingChanges.length === 0)
+      throw new Error(`Failed to find breaking changes for (${i.baseline.name}, ${i.current.name})`);
     interfaceChangeSet.set(i.current.name, breakingChanges);
   });
 
   // debug
   interfaceChangeSet.forEach((bc, name) => {
-    console.log('--- interface breaking change:');
-    const res = bc.map(b => { 
-      return ({ 'name:': name, 'children:': b.current?.name, 'location:': b.location, 'reasons:': b.reasons });
-    })
-    console.log(res)
-  })
+    console.log('--- interface breaking change: ' + name);
+    const res = bc.map((b) => {
+      return { 'bc name:': name, 'children:': b.baseline?.name ?? b.baseline?.node.getText(), 'location:': b.location, 'reasons:': b.reasons, };
+    });
+    console.table(res);
+  });
+
+  console.log('------- interface breaking changes count: ' + interfaceChangeSet.size);
+  console.log('-------- incompatibleInterfaces count: ' + incompatibleInterfaces.size);
 
   // TODO: add message
   const patchMessage: PatchMessage = {
