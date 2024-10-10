@@ -18,7 +18,7 @@ import {
   findRemovedDeclarations,
   getTopLevelDeclarations,
 } from '../common/utils/ast-utils';
-import { findFunctionBreakingChanges } from '../azure/core/breaking-change-finder';
+import { findFunctionBreakingChanges } from '../azure/core/breaking-change-diff';
 
 // TODO: support arrow function
 function findFunctionTypes(root: SourceFile): Map<string, Node> | undefined {

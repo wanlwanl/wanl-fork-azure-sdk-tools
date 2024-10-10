@@ -19,17 +19,20 @@ import {
   findRemovedDeclarations,
   getTopLevelDeclarations,
 } from '../common/utils/ast-utils';
-import { findInterfaceBreakingChanges } from '../azure/core/breaking-change-finder';
+import { findInterfaceBreakingChanges } from '../azure/core/breaking-change-diff';
 
 function findInterfaceTypes(root: SourceFile): Map<string, Node> | undefined {
-    console.log(`getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration) = `, getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration)?.size)
+  console.log(
+    `getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration) = `,
+    getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration)?.size
+  );
   return getTopLevelDeclarations(root).get(SyntaxKind.InterfaceDeclaration);
 }
 
 const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   const incompatibleInterfaces = findIncompatibleDeclarations(detectProject, findInterfaceTypes);
   const removedInterfaces = findRemovedDeclarations(detectProject, findInterfaceTypes);
-//   removedInterfaces.forEach((i) => turbolog(`removed interface name: `, i.name));
+  //   removedInterfaces.forEach((i) => turbolog(`removed interface name: `, i.name));
 
   const interfaceChangeSet = new Map<string, BreakingPair[]>();
 
@@ -46,7 +49,12 @@ const rule: CreateOperationRule = (_, detectProject: DetectProject) => {
   interfaceChangeSet.forEach((bc, name) => {
     console.log('--- interface breaking change: ' + name);
     const res = bc.map((b) => {
-      return { 'bc name:': name, 'children:': b.baseline?.name ?? b.baseline?.node.getText(), 'location:': b.location, 'reasons:': b.reasons, };
+      return {
+        'bc name:': name,
+        'children:': b.baseline?.name ?? b.baseline?.node.getText(),
+        'location:': b.location,
+        'reasons:': b.reasons,
+      };
     });
     console.table(res);
   });
