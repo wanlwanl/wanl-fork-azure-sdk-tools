@@ -11,6 +11,7 @@ import {
   TypeNode,
   TypeAliasDeclaration,
   CallSignatureDeclaration,
+  ClassDeclaration,
 } from 'ts-morph';
 import {
   DiffLocation,
@@ -160,12 +161,13 @@ function findClassicPropertyBreakingChanges(sourceProperty: Symbol, targetProper
 }
 
 // NOTE: this function compares methods and arrow functions in interface
-function findPropertyBreakingChanges(sourceProperties: Symbol[], targetProperties: Symbol[]): DiffPair[] {
+function findGeneralPropertyBreakingChanges(sourceProperties: Symbol[], targetProperties: Symbol[]): DiffPair[] {
   const sourcePropMap = sourceProperties.reduce((map, p) => {
     map.set(p.getName(), p);
     return map;
   }, new Map<string, Symbol>());
 
+  // handle removed properties
   const removed = targetProperties.reduce((result, targetProperty) => {
     const name = targetProperty.getName();
     if (sourcePropMap.has(name)) {
@@ -179,6 +181,7 @@ function findPropertyBreakingChanges(sourceProperties: Symbol[], targetPropertie
     return result;
   }, new Array<DiffPair>());
 
+  // handle changed properties
   const changed = targetProperties.reduce((result, targetProperty) => {
     const name = targetProperty.getName();
     const sourceProperty = sourcePropMap.get(name);
@@ -208,6 +211,7 @@ function findPropertyBreakingChanges(sourceProperties: Symbol[], targetPropertie
     }
 
     // handle method and arrow function
+    // TODO: handle arrow function's optional/readonly/...
     if (
       (isPropertyMethod(targetProperty) || isPropertyArrowFunction(targetProperty)) &&
       (isPropertyMethod(sourceProperty) || isPropertyArrowFunction(sourceProperty))
@@ -288,6 +292,8 @@ function findParameterBreakingChanges(sourceMethod: Symbol, targetMethod: Symbol
   );
 }
 
+// TODO: arrow function is actually a property, should detect prop's optional/readonly/...
+// TODO: handle overloads
 function findFunctionPropertyBreakingChangeDetails(sourceMethod: Symbol, targetMethod: Symbol): DiffPair[] {
   const returnTypePairs = findReturnTypeBreakingChanges(sourceMethod, targetMethod);
   const parameterPairs = findParameterBreakingChanges(sourceMethod, targetMethod);
@@ -311,7 +317,7 @@ export function findInterfaceBreakingChanges(
   const targetProperties = target.getType().getProperties();
   const sourceProperties = source.getType().getProperties();
 
-  const propertyBreakingChanges = findPropertyBreakingChanges(sourceProperties, targetProperties);
+  const propertyBreakingChanges = findGeneralPropertyBreakingChanges(sourceProperties, targetProperties);
 
   return [...callSignatureBreakingChanges, ...propertyBreakingChanges];
 }
@@ -430,4 +436,64 @@ export function checkAddedDeclaration(
       ? getNameNodeFromNode(current)
       : getNameNodeFromNode(baseline);
   if (!baseline) return createDiffPair(location, DiffReasons.Added, sourceNameNode, targetNameNode, assignDirection);
+}
+
+export function findClassBreakingChanges(source: ClassDeclaration, target: ClassDeclaration): DiffPair[] {
+  const pairs: DiffPair[] = [];
+
+  // Check for changes in inheritance
+  const sourceBaseClass = source.getBaseClass();
+  const targetBaseClass = target.getBaseClass();
+  if (sourceBaseClass?.getName() !== targetBaseClass?.getName()) {
+    pairs.push(createDiffPair(
+      DiffLocation.Class_Inheritance,
+      DiffReasons.TypeChanged,
+      sourceBaseClass ? { name: sourceBaseClass?.getName() || 'None', node: sourceBaseClass } : undefined,
+      targetBaseClass ? { name: targetBaseClass?.getName() || 'None', node: targetBaseClass } : undefined
+    ));
+  }
+
+  // Check for changes in implemented interfaces
+  const sourceInterfaces = source.getImplements().map(i => i.getText());
+  const targetInterfaces = target.getImplements().map(i => i.getText());
+  const removedInterfaces = targetInterfaces.filter(i => !sourceInterfaces.includes(i));
+  removedInterfaces.forEach(i => {
+    pairs.push(createDiffPair(
+      DiffLocation.Class_Interface,
+      DiffReasons.Removed,
+      undefined,
+      { name: i, node: target.getImplements().find(impl => impl.getText() === i)! }
+    ));
+  });
+
+  // Check for changes in properties
+  const sourceProperties = source.getProperties();
+  const targetProperties = target.getProperties();
+  pairs.push(...findGeneralPropertyBreakingChanges(
+    sourceProperties.map(p => p.getSymbolOrThrow()),
+    targetProperties.map(p => p.getSymbolOrThrow())
+  ));
+
+  // TODO: Check for arrow function
+  // Check for changes in methods
+  const sourceMethods = source.getMethods();
+  const targetMethods = target.getMethods();
+  targetMethods.forEach(targetMethod => {
+    const sourceMethod = sourceMethods.find(m => m.getName() === targetMethod.getName());
+    if (!sourceMethod) {
+      pairs.push(createDiffPair(
+        DiffLocation.Signature,
+        DiffReasons.Removed,
+        undefined,
+        { name: targetMethod.getName(), node: targetMethod }
+      ));
+    } else {
+      pairs.push(...findFunctionPropertyBreakingChangeDetails(
+        sourceMethod.getSymbolOrThrow(),
+        targetMethod.getSymbolOrThrow()
+      ));
+    }
+  });
+
+  return pairs;
 }

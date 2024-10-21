@@ -108,6 +108,8 @@ export enum DiffLocation {
   Property,
   TypeAlias,
   Interface,
+  Class_Inheritance,
+  Class_Interface,
 }
 
 export enum AssignDirection {
