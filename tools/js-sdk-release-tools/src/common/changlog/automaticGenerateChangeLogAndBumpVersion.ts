@@ -23,17 +23,25 @@ import { ApiVersionType, SDKType } from "../types"
 import { getApiVersionType } from '../../xlc/apiVersion/apiVersionTypeExtractor'
 import { fixChangelogFormat, getApiReviewPath, getNpmPackageName, getSDKType, tryReadNpmPackageChangelog } from '../utils';
 import { tryGetNpmView } from '../npmUtils';
+import { hasOperations } from '../../utils/typespecUtils';
 
 export async function generateChangelogAndBumpVersion(packageFolderPath: string) {
     logger.info(`Start to generate changelog and bump version in ${packageFolderPath}`);
     const jsSdkRepoPath = String(shell.pwd());
     packageFolderPath = path.join(jsSdkRepoPath, packageFolderPath);
-    const ApiType = await getApiVersionType(packageFolderPath);
-    const isStableRelease = ApiType != ApiVersionType.Preview;
     const packageName = getNpmPackageName(packageFolderPath);
     const npmViewResult = await tryGetNpmView(packageName);
     const stableVersion = getVersion(npmViewResult, "latest");
     const nextVersion = getVersion(npmViewResult, "next");
+    const hasOperationsInSpecification = await hasOperations(packageFolderPath, getSDKType(packageFolderPath));
+    // TODO: test in test env
+    const getApiVersionTypeWhenNoOperations = isBetaVersion(stableVersion)
+        ? ApiVersionType.Preview
+        : ApiVersionType.Stable;
+    const ApiType = hasOperationsInSpecification
+        ? await getApiVersionType(packageFolderPath)
+        : getApiVersionTypeWhenNoOperations;
+    const isStableRelease = ApiType != ApiVersionType.Preview;
 
     if (!npmViewResult || (!!stableVersion && isBetaVersion(stableVersion) && isStableRelease)) {
         logger.info(`Package ${packageName} is first ${!npmViewResult ? ' ': ' stable'} release, start to generate changelogs and set version for first ${!npmViewResult ? ' ': ' stable'} release.`);

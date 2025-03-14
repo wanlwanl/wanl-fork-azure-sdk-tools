@@ -12,6 +12,7 @@ interface Case {
 
 describe("detect operations in specification", () => {
     const cases: Case[] = [
+        // TODO: add case 
         {
             description: "should return true on HLC",
             packageRoot: resolve(
