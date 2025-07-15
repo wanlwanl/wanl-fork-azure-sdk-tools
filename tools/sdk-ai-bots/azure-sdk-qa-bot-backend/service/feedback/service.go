@@ -1,6 +1,7 @@
 package feedback
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"github.com/azure-sdk-tools/tools/sdk-ai-bots/azure-sdk-qa-bot-backend/config"
 	"github.com/azure-sdk-tools/tools/sdk-ai-bots/azure-sdk-qa-bot-backend/model"
 	"github.com/azure-sdk-tools/tools/sdk-ai-bots/azure-sdk-qa-bot-backend/service/storage"
+	"github.com/xuri/excelize/v2"
 )
 
 type FeedbackService struct{}
@@ -20,62 +22,80 @@ func NewFeedbackService() *FeedbackService {
 
 func (s *FeedbackService) SaveFeedback(feedback model.FeedbackReq) error {
 	timestamp := time.Now()
-	filename := fmt.Sprintf("feedback_%s.csv", timestamp.Format("2006-01-02"))
-	header := "Timestamp,TenantID,Messages,Reaction,Comment\n"
+	filename := fmt.Sprintf("feedback_%s.xlsx", timestamp.Format("2006-01-02"))
+
 	// Read file from storage
 	storageService, err := storage.NewStorageService()
 	if err != nil {
 		return fmt.Errorf("failed to create storage service: %w", err)
 	}
-	// Create or open CSV file
-	var f *os.File
 
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		// Create new file with headers
-		f, err = os.Create(filename)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Open existing file in write mode and truncate it to overwrite content
-		f, err = os.OpenFile(filename, os.O_WRONLY|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-	}
-	// Sync the feedback file from storage
+	var f *excelize.File
+
+	// Try to download existing file from storage
 	content, err := storageService.DownloadBlob(config.STORAGE_FEEDBACK_CONTAINER, filename)
 	if err != nil {
 		log.Printf("Failed to download feedback file: %v", err)
 	}
+
 	if len(content) > 0 {
-		_, err = f.Write(content)
+		// Load existing Excel file from downloaded content
+		f, err = excelize.OpenReader(bytes.NewReader(content))
+		if err != nil {
+			log.Printf("Failed to open existing Excel file: %v", err)
+			// Create new file if we can't open the existing one
+			f = excelize.NewFile()
+		}
 	} else {
-		// Write header if file is new
-		_, err = f.WriteString(header)
+		// Create new Excel file
+		f = excelize.NewFile()
+		// Set headers
+		headers := []string{"Timestamp", "TenantID", "Messages", "Reaction", "Comment"}
+		for i, header := range headers {
+			cell := fmt.Sprintf("%c1", 'A'+i)
+			f.SetCellValue("Sheet1", cell, header)
+		}
 	}
+
+	// Find the next available row
+	rows, err := f.GetRows("Sheet1")
 	if err != nil {
-		f.Close()
-		log.Printf("Failed to write feedback record: %v", err)
+		return fmt.Errorf("failed to get rows: %w", err)
 	}
+
+	nextRow := len(rows) + 1
+	if nextRow == 1 {
+		// If file was empty, add headers first
+		headers := []string{"Timestamp", "TenantID", "Messages", "Reaction", "Comment"}
+		for i, header := range headers {
+			cell := fmt.Sprintf("%c1", 'A'+i)
+			f.SetCellValue("Sheet1", cell, header)
+		}
+		nextRow = 2
+	}
+
+	// Prepare the new record data
 	messageStr, _ := json.Marshal(feedback.Messages)
-	// Format and write the new record
-	record := fmt.Sprintf("%s,%s,%s,%s,%s\n",
-		timestamp.Format(time.RFC3339),
-		feedback.TenantID,
-		messageStr,
-		feedback.Reaction,
-		feedback.Comment,
-	)
-	_, err = f.WriteString(record)
-	if err != nil {
-		f.Close()
-		log.Printf("Failed to write feedback record: %v", err)
+
+	// Add the new record
+	f.SetCellValue("Sheet1", fmt.Sprintf("A%d", nextRow), timestamp.Format(time.RFC3339))
+	f.SetCellValue("Sheet1", fmt.Sprintf("B%d", nextRow), feedback.TenantID)
+	f.SetCellValue("Sheet1", fmt.Sprintf("C%d", nextRow), string(messageStr))
+	f.SetCellValue("Sheet1", fmt.Sprintf("D%d", nextRow), feedback.Reaction)
+	f.SetCellValue("Sheet1", fmt.Sprintf("E%d", nextRow), feedback.Comment)
+
+	// Save the file locally
+	if err := f.SaveAs(filename); err != nil {
+		return fmt.Errorf("failed to save Excel file: %w", err)
 	}
-	f.Close()
+
+	// Close the Excel file
+	if err := f.Close(); err != nil {
+		log.Printf("Failed to close Excel file: %v", err)
+	}
 
 	go updateFeedbackFile(filename)
-	return err
+	return nil
 }
 
 func updateFeedbackFile(filename string) {
