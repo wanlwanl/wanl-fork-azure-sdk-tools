@@ -27,7 +27,7 @@ deploy:
         # Python channel
         CHANNEL_ID_FOR_PYTHON: ${{CHANNEL_ID_FOR_PYTHON}}
         CHANNEL_ID_FOR_PYTHON_DEV_INTERNAL: ${{CHANNEL_ID_FOR_PYTHON_DEV_INTERNAL}}
-        RAG_TANENT_ID_FOR_PYTHON: ${{RAG_TANENT_ID_FOR_PYTHON}}
+        RAG_TENANT_ID_FOR_PYTHON: ${{RAG_TENANT_ID_FOR_PYTHON}}
         # Test in local
         IS_LOCAL: true
         # Azure Table

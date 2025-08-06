@@ -16,6 +16,8 @@ export default defineConfig({
     // Specify test file patterns
     include: ['test/**/*.{test,spec}.{js,ts,jsx,tsx}'],
     exclude: ['node_modules/', 'dist/'],
+    // Watch mode configuration - explicitly disable by default for CI/CD compatibility
+    watch: false,
     // Coverage configuration
     coverage: {
       provider: 'v8', // Use V8 for faster coverage

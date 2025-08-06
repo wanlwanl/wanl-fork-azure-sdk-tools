@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     globals: true, // Use Vitest's global APIs (describe, it, expect, etc.)
     environment: 'node', // Specify the test environment (e.g., node, jsdom)
+    // Watch mode configuration - explicitly disable by default for CI/CD compatibility
+    watch: false,
     // reporters: ['default', 'html'], // Optional: configure test reporters
     // coverage: { // Optional: configure code coverage
     //   provider: 'v8', // or 'istanbul'

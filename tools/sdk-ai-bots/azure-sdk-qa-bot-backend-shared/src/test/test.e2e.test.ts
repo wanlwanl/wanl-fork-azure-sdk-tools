@@ -1,9 +1,10 @@
 import axios from 'axios';
-import path from 'path';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { describe, expect, it } from 'vitest';
 
-const __dirname = import.meta.dirname;
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const envPath = path.resolve(__dirname, '../../env/.env.local');
 dotenv.config({ path: envPath });
 

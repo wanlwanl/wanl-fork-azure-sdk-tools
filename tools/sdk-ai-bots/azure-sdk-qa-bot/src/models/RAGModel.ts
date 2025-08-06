@@ -63,7 +63,6 @@ export class RAGModel implements PromptCompletionModel {
         references: [],
       };
     }
-    // TODO: try merge cancelTimer and stop into one method
     await thinkingHandler.safeCancelTimer();
     await thinkingHandler.stop(ragReply, currentPrompt);
 

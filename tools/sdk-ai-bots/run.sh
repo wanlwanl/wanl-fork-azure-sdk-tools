@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Azure SDK QA Bot Service Management Script
+# This script manages both the Go backend service and the shared TypeScript service
+
 GO_SERVICE_DIR="azure-sdk-qa-bot-backend"
 SHARED_SERVICE_DIR="azure-sdk-qa-bot-backend-shared"
 PID_FILE="service.pid"
@@ -23,47 +26,47 @@ done
 
 start_service() {
     if [ -f "$PID_FILE" ]; then
-        echo "Go service appears to be already running. PID file exists."
+        echo "Go service is already running (PID file exists)."
         return 1
     fi
     
-    # Start the Go application from the correct directory
-    cd "$GO_SERVICE_DIR" || { echo "Error: Cannot change to Go service directory"; return 1; }
-    echo "Starting Go service from $(pwd)..."
+    # Start the Go backend service
+    cd "$GO_SERVICE_DIR" || { echo "Error: Cannot access Go service directory"; return 1; }
+    echo "Starting Go backend service from $(pwd)..."
     nohup go run . > ../service.log 2>&1 &
     cd ..
     
-    # Wait briefly for the actual service to start
+    # Wait for the service to initialize
     sleep 2
-    # Get the PID of the actual service process listening on port 8088
+    # Capture the PID of the process listening on port 8088
     SERVICE_PID=$(lsof -ti:8088)
     if [ ! -z "$SERVICE_PID" ]; then
         echo $SERVICE_PID > "$PID_FILE"
-        echo "Started Go service with PID: $SERVICE_PID"
+        echo "✓ Go backend service started successfully (PID: $SERVICE_PID)"
     else
-        echo "Warning: Could not find service PID listening on port 8088"
+        echo "⚠ Warning: Could not detect service process on port 8088"
     fi
     
-    # Start the shared service (always run this)
+    # Start the shared TypeScript service
     if [ -f "$SHARED_PID_FILE" ]; then
-        echo "Shared service appears to be already running. Shared PID file exists."
+        echo "Shared service is already running (PID file exists)."
     else
-        echo "Starting shared service from $SHARED_SERVICE_DIR..."
-        cd "$SHARED_SERVICE_DIR" || { echo "Error: Cannot change to shared service directory"; return 1; }
+        echo "Starting shared TypeScript service from $SHARED_SERVICE_DIR..."
+        cd "$SHARED_SERVICE_DIR" || { echo "Error: Cannot access shared service directory"; return 1; }
         nohup npm run dev:local > ../shared_service.log 2>&1 &
         SHARED_PID=$!
         cd ..
         echo $SHARED_PID > "$SHARED_PID_FILE"
-        echo "Started shared service with PID: $SHARED_PID"
+        echo "✓ Shared service started successfully (PID: $SHARED_PID)"
     fi
 }
 
 stop_service() {
-    # Stop Go service
+    # Stop the Go backend service
     if [ -f "$PID_FILE" ]; then
-        echo "Stopping Go service..."
+        echo "Stopping Go backend service..."
         SERVICE_PID=$(cat "$PID_FILE")
-        # Also try to find any process listening on port 8088
+        # Also check for any process listening on port 8088
         PORT_PID=$(lsof -ti:8088)
         if [ ! -z "$SERVICE_PID" ]; then
             kill $SERVICE_PID 2>/dev/null
@@ -72,59 +75,66 @@ stop_service() {
             kill $PORT_PID 2>/dev/null
         fi
         rm "$PID_FILE"
+        echo "✓ Go backend service stopped"
     else
-        # Try to stop by port if PID file doesn't exist
+        # Attempt to stop by port if PID file doesn't exist
         PORT_PID=$(lsof -ti:8088)
         if [ ! -z "$PORT_PID" ]; then
             kill $PORT_PID 2>/dev/null
+            echo "✓ Go backend service stopped (by port)"
+        else
+            echo "Go backend service was not running"
         fi
-        echo "Go service PID file not found, tried stopping by port"
     fi
     
-    # Stop shared service
+    # Stop the shared TypeScript service
     if [ -f "$SHARED_PID_FILE" ]; then
         echo "Stopping shared service..."
         SHARED_PID=$(cat "$SHARED_PID_FILE")
         kill $SHARED_PID 2>/dev/null
-        # Kill any potential child processes
+        # Terminate any child processes
         pkill -P $SHARED_PID 2>/dev/null
         rm "$SHARED_PID_FILE"
+        echo "✓ Shared service stopped"
     else
-        echo "Shared service PID file not found"
+        echo "Shared service was not running"
     fi
 }
 
 status_service() {
+    echo "=== Azure SDK QA Bot Service Status ==="
+    
+    # Check Go backend service status
     PORT_PID=$(lsof -ti:8088)
     if [ -f "$PID_FILE" ]; then
         STORED_PID=$(cat "$PID_FILE")
         if [ ! -z "$PORT_PID" ]; then
             if [ "$PORT_PID" = "$STORED_PID" ]; then
-                echo "Go service is running with PID: $PORT_PID"
+                echo "✓ Go backend service: Running (PID: $PORT_PID)"
             else
-                echo "Go service is running with PID: $PORT_PID (PID file shows: $STORED_PID)"
+                echo "⚠ Go backend service: Running (PID: $PORT_PID, file shows: $STORED_PID)"
             fi
         else
-            echo "No process found listening on port 8088"
+            echo "✗ Go backend service: Not responding on port 8088"
         fi
     else
         if [ ! -z "$PORT_PID" ]; then
-            echo "Go service is running with PID: $PORT_PID (no PID file)"
+            echo "⚠ Go backend service: Running (PID: $PORT_PID, no PID file)"
         else
-            echo "Go service is not running"
+            echo "✗ Go backend service: Not running"
         fi
     fi
     
-    # Check shared service status
+    # Check shared TypeScript service status
     if [ -f "$SHARED_PID_FILE" ]; then
         SHARED_PID=$(cat "$SHARED_PID_FILE")
         if kill -0 $SHARED_PID 2>/dev/null; then
-            echo "Shared service is running with PID: $SHARED_PID"
+            echo "✓ Shared service: Running (PID: $SHARED_PID)"
         else
-            echo "Shared service PID file exists but process is not running"
+            echo "✗ Shared service: PID file exists but process not running"
         fi
     else
-        echo "Shared service is not running"
+        echo "✗ Shared service: Not running"
     fi
 }
 

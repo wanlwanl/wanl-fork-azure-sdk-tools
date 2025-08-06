@@ -1,52 +1,97 @@
-# Azure SDK QA Bot Shared
+# Azure SDK QA Bot Backend Shared Service
 
-## Usage
+## Overview
 
-### Start server
+This shared service provides preprocessing capabilities for the Azure SDK QA Bot, including content extraction from inline links and image processing functionalities.
 
-1. Download crendential in `PREPROCESS-ENV-LOCAL-BASE64` from key vault `AzureSDKQABotConfig`, decode it from `base64`
-1. Create `env/.env.local` file and add the decoded content to it
-1. `npm run dev:local`
+## Getting Started
 
-### Request to process inline link and images
+### Starting the Server
 
-1. Install `REST Client` extension
-1. Replace the `YOUR_API_KEY` in [preprocess request sample](./sample/preprocess.http) and click `Send Request`
-1. Check [test](./src/test/test.e2e.test.ts) for more cases
+1. **Download Credentials**:
+   - Access Azure Key Vault `AzureSDKQABotConfig`
+   - Download the `PREPROCESS-ENV-LOCAL-BASE64` secret
+   - Decode the content from base64 format
 
-## Request
+2. **Configure Environment**:
+   - Create `env/.env.local` file
+   - Add the decoded credential content to the file
 
-### body
+3. **Start the Development Server**:
+   ```bash
+   npm run dev:local
+   ```
 
-```ts
+### Testing the API
+
+1. **Install REST Client Extension** in VS Code
+2. **Configure API Request**:
+   - Open the [preprocess request sample](./sample/preprocess.http)
+   - Replace `YOUR_API_KEY` with your actual API key
+   - Click `Send Request`
+3. **View Additional Examples**:
+   - See [end-to-end tests](./src/test/test.e2e.test.ts) for more usage examples
+
+## API Reference
+
+### Request Format
+
+#### Request Body
+```typescript
 interface PreprocessRequestBody {
-  text: string;
-  images?: string[];
+  text: string;           // Text content to process
+  images?: string[];      // Optional array of image URLs/data
 }
 ```
 
-### headers
-
-```ts
+#### Request Headers
+```typescript
 interface Headers {
-  'x-api-key': string
+  'x-api-key': string;    // API authentication key
 }
 ```
 
-## Response
+### Response Format
 
-### body
-
-```ts
-
+#### Response Body
+```typescript
 interface PreprocessWarning {
-  id: string;
-  warning: string;
+  id: string;             // Warning identifier
+  warning: string;        // Warning message description
 }
 
 interface PreprocessResult {
-  text: string;
-  // if there's warnings, it indicates some links are failed to parse
-  warnings?: PreprocessWarning[];
+  text: string;           // Processed text content
+  warnings?: PreprocessWarning[];  // Optional warnings (e.g., failed link parsing)
 }
+```
+
+## Features
+
+- **Link Processing**: Extracts and processes content from inline links
+- **Image Handling**: Processes and analyzes image content
+- **Error Handling**: Provides detailed warnings for failed operations
+- **API Security**: Secure API key-based authentication
+
+## Development
+
+### Prerequisites
+- Node.js (version 18 or higher)
+- npm or yarn package manager
+- Access to Azure Key Vault for credentials
+
+### Local Development
+1. Follow the setup steps in "Getting Started"
+2. The service will be available at `http://localhost:3000` (or configured port)
+3. Use the provided test samples to verify functionality
+
+### Testing
+Run the test suite:
+```bash
+npm test
+```
+
+For end-to-end testing:
+```bash
+npm run test:e2e
 ```
