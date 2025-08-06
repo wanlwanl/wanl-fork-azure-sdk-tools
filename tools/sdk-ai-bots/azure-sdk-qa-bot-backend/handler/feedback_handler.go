@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/azure-sdk-tools/tools/sdk-ai-bots/azure-sdk-qa-bot-backend/model"
@@ -17,8 +18,17 @@ func FeedBackHandler(c *gin.Context) {
 
 	service := feedback.NewFeedbackService()
 	if err := service.SaveFeedback(req); err != nil {
+		fmt.Printf("Failed to save feedback: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if req.Reaction == model.Reaction_Bad {
+		if err := service.CreateGitHubIssue(req); err != nil {
+			fmt.Printf("Failed to create GitHub issue for feedback: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, &model.FeedbackResp{})
