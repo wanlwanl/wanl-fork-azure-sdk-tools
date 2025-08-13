@@ -60,3 +60,7 @@ cd wanl-fork-azure-sdk-tools/tools/sdk-ai-bots/azure-sdk-qa-bot-mcp-server
 - Configures it in your MCP settings file
 - Sets up the npm executable for easy usage
 - Prompts for environment configuration (Backend URL, API Key)
+
+## Run MCP Server
+
+Click Start button at mcp.json file, and make sure the mcp server is running.

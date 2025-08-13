@@ -100,6 +100,82 @@ function Get-EnvironmentConfig {
     return $envConfig
 }
 
+function Update-VsCodeConfig {
+    param(
+        [hashtable]$EnvConfig,
+        [string]$ServerName
+    )
+    
+    Write-Host ""
+    Write-Host "Updating VS Code MCP configuration..." -ForegroundColor Yellow
+    
+    # Use the current workspace directory for VS Code configuration
+    $vscodeConfigPath = Join-Path $PSScriptRoot ".vscode" "mcp.json"
+    
+    if (Test-Path $vscodeConfigPath) {
+        try {
+            $jsonContent = Get-Content -Raw $vscodeConfigPath
+            if ([string]::IsNullOrWhiteSpace($jsonContent)) {
+                $vscodeConfig = @{}
+            } else {
+                $vscodeConfig = $jsonContent | ConvertFrom-Json -AsHashtable
+                if ($null -eq $vscodeConfig) {
+                    $vscodeConfig = @{}
+                }
+            }
+        } catch {
+            Write-Warning "Error reading existing VS Code config, creating new one: $_"
+            $vscodeConfig = @{}
+        }
+    } else {
+        $vscodeConfig = @{}
+    }
+    
+    $serverKey = $ServerName
+    $serverConfig = @{
+        "type"    = "stdio"
+        "command" = "azure-sdk-qa-bot-mcp-server"
+        "args"    = @()
+        "env"     = $EnvConfig
+    }
+    
+    $orderedServers = [ordered]@{
+        $serverKey = $serverConfig
+    }
+    
+    # Ensure vscodeConfig is a valid hashtable
+    if ($null -eq $vscodeConfig -or -not ($vscodeConfig -is [hashtable])) {
+        $vscodeConfig = @{}
+    }
+    
+    if (-not $vscodeConfig.ContainsKey('servers')) {
+        $vscodeConfig['servers'] = @{}
+    }
+    
+    # Safely iterate through existing servers
+    if ($vscodeConfig.servers -and $vscodeConfig.servers.Keys) {
+        foreach ($key in $vscodeConfig.servers.Keys) {
+            if ($key -ne $serverKey) {
+                $orderedServers[$key] = $vscodeConfig.servers[$key]
+            }
+        }
+    }
+    
+    $vscodeConfig.servers = $orderedServers
+    
+    # Create .vscode directory if it doesn't exist
+    $vscodeDir = Split-Path $vscodeConfigPath -Parent
+    if (-not (Test-Path $vscodeDir)) {
+        New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
+    }
+    
+    Write-Host "Updating VS Code MCP config at $vscodeConfigPath" -ForegroundColor Green
+    $vscodeConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $vscodeConfigPath -Force
+    
+    Write-Host "✓ Updated VS Code config: $vscodeConfigPath" -ForegroundColor Green
+    return $true
+}
+
 # Determine install directory
 if (-not $InstallDirectory) {
     if ($IsWindows -or $env:OS -eq "Windows_NT") {
@@ -121,7 +197,41 @@ if ((Test-Path $serverInstallPath) -and (-not $Force)) {
     Write-Host "Use -Force to reinstall or remove the directory manually."
     
     if ($UpdateVsCodeConfig) {
-        Write-Host "Updating VS Code configuration only..."
+        Write-Host "Updating VS Code configuration only..." -ForegroundColor Yellow
+        
+        # Get environment configuration for VS Code update
+        $envConfig = Get-EnvironmentConfig
+        
+        # Update VS Code configuration
+        $configUpdated = Update-VsCodeConfig -EnvConfig $envConfig -ServerName $ServerName
+        
+        if ($configUpdated) {
+            Write-Host ""
+            Write-Host "Configuration update completed! 🚀" -ForegroundColor Green
+            Write-Host "1. Start the mcp server in mcp.json" -ForegroundColor White
+            Write-Host "2. The MCP server should now be available as '$ServerName'" -ForegroundColor White
+            
+            # Show manual configuration example
+            Write-Host ""
+            Write-Host "Configuration applied:" -ForegroundColor Yellow
+            $envConfigJson = $envConfig | ConvertTo-Json -Compress
+            Write-Host @"
+{
+  "servers": {
+    "$ServerName": {
+      "type": "stdio",
+      "command": "azure-sdk-qa-bot-mcp-server", 
+      "args": [],
+      "env": $envConfigJson
+    }
+  }
+}
+"@ -ForegroundColor Cyan
+        } else {
+            Write-Warning "Failed to update VS Code configuration."
+        }
+        
+        exit 0
     } else {
         exit 1
     }
@@ -238,74 +348,7 @@ $envConfig = Get-EnvironmentConfig
 
 # Update VS Code configuration
 if ($UpdateVsCodeConfig) {
-    Write-Host ""
-    Write-Host "Updating VS Code MCP configuration..." -ForegroundColor Yellow
-    
-    # Use the current workspace directory for VS Code configuration
-    $vscodeConfigPath = Join-Path $PSScriptRoot ".vscode" "mcp.json"
-    
-    if (Test-Path $vscodeConfigPath) {
-        try {
-            $jsonContent = Get-Content -Raw $vscodeConfigPath
-            if ([string]::IsNullOrWhiteSpace($jsonContent)) {
-                $vscodeConfig = @{}
-            } else {
-                $vscodeConfig = $jsonContent | ConvertFrom-Json -AsHashtable
-                if ($null -eq $vscodeConfig) {
-                    $vscodeConfig = @{}
-                }
-            }
-        } catch {
-            Write-Warning "Error reading existing VS Code config, creating new one: $_"
-            $vscodeConfig = @{}
-        }
-    } else {
-        $vscodeConfig = @{}
-    }
-    
-    $serverKey = $ServerName
-    $serverConfig = @{
-        "type"    = "stdio"
-        "command" = "azure-sdk-qa-bot-mcp-server"
-        "args"    = @()
-        "env"     = $envConfig
-    }
-    
-    $orderedServers = [ordered]@{
-        $serverKey = $serverConfig
-    }
-    
-    # Ensure vscodeConfig is a valid hashtable
-    if ($null -eq $vscodeConfig -or -not ($vscodeConfig -is [hashtable])) {
-        $vscodeConfig = @{}
-    }
-    
-    if (-not $vscodeConfig.ContainsKey('servers')) {
-        $vscodeConfig['servers'] = @{}
-    }
-    
-    # Safely iterate through existing servers
-    if ($vscodeConfig.servers -and $vscodeConfig.servers.Keys) {
-        foreach ($key in $vscodeConfig.servers.Keys) {
-            if ($key -ne $serverKey) {
-                $orderedServers[$key] = $vscodeConfig.servers[$key]
-            }
-        }
-    }
-    
-    $vscodeConfig.servers = $orderedServers
-    
-    # Create .vscode directory if it doesn't exist
-    $vscodeDir = Split-Path $vscodeConfigPath -Parent
-    if (-not (Test-Path $vscodeDir)) {
-        New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
-    }
-    
-    Write-Host "Updating VS Code MCP config at $vscodeConfigPath" -ForegroundColor Green
-    $vscodeConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $vscodeConfigPath -Force
-    
-    Write-Host "✓ Updated VS Code config: $vscodeConfigPath" -ForegroundColor Green
-    $configUpdated = $true
+    $configUpdated = Update-VsCodeConfig -EnvConfig $envConfig -ServerName $ServerName
 } else {
     $configUpdated = $false
 }

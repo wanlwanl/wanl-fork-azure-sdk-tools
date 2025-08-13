@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuration
-const COMPLETION_API_URL = process.env.BACKEND_URL || 'http://localhost:8088/completion';
+const COMPLETION_API_URL = process.env.BACKEND_URL + '/completion';
 const API_KEY = process.env.API_KEY; // Optional, not needed for localhost
 
 // Types matching the backend API
