@@ -50,28 +50,12 @@ param(
     [string]$ServerName = 'azure-sdk-qa-bot',
     [switch]$Force,
     [string]$BackendUrl = '',
-    [string]$ApiKey = '',
-    [switch]$Interactive = $true
+    [string]$ApiKey = ''
 )
 
 $ErrorActionPreference = "Stop"
 
-function Get-EnvironmentConfig {
-    # Use provided parameters if available and not interactive
-    if (-not $Interactive -and $BackendUrl) {
-        $envConfig = @{
-            "NODE_ENV" = "production"
-            "BACKEND_URL" = $BackendUrl
-        }
-        
-        if ($ApiKey) {
-            $envConfig["API_KEY"] = $ApiKey
-        }
-        
-        Write-Host "Using provided environment configuration" -ForegroundColor Green
-        return $envConfig
-    }
-    
+function Get-EnvironmentConfig {    
     # Interactive configuration
     Write-Host "`n=== Environment Configuration ===" -ForegroundColor Cyan
     Write-Host "Configure the MCP server environment variables:" -ForegroundColor Yellow
@@ -132,7 +116,7 @@ Write-Host "=======================================" -ForegroundColor Green
 Write-Host ""
 
 # Check if already installed
-if (Test-Path $serverInstallPath -and -not $Force) {
+if ((Test-Path $serverInstallPath) -and (-not $Force)) {
     Write-Warning "MCP Server already installed at: $serverInstallPath"
     Write-Host "Use -Force to reinstall or remove the directory manually."
     
@@ -229,7 +213,7 @@ Write-Host "Installing dependencies..." -ForegroundColor Yellow
 Push-Location $serverInstallPath
 
 try {
-    npm install --production
+    npm install
     Write-Host "✓ Dependencies installed" -ForegroundColor Green
     
     Write-Host "Building TypeScript..." -ForegroundColor Yellow
@@ -246,16 +230,6 @@ try {
     Pop-Location
 }
 
-# Test the installation
-Write-Host "Testing installation..." -ForegroundColor Yellow
-$testResult = & azure-sdk-qa-bot-mcp-server --help 2>$null
-if ($LASTEXITCODE -eq 0 -or $testResult) {
-    Write-Host "✓ Installation test passed" -ForegroundColor Green
-} else {
-    Write-Warning "Installation test failed, but server may still work"
-}
-
-Write-Host ""
 Write-Host "Installation completed successfully!" -ForegroundColor Green
 Write-Host "Server installed at: $serverInstallPath" -ForegroundColor Cyan
 
@@ -267,84 +241,91 @@ if ($UpdateVsCodeConfig) {
     Write-Host ""
     Write-Host "Updating VS Code MCP configuration..." -ForegroundColor Yellow
     
-    # Try common VS Code config locations
-    $vscodeConfigPaths = @()
-
-    # Check current directory and workspace
-    $vscodeConfigPaths += Join-Path (Get-Location) ".vscode" "mcp.json"
+    # Use the current workspace directory for VS Code configuration
+    $vscodeConfigPath = Join-Path $PSScriptRoot ".vscode" "mcp.json"
     
-    $configUpdated = $false
-    
-    foreach ($vscodeConfigPath in $vscodeConfigPaths) {
-        $configDir = Split-Path $vscodeConfigPath -Parent
-        
-        if (Test-Path $configDir -or (Split-Path $vscodeConfigPath -Leaf) -eq "mcp.json") {
-            try {
-                # Create directory if it doesn't exist
-                if (-not (Test-Path $configDir)) {
-                    New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-                }
-                
-                # Load or create config
-                if (Test-Path $vscodeConfigPath) {
-                    $vscodeConfig = Get-Content -Raw $vscodeConfigPath | ConvertFrom-Json -AsHashtable
-                } else {
+    if (Test-Path $vscodeConfigPath) {
+        try {
+            $jsonContent = Get-Content -Raw $vscodeConfigPath
+            if ([string]::IsNullOrWhiteSpace($jsonContent)) {
+                $vscodeConfig = @{}
+            } else {
+                $vscodeConfig = $jsonContent | ConvertFrom-Json -AsHashtable
+                if ($null -eq $vscodeConfig) {
                     $vscodeConfig = @{}
                 }
-                
-                # Ensure servers section exists
-                if (-not $vscodeConfig.ContainsKey('servers')) {
-                    $vscodeConfig['servers'] = @{}
-                }
-                
-                # Add our server configuration
-                $serverConfig = @{
-                    "type" = "stdio"
-                    "command" = "azure-sdk-qa-bot-mcp-server"
-                    "args" = @()
-                    "env" = $envConfig
-                }
-                
-                $vscodeConfig.servers[$ServerName] = $serverConfig
-                
-                # Ensure inputs section exists
-                if (-not $vscodeConfig.ContainsKey('inputs')) {
-                    $vscodeConfig['inputs'] = @()
-                }
-                
-                # Save updated config
-                $vscodeConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $vscodeConfigPath -Force
-                Write-Host "✓ Updated VS Code config: $vscodeConfigPath" -ForegroundColor Green
-                $configUpdated = $true
-                
-                break  # Stop after first successful update
-                
-            } catch {
-                Write-Warning "Could not update VS Code config at $vscodeConfigPath : $_"
-                continue
+            }
+        } catch {
+            Write-Warning "Error reading existing VS Code config, creating new one: $_"
+            $vscodeConfig = @{}
+        }
+    } else {
+        $vscodeConfig = @{}
+    }
+    
+    $serverKey = $ServerName
+    $serverConfig = @{
+        "type"    = "stdio"
+        "command" = "azure-sdk-qa-bot-mcp-server"
+        "args"    = @()
+        "env"     = $envConfig
+    }
+    
+    $orderedServers = [ordered]@{
+        $serverKey = $serverConfig
+    }
+    
+    # Ensure vscodeConfig is a valid hashtable
+    if ($null -eq $vscodeConfig -or -not ($vscodeConfig -is [hashtable])) {
+        $vscodeConfig = @{}
+    }
+    
+    if (-not $vscodeConfig.ContainsKey('servers')) {
+        $vscodeConfig['servers'] = @{}
+    }
+    
+    # Safely iterate through existing servers
+    if ($vscodeConfig.servers -and $vscodeConfig.servers.Keys) {
+        foreach ($key in $vscodeConfig.servers.Keys) {
+            if ($key -ne $serverKey) {
+                $orderedServers[$key] = $vscodeConfig.servers[$key]
             }
         }
     }
     
-    if (-not $configUpdated) {
-        Write-Warning "Could not find or update VS Code MCP configuration."
-        Write-Host "You can manually add this configuration to your VS Code mcp.json file:" -ForegroundColor Yellow
-        
-        $manualConfig = @{
-            "servers" = @{
-                $ServerName = @{
-                    "type" = "stdio"
-                    "command" = "azure-sdk-qa-bot-mcp-server"
-                    "args" = @()
-                    "env" = @{
-                        "NODE_ENV" = "production"
-                    }
-                }
+    $vscodeConfig.servers = $orderedServers
+    
+    # Create .vscode directory if it doesn't exist
+    $vscodeDir = Split-Path $vscodeConfigPath -Parent
+    if (-not (Test-Path $vscodeDir)) {
+        New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
+    }
+    
+    Write-Host "Updating VS Code MCP config at $vscodeConfigPath" -ForegroundColor Green
+    $vscodeConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $vscodeConfigPath -Force
+    
+    Write-Host "✓ Updated VS Code config: $vscodeConfigPath" -ForegroundColor Green
+    $configUpdated = $true
+} else {
+    $configUpdated = $false
+}
+    
+if (-not $configUpdated) {
+    Write-Warning "Could not find or update VS Code MCP configuration."
+    Write-Host "You can manually add this configuration to your VS Code mcp.json file:" -ForegroundColor Yellow
+    
+    $manualConfig = @{
+        "servers" = @{
+            $ServerName = @{
+                "type" = "stdio"
+                "command" = "azure-sdk-qa-bot-mcp-server"
+                "args" = @()
+                "env" = $envConfig
             }
         }
-        
-        Write-Host ($manualConfig | ConvertTo-Json -Depth 10) -ForegroundColor Cyan
     }
+    
+    Write-Host ($manualConfig | ConvertTo-Json -Depth 10) -ForegroundColor Cyan
 }
 
 Write-Host ""

@@ -18,10 +18,10 @@ Use the installation script to automatically set up the MCP server:
 
 **Windows (PowerShell):**
 
-Method 1 - Direct from repository (if repository is public):
+Method 1 - Direct from repository:
 ```powershell
 # Run the installation script directly from the repository
-irm https://raw.githubusercontent.com/wanlwanl/wanl-fork-azure-sdk-tools/support_mcp_tools/tools/sdk-ai-bots/azure-sdk-qa-bot-mcp-server/install-mcp-server.ps1 | iex
+irm https://raw.githubusercontent.com/wanlwanl/wanl-fork-azure-sdk-tools/support_mcp_tools/tools/sdk-ai-bots/azure-sdk-qa-bot-mcp-server/install-mcp-server.ps1 -UpdateVsCodeConfig | iex
 ```
 
 Method 2 - Download and run locally:
