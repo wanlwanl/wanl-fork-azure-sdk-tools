@@ -48,12 +48,31 @@ param(
     [string]$Branch = 'support_mcp_tools',
     [switch]$UpdateVsCodeConfig,
     [string]$ServerName = 'azure-sdk-qa-bot',
-    [switch]$Force
+    [switch]$Force,
+    [string]$BackendUrl = '',
+    [string]$ApiKey = '',
+    [switch]$Interactive = $true
 )
 
 $ErrorActionPreference = "Stop"
 
 function Get-EnvironmentConfig {
+    # Use provided parameters if available and not interactive
+    if (-not $Interactive -and $BackendUrl) {
+        $envConfig = @{
+            "NODE_ENV" = "production"
+            "BACKEND_URL" = $BackendUrl
+        }
+        
+        if ($ApiKey) {
+            $envConfig["API_KEY"] = $ApiKey
+        }
+        
+        Write-Host "Using provided environment configuration" -ForegroundColor Green
+        return $envConfig
+    }
+    
+    # Interactive configuration
     Write-Host "`n=== Environment Configuration ===" -ForegroundColor Cyan
     Write-Host "Configure the MCP server environment variables:" -ForegroundColor Yellow
     
@@ -61,15 +80,27 @@ function Get-EnvironmentConfig {
     $defaultBackendUrl = "https://azuresdkbot-azuresdkbot-dev-czhxctdndmfdb5hq.eastasia-01.azurewebsites.net"
     Write-Host ""
     Write-Host "Backend URL - The Azure SDK QA Bot backend service endpoint" -ForegroundColor White
-    $backendUrl = Read-Host "Backend URL (press Enter for default: $defaultBackendUrl)"
-    if ([string]::IsNullOrWhiteSpace($backendUrl)) {
-        $backendUrl = $defaultBackendUrl
+    
+    if ($BackendUrl) {
+        $backendUrl = $BackendUrl
+        Write-Host "Using provided Backend URL: $BackendUrl" -ForegroundColor Green
+    } else {
+        $backendUrl = Read-Host "Backend URL (press Enter for default: $defaultBackendUrl)"
+        if ([string]::IsNullOrWhiteSpace($backendUrl)) {
+            $backendUrl = $defaultBackendUrl
+        }
     }
     
     # API Key (optional)
     Write-Host ""
     Write-Host "API Key - Optional for localhost, required for remote backends" -ForegroundColor White
-    $apiKey = Read-Host "API Key (press Enter to skip)"
+    
+    if ($ApiKey) {
+        Write-Host "Using provided API Key" -ForegroundColor Green
+        $apiKeyToUse = $ApiKey
+    } else {
+        $apiKeyToUse = Read-Host "API Key (press Enter to skip)"
+    }
     
     # Create environment config
     $envConfig = @{
@@ -77,8 +108,8 @@ function Get-EnvironmentConfig {
         "BACKEND_URL" = $backendUrl
     }
     
-    if (-not [string]::IsNullOrWhiteSpace($apiKey)) {
-        $envConfig["API_KEY"] = $apiKey
+    if (-not [string]::IsNullOrWhiteSpace($apiKeyToUse)) {
+        $envConfig["API_KEY"] = $apiKeyToUse
     }
     
     Write-Host "✓ Environment configuration completed" -ForegroundColor Green
@@ -87,7 +118,11 @@ function Get-EnvironmentConfig {
 
 # Determine install directory
 if (-not $InstallDirectory) {
-    $InstallDirectory = Join-Path $env:HOME ".mcp-servers"
+    if ($IsWindows -or $env:OS -eq "Windows_NT") {
+        $InstallDirectory = Join-Path $env:USERPROFILE ".mcp-servers"
+    } else {
+        $InstallDirectory = Join-Path $env:HOME ".mcp-servers"
+    }
 }
 
 $serverInstallPath = Join-Path $InstallDirectory "azure-sdk-qa-bot-mcp-server"
@@ -224,13 +259,13 @@ Write-Host ""
 Write-Host "Installation completed successfully!" -ForegroundColor Green
 Write-Host "Server installed at: $serverInstallPath" -ForegroundColor Cyan
 
+# Get environment configuration (needed for both VS Code config and manual examples)
+$envConfig = Get-EnvironmentConfig
+
 # Update VS Code configuration
 if ($UpdateVsCodeConfig) {
     Write-Host ""
     Write-Host "Updating VS Code MCP configuration..." -ForegroundColor Yellow
-    
-    # Get environment configuration from user
-    $envConfig = Get-EnvironmentConfig
     
     # Try common VS Code config locations
     $vscodeConfigPaths = @()

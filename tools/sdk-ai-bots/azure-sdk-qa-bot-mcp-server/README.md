@@ -17,9 +17,33 @@ This project is an MCP (Model Context Protocol) server in TypeScript/Node.js. It
 Use the installation script to automatically set up the MCP server:
 
 **Windows (PowerShell):**
+
+Method 1 - Direct from repository (if repository is public):
 ```powershell
 # Run the installation script directly from the repository
 irm https://raw.githubusercontent.com/wanlwanl/wanl-fork-azure-sdk-tools/support_mcp_tools/tools/sdk-ai-bots/azure-sdk-qa-bot-mcp-server/install-mcp-server.ps1 | iex
+```
+
+Method 2 - Download and run locally:
+```powershell
+# Download the installation script
+Invoke-RestMethod -Uri "https://raw.githubusercontent.com/wanlwanl/wanl-fork-azure-sdk-tools/support_mcp_tools/tools/sdk-ai-bots/azure-sdk-qa-bot-mcp-server/install-mcp-server.ps1" -OutFile "install-mcp-server.ps1"
+
+# Run the script with VS Code configuration update
+.\install-mcp-server.ps1 -UpdateVsCodeConfig
+
+# Or run with custom environment variables
+.\install-mcp-server.ps1 -UpdateVsCodeConfig -BackendUrl "https://your-backend-url.com" -ApiKey "your-api-key"
+```
+
+Method 3 - Clone repository and run:
+```powershell
+# Clone the repository
+git clone https://github.com/wanlwanl/wanl-fork-azure-sdk-tools.git
+cd wanl-fork-azure-sdk-tools/tools/sdk-ai-bots/azure-sdk-qa-bot-mcp-server
+
+# Run the installation script
+.\install-mcp-server.ps1 -UpdateVsCodeConfig
 ```
 
 This script will:
