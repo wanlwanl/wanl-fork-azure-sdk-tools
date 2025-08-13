@@ -56,7 +56,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools: Tool[] = [
     {
       name: 'ask_azure_sdk_qa',
-      description: 'Ask a question to the Azure SDK QA bot. This tool can answer questions about Azure SDKs, TypeSpec, and related development topics. Supports conversation history for context-aware responses.',
+      description: 'Ask a question to the Azure SDK QA bot. This tool can answer questions about Azure SDK onboarding, TypeSpec, and related development topics. Supports conversation history for context-aware responses.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -85,7 +85,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           tenant_id: {
             type: 'string',
             enum: [...TENANTS],
-            description: 'The tenant/bot to query (default: azure_sdk_qa_bot)',
+            description: 'The tenant/bot to query, you need to choose the most relevant tenant.',
             default: 'azure_sdk_qa_bot'
           }
         },
