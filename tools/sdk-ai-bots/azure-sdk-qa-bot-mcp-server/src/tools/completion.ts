@@ -19,16 +19,9 @@ export interface AdditionalInfo {
 }
 
 export interface CompletionRequest {
-  tenant_id: 'azure_sdk_qa_bot' | 'typespec_extension' | 'python_channel_qa_bot' | 'azure_sdk_onboarding';
-  prompt_template?: string;
-  intension_prompt_template?: string;
-  prompt_template_arguments?: string;
-  top_k?: number;
-  sources?: string[];
+  tenant_id: 'azure_sdk_qa_bot' | 'python_channel_qa_bot' | 'azure_sdk_onboarding';
   message: Message;
   history?: Message[];
-  with_full_context?: boolean;
-  with_preprocess?: boolean;
   additional_infos?: AdditionalInfo[];
 }
 

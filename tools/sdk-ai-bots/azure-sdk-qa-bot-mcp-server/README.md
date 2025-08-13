@@ -25,6 +25,8 @@ irm https://raw.githubusercontent.com/wanlwanl/wanl-fork-azure-sdk-tools/support
 Remove-Item install-mcp-server.ps1
 ```
 
+The API_KEY could found in the [keyvalut](https://ms.portal.azure.com/#@microsoft.onmicrosoft.com/resource/subscriptions/faa080af-c1d8-40ad-9cce-e1a450ca5b57/resourceGroups/typespec_helper/providers/Microsoft.KeyVault/vaults/azuresdkqabotea/secrets)
+
 **What the script does:**
 
 - Downloads and installs the MCP server package
