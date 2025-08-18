@@ -377,19 +377,6 @@ if __name__ == "__main__":
         kwargs = {}
         if args.send_result:
             if args.is_ci:
-                # service_connection_id = os.environ["AZURESUBSCRIPTION_SERVICE_CONNECTION_ID"]
-                # client_id = os.environ["AZURESUBSCRIPTION_CLIENT_ID"]
-                # tenant_id = os.environ["AZURESUBSCRIPTION_TENANT_ID"]
-                # system_access_token = os.environ["SYSTEM_ACCESSTOKEN"]
-
-                # kwargs = {
-                #     "credential": AzurePipelinesCredential(
-                #         service_connection_id=service_connection_id,
-                #         client_id=client_id,
-                #         tenant_id=tenant_id,
-                #         system_access_token=system_access_token,
-                #     )
-                # }
                 kwargs = {
                     "credential": DefaultAzureCredential()
                 }
