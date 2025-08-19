@@ -361,7 +361,7 @@ if __name__ == "__main__":
         args.test_folder = os.path.join(script_directory, "tests")
     
     print(f"test folder: {args.test_folder}")
-    # Required environment variables
+    # load environment variables
     load_dotenv()
     azure_ai_project_endpoint = os.environ["AZURE_AI_PROJECT_ENDPOINT"]
     print(f"📋 Using project endpoint: {azure_ai_project_endpoint}")
