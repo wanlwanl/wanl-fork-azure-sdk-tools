@@ -83,10 +83,10 @@ async def call_bot_api(question: str, bot_endpoint: str, api_key: str, tenant_id
 
 async def prepare_dataset(testdata_dir: str, file_prefix: str = None, is_bot: bool = True):
     """
-    Process markdown files in the data directory and generate Q&A pairs.
+    Process files in the data directory and generate Q&A pairs.
     
     Args:
-        prefix: Optional prefix to filter which markdown files to process.
+        prefix: Optional prefix to filter which files to process.
                     If provided, only files starting with this prefix will be processed.
     """
     print("📁 Preparing dataset...")
