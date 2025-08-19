@@ -11,7 +11,7 @@ import time
 from typing import Any, Dict
 from azure.ai.evaluation import evaluate, SimilarityEvaluator, GroundednessEvaluator
 import aiohttp
-from azure.identity import AzurePipelinesCredential, DefaultAzureCredential, AzureCliCredential
+from azure.identity import DefaultAzureCredential, AzureCliCredential
 from tabulate import tabulate
 import argparse
 from dotenv import load_dotenv
