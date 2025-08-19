@@ -345,8 +345,6 @@ async def create_local_evaluation_task(filename: str):
     project_endpoint = os.environ["PROJECT_ENDPOINT"]
     print(f"📋 Using project endpoint: {project_endpoint}")
     
-    # :param type: The type of the model configuration. Should be 'azure_openai' for AzureOpenAIModelConfiguration
-    # :type type: NotRequired[Literal["azure_openai"]]
     # :param azure_deployment: Name of Azure OpenAI deployment to make requests to
     # :type azure_deployment: str
     # :param azure_endpoint: Endpoint of Azure OpenAI resource to make requests to
