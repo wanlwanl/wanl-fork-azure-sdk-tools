@@ -6,6 +6,10 @@ parameters:
 pool:
   vmImage: 'ubuntu-latest'
 
+trigger:
+- azure-sdk-ai-bot
+- evaluation
+
 pr:
 - azure-sdk-ai-bot
 - evaluation
