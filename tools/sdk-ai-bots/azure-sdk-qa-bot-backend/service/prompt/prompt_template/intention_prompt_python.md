@@ -21,7 +21,7 @@ The question must be classified into one of these categories:
     - Generated code structure problems
 
 - **sdk-develop**: Questions about Python development and code quality, such as:
-    - Custom code advice
+    - Custom code design principles and best practices
     - Pylint checking issues and configuration
     - Spell checking issues and configuration
     - SDK test issues and solvement
@@ -30,7 +30,7 @@ The question must be classified into one of these categories:
 - **sdk-release**: Questions about Python SDK release processes, such as:
     - Management Plane(ARM) vs Data plane release process
     - Release pipeline failures and troubleshooting
-    - Schedule an Out-of-band (OOB) release
+    - Schedule for an Out-of-band (OOB) release
 
 - **sdk-usage**: Questions about using Azure Python SDKs at runtime, including:
     - SDK Runtime failures and troubleshooting
