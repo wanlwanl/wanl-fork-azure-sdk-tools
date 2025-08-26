@@ -20,7 +20,7 @@ The question must be classified into one of these categories:
     - Usage of the SDK generation pipelines
     - Generated code structure problems
 
-- **sdk-develop**: Questions about Python development and code quality, such as:
+- **sdk-development**: Questions about Python development and code quality, such as:
     - Custom code design principles and best practices
     - Pylint checking issues and configuration
     - Spell checking issues and configuration
@@ -46,7 +46,7 @@ The question must be classified into one of these categories:
 Respond with a JSON object using this structure (no markdown formatting needed):
 {
   "question": string,    // The rewritten standalone question
-  "category": string,    // Must be one of the categories: api-design, code-generation, sdk-develop, sdk-release, and sdk-usage
+  "category": string,    // Must be one of the categories: api-design, code-generation, sdk-development, sdk-release, and sdk-usage
 }
 
 ## Examples
@@ -62,7 +62,7 @@ Original: "How to set custom polling endpoint in python sdk?"
 Response:
 {
   "question": "What's the best practice for custom code to set custom polling endpoint in python sdk?",
-  "category": "sdk-develop",
+  "category": "sdk-development",
 }
 
 Original: "How to get release pipeline link?"
