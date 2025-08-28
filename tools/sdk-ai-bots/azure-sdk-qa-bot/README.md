@@ -55,6 +55,14 @@ This naming convention ensures consistency and makes it easy to identify which e
 
 ## Deploy to Azure
 
+## Environments
+
+`<env>` mentioned below sections can be found in `env/.env.*` as the last part, which indicate the environments for the bot 
+
+- prod: Production environment for Azure SDK team
+- dev: Dev environment for Azure SDK tesing team
+- devint: Dev Internal environment for Azure SDK QA Bot for Teams team
+
 ## Provision
 
 This section describe how to create or update Azure resources for bot service
