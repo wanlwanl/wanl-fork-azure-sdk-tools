@@ -30,12 +30,15 @@ The question must be classified into one of these categories:
 - **sdk-release**: Questions about Python SDK release processes, such as:
     - Management Plane(ARM) vs Data plane release process
     - Release pipeline failures and troubleshooting
-    - Schedule for an Out-of-band (OOB) release
 
 - **sdk-usage**: Questions about using Azure Python SDKs at runtime, including:
     - SDK Runtime failures and troubleshooting
     - Service-specific SDK usage patterns and best practices
     - SDK client configuration for sovereign clouds
+
+- **just-post**: Questions including:
+    - Ask for review about PR of azure-sdk-for-python repo 
+    - Announcement for upcoming changes of SDK repo or eng tools
 
 - **unknown**: Questions that:
     - Lack sufficient context to determine the specific development or usage context
