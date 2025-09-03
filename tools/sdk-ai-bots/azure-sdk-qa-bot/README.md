@@ -53,6 +53,43 @@ For example, resources in the production East Asia environment would be prefixed
 
 This naming convention ensures consistency and makes it easy to identify which environment and region each resource belongs to.
 
+## Deploy to Azure
+
+## Environments
+
+`<env>` mentioned below sections can be found in `env/.env.*` as the last part, which indicate the environments for the bot 
+
+- prod: Production environment for Azure SDK team
+- dev: Dev environment for Azure SDK tesing team
+- devint: Dev Internal environment for Azure SDK QA Bot for Teams team
+
+## Provision
+
+This section describe how to create or update Azure resources for bot service
+
+> **Prerequisites**
+>
+> Install https://marketplace.visualstudio.com/items?itemName=TeamsDevApp.ms-teams-vscode-extension
+>
+> Make sure acccounts are logged in in `ACCOUNTS` tab
+
+1. Download secrets`BOT-SERVICE-<ENV>` in [AzureSDKQABotConfig](https://ms.portal.azure.com/?Microsoft_Azure_SignalR=true&microsoft_azure_marketplace_ItemHideKey=SignalRSvcHidden#@microsoft.onmicrosoft.com/resource/subscriptions/faa080af-c1d8-40ad-9cce-e1a450ca5b57/resourceGroups/typespec_helper/providers/Microsoft.KeyVault/vaults/AzureSDKQABotConfig/secrets) and rename to `env/.env.<env>.user`
+1. Click `Provision` button in the extension will update the Azure resouces 
+
+## Deployment
+
+This section describe how to update bot service logic in Azure web app
+
+> **Prerequisites**
+>
+> Install https://marketplace.visualstudio.com/items?itemName=TeamsDevApp.ms-teams-vscode-extension
+>
+> Make sure acccounts are logged in in `ACCOUNTS` tab
+
+1. Run `./scripts/setup-docker-image.ps1 -Tag <env>-<version> -Push` to build and push docker image
+1. Update `DOCKER_IMAGE_TAG` in `.env.<env>`
+1. Click `Provision` button in the extension to update the docker tag 
+
 ## Troubleshooting
 
 The troubleshooting process involves identifying the root cause through logs, fixing issues when necessary by submitting Pull Requests, and using the Teams Toolkit Visual Studio Code Extension for provisioning or deployment. In rare cases, you may need to uninstall and reinstall the bot in Teams.
