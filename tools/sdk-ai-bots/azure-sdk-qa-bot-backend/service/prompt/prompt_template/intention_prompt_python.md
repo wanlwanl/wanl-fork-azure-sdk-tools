@@ -38,7 +38,7 @@ The question must be classified into one of these categories:
 
 - **just-post**: Questions including:
     - Ask for review about PR of azure-sdk-for-python repo 
-    - Announcement for upcoming changes of SDK repo or eng tools
+    - Announcement for upcoming changes of SDK repo or eng tools or monthly kickoff
 
 - **unknown**: Questions that:
     - Lack sufficient context to determine the specific development or usage context
