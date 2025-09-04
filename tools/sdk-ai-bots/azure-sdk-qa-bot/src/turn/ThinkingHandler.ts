@@ -51,7 +51,12 @@ export class ThinkingHandler {
 
   // separate this method from cancelTimer to make sure complete message is always shown
   public async stop(reply: CompletionResponsePayload | RagApiError, currentPrompt: Prompt) {
-    const answer = this.generateAnswer(reply);
+    let answer = this.generateAnswer(reply);
+    const isMentioned = this.isBotMentioned();
+    if (!isMentioned) {
+      const botName = this.context.activity.recipient?.name || 'Azure SDK QA Bot';
+      answer += `\n\n🔁For follow-up questions, \`@${botName}\` is recommended.`;
+    }
     const updated: Partial<TurnContext> = {
       type: 'message',
       id: this.resourceId,
@@ -69,6 +74,12 @@ export class ThinkingHandler {
         this.meta
       );
     }
+  }
+
+  private isBotMentioned(): boolean {
+    const mentions = TurnContext.getMentions(this.context.activity);
+    const botId = this.context.activity.recipient?.id;
+    return mentions.some((mention) => mention.mentioned?.id === botId);
   }
 
   private generateAnswer(reply: CompletionResponsePayload | RagApiError) {
