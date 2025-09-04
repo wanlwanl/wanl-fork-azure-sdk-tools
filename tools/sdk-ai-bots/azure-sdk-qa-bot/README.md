@@ -73,7 +73,7 @@ This section describe how to create or update Azure resources for bot service
 >
 > Make sure acccounts are logged in in `ACCOUNTS` tab
 
-1. Download secrets`BOT-SERVICE-<ENV>` in [AzureSDKQABotConfig](https://ms.portal.azure.com/?Microsoft_Azure_SignalR=true&microsoft_azure_marketplace_ItemHideKey=SignalRSvcHidden#@microsoft.onmicrosoft.com/resource/subscriptions/faa080af-c1d8-40ad-9cce-e1a450ca5b57/resourceGroups/typespec_helper/providers/Microsoft.KeyVault/vaults/AzureSDKQABotConfig/secrets) and rename to `env/.env.<env>.user`
+1. Download secrets `BOT-SERVICE-<ENV>` in [AzureSDKQABotConfig](https://ms.portal.azure.com/?Microsoft_Azure_SignalR=true&microsoft_azure_marketplace_ItemHideKey=SignalRSvcHidden#@microsoft.onmicrosoft.com/resource/subscriptions/faa080af-c1d8-40ad-9cce-e1a450ca5b57/resourceGroups/typespec_helper/providers/Microsoft.KeyVault/vaults/AzureSDKQABotConfig/secrets) and rename to `env/.env.<env>.user`
 1. Click `Provision` button in the extension will update the Azure resouces 
 
 ## Deployment
