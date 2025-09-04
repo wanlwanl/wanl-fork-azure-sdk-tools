@@ -87,6 +87,7 @@ This section describe how to update bot service logic in Azure web app
 > Make sure acccounts are logged in in `ACCOUNTS` tab
 
 1. Run `./scripts/setup-docker-image.ps1 -Tag <env>-<version> -Push` to build and push docker image
+1. Download secrets`BOT-SERVICE-<ENV>` in [AzureSDKQABotConfig](https://ms.portal.azure.com/?Microsoft_Azure_SignalR=true&microsoft_azure_marketplace_ItemHideKey=SignalRSvcHidden#@microsoft.onmicrosoft.com/resource/subscriptions/faa080af-c1d8-40ad-9cce-e1a450ca5b57/resourceGroups/typespec_helper/providers/Microsoft.KeyVault/vaults/AzureSDKQABotConfig/secrets) and rename to `env/.env.<env>.user`
 1. Update `DOCKER_IMAGE_TAG` in `.env.<env>`
 1. Click `Provision` button in the extension to update the docker tag 
 
