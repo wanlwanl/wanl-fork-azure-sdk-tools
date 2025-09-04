@@ -87,6 +87,8 @@ This section describe how to update bot service logic in Azure web app
 > Make sure acccounts are logged in in `ACCOUNTS` tab
 > acr-name-for-env: use the name of the ACR in the same resource group
 
+1. Run `az login`
+1. Run `az acr login --name <acr-name-for-env>`
 1. Run `./scripts/setup-docker-image.ps1 -Tag <env>-<version> -Push -AcrName <acr-name-for-env>` to build and push docker image
 1. Download secrets`BOT-SERVICE-<ENV>` in [AzureSDKQABotConfig](https://ms.portal.azure.com/?Microsoft_Azure_SignalR=true&microsoft_azure_marketplace_ItemHideKey=SignalRSvcHidden#@microsoft.onmicrosoft.com/resource/subscriptions/faa080af-c1d8-40ad-9cce-e1a450ca5b57/resourceGroups/typespec_helper/providers/Microsoft.KeyVault/vaults/AzureSDKQABotConfig/secrets) and rename to `env/.env.<env>.user`
 1. Update `DOCKER_IMAGE_TAG` in `.env.<env>`
