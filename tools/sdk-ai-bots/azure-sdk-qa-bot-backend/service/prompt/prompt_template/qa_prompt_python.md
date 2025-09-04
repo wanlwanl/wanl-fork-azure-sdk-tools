@@ -97,7 +97,7 @@ Structure your response as a JSON object following this exact format:
       "content": string      // relevant excerpt supporting your answer
     }
   ],
-  "category": string, // the category of user's question (api-design, code-generation, sdk-development, sdk-release, sdk-usage)
+  "category": string, // the category of user's question (api-design, code-generation, sdk-development, sdk-release, sdk-usage, just-post, unknown)
   "reasoning_progress": string // output your reasoning progress of generating the answer
 }
 ```
