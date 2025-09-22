@@ -29,7 +29,8 @@ scenario_to_channel: dict[str, str] = {
     "advocacy": "Advocacy",
     "ai": "AI Discussion",
     "apispec": "API Spec Review",
-    "apiview": "APIView"
+    "apiview": "APIView",
+    "onboarding": "Azure SDK Onboarding"
 }
 
 def retrieve_tenant_id(channel: str):
